@@ -46,6 +46,8 @@ export const chats = pgTable("chats", {
 // Agent memory
 export const agentMemory = pgTable("agent_memory", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  runId: varchar("run_id").references(() => runs.id, { onDelete: "cascade" }),
   agent: text("agent").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -91,6 +93,12 @@ export const insertCorpusSchema = createInsertSchema(corpus).omit({
   createdAt: true,
 });
 
+export const insertAgentMemorySchema = createInsertSchema(agentMemory).omit({
+  id: true,
+  createdAt: true,
+  userId: true, // Will be set from session
+});
+
 // TypeScript types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -103,6 +111,8 @@ export type Chat = typeof chats.$inferSelect;
 export type InsertChat = z.infer<typeof insertChatSchema>;
 
 export type AgentMemory = typeof agentMemory.$inferSelect;
+export type InsertAgentMemory = z.infer<typeof insertAgentMemorySchema>;
+
 export type Corpus = typeof corpus.$inferSelect;
 
 // AI Agent personas constants

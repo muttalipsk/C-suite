@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, ChevronDown, ChevronUp } from "lucide-react";
+import { MessageSquare, ChevronDown, ChevronUp, Save } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChatBox } from "./ChatBox";
+import { useToast } from "@/hooks/use-toast";
 
 interface AgentCardProps {
   agentKey: string;
@@ -19,6 +20,9 @@ interface AgentCardProps {
 export function AgentCard({ agentKey, agentName, company, avatar, recommendation, runId }: AgentCardProps) {
   const [showChat, setShowChat] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const { toast } = useToast();
 
   // Parse recommendation into structured sections
   const parseRecommendation = (text: string) => {
@@ -46,6 +50,40 @@ export function AgentCard({ agentKey, agentName, company, avatar, recommendation
   };
 
   const sections = parseRecommendation(recommendation);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/memory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agent: agentKey,
+          runId,
+          content: recommendation,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save recommendation");
+      }
+
+      setIsSaved(true);
+      toast({
+        title: "Saved to Memory",
+        description: `${agentName}'s recommendation saved successfully`,
+      });
+    } catch (error) {
+      console.error("Save error:", error);
+      toast({
+        title: "Save Failed",
+        description: "Could not save recommendation. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <Card className="hover-elevate transition-all">
@@ -117,15 +155,28 @@ export function AgentCard({ agentKey, agentName, company, avatar, recommendation
           </CollapsibleContent>
         </Collapsible>
 
-        <Button
-          variant={showChat ? "secondary" : "default"}
-          className="w-full"
-          onClick={() => setShowChat(!showChat)}
-          data-testid={`button-chat-${agentKey}`}
-        >
-          <MessageSquare className="w-4 h-4 mr-2" />
-          {showChat ? "Hide Chat" : "Ask Follow-up Questions"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={handleSave}
+            disabled={isSaving || isSaved}
+            data-testid={`button-save-${agentKey}`}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {isSaved ? "Saved to Memory" : isSaving ? "Saving..." : "Save to Memory"}
+          </Button>
+          
+          <Button
+            variant={showChat ? "secondary" : "default"}
+            className="flex-1"
+            onClick={() => setShowChat(!showChat)}
+            data-testid={`button-chat-${agentKey}`}
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            {showChat ? "Hide Chat" : "Ask Follow-up"}
+          </Button>
+        </div>
 
         {showChat && (
           <div className="pt-4 border-t">

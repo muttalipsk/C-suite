@@ -306,6 +306,29 @@ Role Details: ${user.roleDetails}
     }
   });
 
+  // MEMORY ROUTES
+  app.post("/api/memory", requireAuth, async (req, res) => {
+    try {
+      const { agent, runId, content } = req.body;
+
+      if (!agent || !content) {
+        return res.status(400).json({ error: "agent and content are required" });
+      }
+
+      const memory = await storage.addAgentMemory(
+        req.session.userId!,
+        agent,
+        content,
+        runId
+      );
+
+      res.json({ success: true, memoryId: memory.id });
+    } catch (error: any) {
+      console.error("Memory save error:", error);
+      res.status(500).json({ error: error.message || "Failed to save memory" });
+    }
+  });
+
   // USER PROFILE ROUTES
   app.get("/api/profile", requireAuth, async (req, res) => {
     try {

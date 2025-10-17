@@ -26,7 +26,7 @@ export interface IStorage {
   getChatsByRunAndAgent(runId: string, agent: string): Promise<Chat[]>;
 
   // Agent memory operations
-  addAgentMemory(agent: string, content: string): Promise<AgentMemory>;
+  addAgentMemory(userId: string, agent: string, content: string, runId?: string): Promise<AgentMemory>;
   getAgentMemory(agent: string, limit?: number): Promise<AgentMemory[]>;
 
   // Corpus operations
@@ -100,10 +100,10 @@ export class DatabaseStorage implements IStorage {
       .orderBy(chats.createdAt);
   }
 
-  async addAgentMemory(agent: string, content: string): Promise<AgentMemory> {
+  async addAgentMemory(userId: string, agent: string, content: string, runId?: string): Promise<AgentMemory> {
     const [memory] = await db
       .insert(agentMemory)
-      .values({ agent, content })
+      .values({ userId, agent, content, runId })
       .returning();
     return memory;
   }
