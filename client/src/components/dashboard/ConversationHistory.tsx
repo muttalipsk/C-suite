@@ -14,7 +14,7 @@ interface SavedRecommendation {
 }
 
 interface ConversationHistoryProps {
-  onSelectConversation?: (id: string) => void;
+  onSelectConversation?: (runId: string, agentKey: string) => void;
 }
 
 export function ConversationHistory({ onSelectConversation }: ConversationHistoryProps) {
@@ -74,21 +74,25 @@ export function ConversationHistory({ onSelectConversation }: ConversationHistor
           <div className="p-4 space-y-2">
             {savedRecommendations.map((saved) => {
               const agent = AI_AGENTS[saved.agentKey as keyof typeof AI_AGENTS];
+              if (!agent) return null;
+              
               return (
-                <div
+                <Button
                   key={saved.id}
-                  className="w-full p-3 rounded-lg border border-sidebar-border hover-elevate transition-all"
+                  variant="ghost"
+                  className="w-full p-3 h-auto rounded-lg border border-sidebar-border hover-elevate transition-all justify-start"
+                  onClick={() => onSelectConversation?.(saved.id.toString(), saved.agentKey)}
                   data-testid={`saved-${saved.id}`}
                 >
-                  <div className="flex items-start gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={agent?.avatar} alt={agent?.name} />
-                      <AvatarFallback>{agent?.name?.[0]}</AvatarFallback>
+                  <div className="flex items-start gap-3 w-full">
+                    <Avatar className="w-10 h-10 shrink-0">
+                      <AvatarImage src={agent.avatar} alt={agent.name} />
+                      <AvatarFallback>{agent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 text-left">
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <p className="font-medium text-sm truncate">{agent?.name}</p>
-                        <Save className="w-3 h-3 text-primary" />
+                        <p className="font-medium text-sm truncate">{agent.name}</p>
+                        <Save className="w-3 h-3 text-primary shrink-0" />
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
                         {saved.content.substring(0, 100)}...
@@ -99,7 +103,7 @@ export function ConversationHistory({ onSelectConversation }: ConversationHistor
                       </span>
                     </div>
                   </div>
-                </div>
+                </Button>
               );
             })}
           </div>

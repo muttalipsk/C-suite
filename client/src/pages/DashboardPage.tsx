@@ -18,6 +18,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [recommendations, setRecommendations] = useState<Record<string, string>>({});
   const [currentRunId, setCurrentRunId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<{runId: string, agentKey: string} | null>(null);
 
   const toggleAgent = useCallback((agentKey: string) => {
     setSelectedAgents(prev => {
@@ -64,12 +65,19 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       console.log("Meeting results:", Object.keys(result.recommendations));
       setRecommendations(result.recommendations);
       setCurrentRunId(result.runId);
+      setSelectedConversation(null);
     } catch (error: any) {
       console.error("Meeting error:", error);
       alert(error.message || "Failed to run meeting. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSelectConversation = async (runId: string, agentKey: string) => {
+    // This will highlight the conversation - you can expand this to load the full conversation
+    setSelectedConversation({ runId, agentKey });
+    console.log("Selected conversation:", runId, agentKey);
   };
 
   // Mock AGENT_DATA and results for the changes to apply correctly
@@ -154,7 +162,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       </div>
 
       {/* Right Sidebar - Conversation History */}
-      <ConversationHistory />
+      <ConversationHistory onSelectConversation={handleSelectConversation} />
     </div>
   );
 }
