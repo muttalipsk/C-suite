@@ -43,7 +43,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     try {
       console.log("Running meeting with agents:", data.selectedAgents);
       console.log("Current selectedAgents state:", selectedAgents);
-      
+
       const response = await fetch("/api/meeting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,7 +74,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   return (
     <div className="flex h-screen bg-background">
       {/* Left Sidebar - Agent Filter */}
-      <AgentFilterSidebar 
+      <AgentFilterSidebar
         selectedAgents={selectedAgents}
         onToggleAgent={toggleAgent}
         onToggleAll={toggleAll}
@@ -103,9 +103,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         <ScrollArea className="flex-1">
           <div className="p-6 max-w-7xl mx-auto space-y-6">
             {/* Meeting Form */}
-            <MeetingForm 
-              onSubmit={handleRunMeeting} 
-              isLoading={isLoading} 
+            <MeetingForm
+              onSubmit={handleRunMeeting}
+              isLoading={isLoading}
               selectedAgents={selectedAgents}
             />
 
@@ -113,7 +113,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             {Object.keys(recommendations).length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-2xl font-semibold">Strategic Recommendations</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className={`grid gap-6 ${
+                  Object.keys(recommendations).length === 1
+                    ? 'grid-cols-1 w-[80%] mx-auto'
+                    : 'grid-cols-1 md:grid-cols-2'
+                }`}>
                   {Object.entries(recommendations).map(([agentKey, recommendation]) => {
                     const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
                     return (
