@@ -7,7 +7,6 @@ import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
-import { log } from "@shared/utils";
 
 const PgSession = connectPgSimple(session);
 
@@ -54,7 +53,7 @@ Product Expectations: ${user.productExpectations}
 Company Website: ${user.companyWebsite}
 Role Details: ${user.roleDetails}
 1-Year Goal: ${user.goalOneYear}
-5-Year Goal: ${user.goalFiveYears`;
+5-Year Goal: ${user.goalFiveYears}`;
   };
 
   // AUTHROUTES
@@ -180,7 +179,7 @@ Role Details: ${user.roleDetails}
             agent.name,
             agent.company,
             agent.role,
-            `AI industry leader specializing in ${agent.company}'s domain`,
+            `AI industry leader specializing in ${agent.company} domain`,
             task,
             userProfile,
             "", // knowledge - would be loaded from corpus in full implementation
@@ -258,7 +257,7 @@ Role Details: ${user.roleDetails}
         agentInfo.name,
         agentInfo.company,
         agentInfo.role,
-        `AI industry leader specializing in ${agentInfo.company}'s domain`,
+        `AI industry leader specializing in ${agentInfo.company} domain`,
         run.task,
         run.userProfile || "",
         recommendation,
@@ -352,7 +351,7 @@ Role Details: ${user.roleDetails}
 
       res.json({ success: true });
     } catch (error: any) {
-      log(`Error saving recommendation: ${error.message}`);
+      console.error(`Error saving recommendation: ${error.message}`);
       res.status(500).json({ error: "Failed to save recommendation" });
     }
   });
@@ -368,7 +367,7 @@ Role Details: ${user.roleDetails}
       const memories = await storage.getRecentMemories(req.session.userId, 20);
       res.json({ memories });
     } catch (error: any) {
-      log(`Error fetching agent memory: ${error.message}`);
+      console.error(`Error fetching agent memory: ${error.message}`);
       res.status(500).json({ error: "Failed to fetch agent memory" });
     }
   });
