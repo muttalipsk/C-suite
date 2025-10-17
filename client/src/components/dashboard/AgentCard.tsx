@@ -54,30 +54,37 @@ export function AgentCard({ agentKey, agentName, company, avatar, recommendation
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch("/api/memory", {
+      const response = await fetch("/api/save-recommendation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          agent: agentKey,
           runId,
-          content: recommendation,
+          agent: agentKey,
+          recommendation,
         }),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to save recommendation");
+        throw new Error(result.error || "Failed to save recommendation");
       }
 
       setIsSaved(true);
       toast({
         title: "Saved to Memory",
-        description: `${agentName}'s recommendation saved successfully`,
+        description: `${agentName}'s recommendation has been saved to your memory.`,
       });
-    } catch (error) {
+
+      // Trigger a custom event to notify conversation history
+      window.dispatchEvent(new CustomEvent('recommendation-saved', {
+        detail: { runId, agent: agentKey, agentName }
+      }));
+    } catch (error: any) {
       console.error("Save error:", error);
       toast({
         title: "Save Failed",
-        description: "Could not save recommendation. Please try again.",
+        description: error.message || "Failed to save recommendation. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -166,7 +173,7 @@ export function AgentCard({ agentKey, agentName, company, avatar, recommendation
             <Save className="w-4 h-4 mr-2" />
             {isSaved ? "Saved to Memory" : isSaving ? "Saving..." : "Save to Memory"}
           </Button>
-          
+
           <Button
             variant={showChat ? "secondary" : "default"}
             className="flex-1"

@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
+import { log } from "@shared/utils";
 
 const PgSession = connectPgSimple(session);
 
@@ -53,14 +54,14 @@ Product Expectations: ${user.productExpectations}
 Company Website: ${user.companyWebsite}
 Role Details: ${user.roleDetails}
 1-Year Goal: ${user.goalOneYear}
-5-Year Goal: ${user.goalFiveYears}`;
+5-Year Goal: ${user.goalFiveYears`;
   };
 
-  // AUTH ROUTES
+  // AUTHROUTES
   app.post("/api/auth/signup", async (req, res) => {
     try {
       const data = insertUserSchema.parse(req.body);
-      
+
       // Check if user exists
       const existingUser = await storage.getUserByEmail(data.email);
       if (existingUser) {
@@ -79,11 +80,11 @@ Role Details: ${user.roleDetails}
       // Set session
       req.session.userId = user.id;
 
-      res.json({ 
-        id: user.id, 
-        email: user.email, 
+      res.json({
+        id: user.id,
+        email: user.email,
         name: user.name,
-        photo: user.photo 
+        photo: user.photo
       });
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -110,11 +111,11 @@ Role Details: ${user.roleDetails}
       // Set session
       req.session.userId = user.id;
 
-      res.json({ 
-        id: user.id, 
-        email: user.email, 
+      res.json({
+        id: user.id,
+        email: user.email,
         name: user.name,
-        photo: user.photo 
+        photo: user.photo
       });
     } catch (error: any) {
       console.error("Login error:", error);
@@ -164,7 +165,7 @@ Role Details: ${user.roleDetails}
 
       // Generate recommendations from all selected agents in parallel
       const recommendations: Record<string, string> = {};
-      
+
       await Promise.all(
         agents.map(async (agentKey: string) => {
           const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
@@ -292,9 +293,9 @@ Role Details: ${user.roleDetails}
   app.get("/api/chat/:runId/:agent", requireAuth, async (req, res) => {
     try {
       const { runId, agent } = req.params;
-      
+
       const history = await storage.getChatsByRunAndAgent(runId, agent);
-      
+
       res.json({
         history: history.map(h => ({
           sender: h.sender,
@@ -327,6 +328,48 @@ Role Details: ${user.roleDetails}
     } catch (error: any) {
       console.error("Memory save error:", error);
       res.status(500).json({ error: error.message || "Failed to save memory" });
+    }
+  });
+
+  // Save recommendation to memory
+  app.post("/api/save-recommendation", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const { runId, agent, recommendation } = req.body;
+
+    if (!runId || !agent || !recommendation) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    try {
+      await storage.addAgentMemory(
+        req.session.userId,
+        agent,
+        `Saved recommendation: ${recommendation.substring(0, 200)}...`
+      );
+
+      res.json({ success: true });
+    } catch (error: any) {
+      log(`Error saving recommendation: ${error.message}`);
+      res.status(500).json({ error: "Failed to save recommendation" });
+    }
+  });
+
+  // Get agent memory
+  app.get("/api/agent-memory", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      // Get recent memories across all agents
+      const memories = await storage.getRecentMemories(req.session.userId, 20);
+      res.json({ memories });
+    } catch (error: any) {
+      log(`Error fetching agent memory: ${error.message}`);
+      res.status(500).json({ error: "Failed to fetch agent memory" });
     }
   });
 

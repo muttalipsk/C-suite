@@ -27,7 +27,8 @@ export interface IStorage {
 
   // Agent memory operations
   addAgentMemory(userId: string, agent: string, content: string, runId?: string): Promise<AgentMemory>;
-  getAgentMemory(agent: string, limit?: number): Promise<AgentMemory[]>;
+  getAgentMemory(agentKey: string, limit?: number): Promise<AgentMemory[]>;
+  getRecentMemories(userId: number, limit?: number): Promise<AgentMemory[]>;
 
   // Corpus operations
   addCorpusChunk(agent: string, fileName: string, chunkText: string, embedding?: string): Promise<Corpus>;
@@ -108,11 +109,20 @@ export class DatabaseStorage implements IStorage {
     return memory;
   }
 
-  async getAgentMemory(agent: string, limit: number = 10): Promise<AgentMemory[]> {
-    return await db
+  async getAgentMemory(agentKey: string, limit: number = 10): Promise<AgentMemory[]> {
+    return db
       .select()
       .from(agentMemory)
-      .where(eq(agentMemory.agent, agent))
+      .where(eq(agentMemory.agentKey, agentKey))
+      .orderBy(desc(agentMemory.createdAt))
+      .limit(limit);
+  }
+
+  async getRecentMemories(userId: number, limit: number = 20): Promise<AgentMemory[]> {
+    return db
+      .select()
+      .from(agentMemory)
+      .where(eq(agentMemory.userId, userId))
       .orderBy(desc(agentMemory.createdAt))
       .limit(limit);
   }

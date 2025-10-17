@@ -1,17 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Clock, ChevronRight } from "lucide-react";
+import { MessageSquare, Clock, ChevronRight, Save } from "lucide-react";
 import { AI_AGENTS } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface Conversation {
-  id: string;
-  agent: string;
-  task: string;
-  timestamp: Date;
-  messageCount: number;
+interface SavedRecommendation {
+  id: number;
+  agentKey: string;
+  content: string;
+  createdAt: string;
 }
 
 interface ConversationHistoryProps {
@@ -19,8 +18,34 @@ interface ConversationHistoryProps {
 }
 
 export function ConversationHistory({ onSelectConversation }: ConversationHistoryProps) {
-  // Placeholder data - will be loaded from API
-  const [conversations] = useState<Conversation[]>([]);
+  const [savedRecommendations, setSavedRecommendations] = useState<SavedRecommendation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadSavedRecommendations = async () => {
+    try {
+      const response = await fetch("/api/agent-memory");
+      if (response.ok) {
+        const data = await response.json();
+        setSavedRecommendations(data.memories || []);
+      }
+    } catch (error) {
+      console.error("Failed to load saved recommendations:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSavedRecommendations();
+
+    // Listen for new saves
+    const handleSave = () => {
+      loadSavedRecommendations();
+    };
+
+    window.addEventListener('recommendation-saved', handleSave);
+    return () => window.removeEventListener('recommendation-saved', handleSave);
+  }, []);
 
   return (
     <div className="w-80 border-l bg-sidebar h-screen flex flex-col">
@@ -33,23 +58,27 @@ export function ConversationHistory({ onSelectConversation }: ConversationHistor
       </div>
 
       <ScrollArea className="flex-1">
-        {conversations.length === 0 ? (
+        {isLoading ? (
           <div className="p-8 text-center">
-            <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+            <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50 animate-pulse" />
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          </div>
+        ) : savedRecommendations.length === 0 ? (
+          <div className="p-8 text-center">
+            <Save className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
             <p className="text-sm text-muted-foreground">
-              No conversations yet. Run a meeting to get started.
+              No saved recommendations yet. Save recommendations to view them here.
             </p>
           </div>
         ) : (
           <div className="p-4 space-y-2">
-            {conversations.map((conv) => {
-              const agent = AI_AGENTS[conv.agent as keyof typeof AI_AGENTS];
+            {savedRecommendations.map((saved) => {
+              const agent = AI_AGENTS[saved.agentKey as keyof typeof AI_AGENTS];
               return (
-                <button
-                  key={conv.id}
-                  onClick={() => onSelectConversation?.(conv.id)}
-                  className="w-full p-3 rounded-lg border border-sidebar-border hover-elevate transition-all text-left group"
-                  data-testid={`conversation-${conv.id}`}
+                <div
+                  key={saved.id}
+                  className="w-full p-3 rounded-lg border border-sidebar-border hover-elevate transition-all"
+                  data-testid={`saved-${saved.id}`}
                 >
                   <div className="flex items-start gap-3">
                     <Avatar className="w-10 h-10">
@@ -59,23 +88,18 @@ export function ConversationHistory({ onSelectConversation }: ConversationHistor
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <p className="font-medium text-sm truncate">{agent?.name}</p>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                        <Save className="w-3 h-3 text-primary" />
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                        {conv.task}
+                        {saved.content.substring(0, 100)}...
                       </p>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {conv.messageCount} messages
-                        </Badge>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {conv.timestamp.toLocaleDateString()}
-                        </span>
-                      </div>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(saved.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
