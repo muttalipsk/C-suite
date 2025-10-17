@@ -8,9 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface SavedRecommendation {
   id: number;
-  agentKey: string;
+  agent: string;
   content: string;
   createdAt: string;
+  runId?: string;
 }
 
 interface ConversationHistoryProps {
@@ -73,7 +74,7 @@ export function ConversationHistory({ onSelectConversation }: ConversationHistor
         ) : (
           <div className="p-4 space-y-2">
             {savedRecommendations.map((saved) => {
-              const agent = AI_AGENTS[saved.agentKey as keyof typeof AI_AGENTS];
+              const agent = AI_AGENTS[saved.agent as keyof typeof AI_AGENTS];
               if (!agent) return null;
               
               return (
@@ -81,7 +82,7 @@ export function ConversationHistory({ onSelectConversation }: ConversationHistor
                   key={saved.id}
                   variant="ghost"
                   className="w-full p-3 h-auto rounded-lg border border-sidebar-border hover-elevate transition-all justify-start"
-                  onClick={() => onSelectConversation?.(saved.id.toString(), saved.agentKey)}
+                  onClick={() => onSelectConversation?.(saved.runId || saved.id.toString(), saved.agent)}
                   data-testid={`saved-${saved.id}`}
                 >
                   <div className="flex items-start gap-3 w-full">

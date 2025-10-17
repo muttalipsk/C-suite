@@ -28,7 +28,7 @@ export interface IStorage {
   // Agent memory operations
   addAgentMemory(userId: string, agent: string, content: string, runId?: string): Promise<AgentMemory>;
   getAgentMemory(agentKey: string, limit?: number): Promise<AgentMemory[]>;
-  getRecentMemories(userId: number, limit?: number): Promise<AgentMemory[]>;
+  getRecentMemories(userId: string, limit?: number): Promise<AgentMemory[]>;
 
   // Corpus operations
   addCorpusChunk(agent: string, fileName: string, chunkText: string, embedding?: string): Promise<Corpus>;
@@ -118,7 +118,7 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async getRecentMemories(userId: number, limit: number = 20): Promise<AgentMemory[]> {
+  async getRecentMemories(userId: string, limit: number = 20): Promise<AgentMemory[]> {
     return db
       .select()
       .from(agentMemory)

@@ -343,20 +343,21 @@ Role Details: ${user.roleDetails}
     }
 
     try {
-      await storage.addAgentMemory(
+      const memory = await storage.addAgentMemory(
         req.session.userId,
         agent,
-        `Saved recommendation: ${recommendation.substring(0, 200)}...`
+        recommendation,
+        runId
       );
 
-      res.json({ success: true });
+      res.json({ success: true, memoryId: memory.id });
     } catch (error: any) {
       console.error(`Error saving recommendation: ${error.message}`);
       res.status(500).json({ error: "Failed to save recommendation" });
     }
   });
 
-  // Get agent memory
+  // Get agent memory for current user
   app.get("/api/agent-memory", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ error: "Not authenticated" });
