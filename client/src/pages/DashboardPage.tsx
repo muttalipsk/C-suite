@@ -7,6 +7,7 @@ import { UserProfileButton } from "@/components/dashboard/UserProfileButton";
 import { AI_AGENTS } from "@shared/schema";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Brain } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface DashboardPageProps {
   onLogout: () => void;
@@ -71,6 +72,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     }
   };
 
+  // Mock AGENT_DATA and results for the changes to apply correctly
+  // In a real scenario, these would be fetched or defined elsewhere.
+  const AGENT_DATA = AI_AGENTS;
+  const results = { recommendations, runId: currentRunId };
+
   return (
     <div className="flex h-screen bg-background">
       {/* Left Sidebar - Agent Filter */}
@@ -113,26 +119,34 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             {Object.keys(recommendations).length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-2xl font-semibold">Strategic Recommendations</h2>
-                <div className={`grid gap-6 ${
-                  Object.keys(recommendations).length === 1
-                    ? 'grid-cols-1 w-[80%] mx-auto'
-                    : 'grid-cols-1 md:grid-cols-2'
-                }`}>
-                  {Object.entries(recommendations).map(([agentKey, recommendation]) => {
-                    const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
-                    return (
-                      <AgentCard
-                        key={agentKey}
-                        agentKey={agentKey}
-                        agentName={agent.name}
-                        company={agent.company}
-                        avatar={agent.avatar}
-                        recommendation={recommendation}
-                        runId={currentRunId}
-                      />
-                    );
-                  })}
-                </div>
+                {/* Results Area */}
+                {results && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-semibold">Strategic Recommendations</h2>
+                      <Badge variant="secondary">{Object.keys(results.recommendations).length} Advisors</Badge>
+                    </div>
+
+                    <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
+                      {Object.entries(results.recommendations).map(([agentKey, recommendation]) => {
+                        const agent = AGENT_DATA[agentKey as keyof typeof AGENT_DATA];
+                        if (!agent) return null;
+
+                        return (
+                          <AgentCard
+                            key={agentKey}
+                            agentKey={agentKey}
+                            agentName={agent.name}
+                            company={agent.company}
+                            avatar={agent.avatar}
+                            recommendation={recommendation}
+                            runId={results.runId}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

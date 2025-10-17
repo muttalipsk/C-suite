@@ -93,7 +93,7 @@ export function AgentCard({ agentKey, agentName, company, avatar, recommendation
   };
 
   return (
-    <Card className="hover-elevate transition-all">
+    <Card className="hover-elevate transition-all w-full">
       <CardHeader className="space-y-4">
         <div className="flex items-start gap-4">
           <Avatar className="w-16 h-16 border-2 border-primary/20">
