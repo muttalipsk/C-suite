@@ -15,10 +15,19 @@ interface AgentCardProps {
   avatar: string;
   recommendation: string;
   runId: string;
+  autoOpenChat?: boolean;
 }
 
-export function AgentCard({ agentKey, agentName, company, avatar, recommendation, runId }: AgentCardProps) {
-  const [showChat, setShowChat] = useState(false);
+export function AgentCard({
+  agentKey,
+  agentName,
+  company,
+  avatar,
+  recommendation,
+  runId,
+  autoOpenChat = false,
+}: AgentCardProps) {
+  const [showChat, setShowChat] = useState(autoOpenChat);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -110,8 +119,8 @@ export function AgentCard({ agentKey, agentName, company, avatar, recommendation
       <CardContent className="space-y-4">
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleTrigger asChild>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-between p-0 h-auto font-semibold text-sm"
               data-testid={`button-toggle-${agentKey}`}
             >

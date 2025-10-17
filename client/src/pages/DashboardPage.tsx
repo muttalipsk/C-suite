@@ -19,6 +19,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [currentRunId, setCurrentRunId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<{runId: string, agentKey: string} | null>(null);
+  const [results, setResults] = useState<{
+    runId: string;
+    recommendations: Record<string, string>;
+    selectedAgents: string[];
+    selectedAgentKey?: string;
+  } | null>(null);
+
 
   const toggleAgent = useCallback((agentKey: string) => {
     setSelectedAgents(prev => {
@@ -66,6 +73,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       setRecommendations(result.recommendations);
       setCurrentRunId(result.runId);
       setSelectedConversation(null);
+      setResults({
+        runId: result.runId,
+        recommendations: result.recommendations,
+        selectedAgents: data.selectedAgents,
+      });
     } catch (error: any) {
       console.error("Meeting error:", error);
       alert(error.message || "Failed to run meeting. Please try again.");
@@ -75,15 +87,37 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   };
 
   const handleSelectConversation = async (runId: string, agentKey: string) => {
-    // This will highlight the conversation - you can expand this to load the full conversation
-    setSelectedConversation({ runId, agentKey });
-    console.log("Selected conversation:", runId, agentKey);
+    try {
+      // Fetch the run data
+      const response = await fetch(`/api/runs`);
+      if (!response.ok) throw new Error("Failed to fetch runs");
+
+      const runs = await response.json();
+      const selectedRun = runs.find((r: any) => r.id === runId);
+
+      if (selectedRun) {
+        // Set the results to show the agent cards
+        setResults({
+          runId: selectedRun.id,
+          recommendations: selectedRun.recommendations,
+          selectedAgents: selectedRun.agents,
+          selectedAgentKey: agentKey // Track which agent was clicked
+        });
+
+        // Scroll to the results section
+        setTimeout(() => {
+          const resultsSection = document.querySelector('[data-results-section]');
+          resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    } catch (error) {
+      console.error("Failed to load conversation:", error);
+    }
   };
 
   // Mock AGENT_DATA and results for the changes to apply correctly
   // In a real scenario, these would be fetched or defined elsewhere.
   const AGENT_DATA = AI_AGENTS;
-  const results = { recommendations, runId: currentRunId };
 
   return (
     <div className="flex h-screen bg-background">
@@ -124,15 +158,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             />
 
             {/* Results */}
-            {Object.keys(recommendations).length > 0 && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-semibold">Strategic Recommendations</h2>
-                {/* Results Area */}
-                {results && (
-                  <div className="space-y-6">
+            {results && (
+                  <div className="space-y-6" data-results-section>
                     <div className="flex items-center justify-between">
-                      <h2 className="text-2xl font-semibold">Strategic Recommendations</h2>
-                      <Badge variant="secondary">{Object.keys(results.recommendations).length} Advisors</Badge>
+                      <h2 className="text-2xl font-bold">AI Leaders' Recommendations</h2>
+                      <Badge variant="outline" className="text-sm">
+                        {results.selectedAgents.length} {results.selectedAgents.length === 1 ? 'Agent' : 'Agents'}
+                      </Badge>
                     </div>
 
                     <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
@@ -149,13 +181,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                             avatar={agent.avatar}
                             recommendation={recommendation}
                             runId={results.runId}
+                            autoOpenChat={results.selectedAgentKey === agentKey}
                           />
                         );
                       })}
                     </div>
                   </div>
-                )}
-              </div>
             )}
           </div>
         </ScrollArea>
