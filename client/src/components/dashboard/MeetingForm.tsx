@@ -23,11 +23,9 @@ interface MeetingFormProps {
   onSubmit: (data: MeetingFormData) => void;
   isLoading?: boolean;
   selectedAgents: string[];
-  onToggleAgent: (agentKey: string) => void;
-  onToggleAll: () => void;
 }
 
-export function MeetingForm({ onSubmit, isLoading = false, selectedAgents, onToggleAgent, onToggleAll }: MeetingFormProps) {
+export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: MeetingFormProps) {
 
   const form = useForm<MeetingFormData>({
     defaultValues: {
@@ -108,61 +106,17 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents, onTog
               )}
             />
 
-            {/* Agent Selection */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <FormLabel className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Select AI Leaders
-                </FormLabel>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={onToggleAll}
-                  data-testid="button-toggle-all"
-                >
-                  {selectedAgents.length === Object.keys(AI_AGENTS).length ? "Deselect All" : "Select All"}
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {Object.entries(AI_AGENTS).map(([key, agent]) => (
-                  <div
-                    key={key}
-                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                      selectedAgents.includes(key) ? "border-primary bg-primary/5" : "border-border"
-                    }`}
-                    data-testid={`agent-card-${key}`}
-                  >
-                    <Checkbox
-                      checked={selectedAgents.includes(key)}
-                      onCheckedChange={() => onToggleAgent(key)}
-                      data-testid={`checkbox-${key}`}
-                    />
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={agent.avatar} alt={agent.name} />
-                      <AvatarFallback>{agent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{agent.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{agent.company}</p>
-                    </div>
-                  </div>
+            {/* Selected Agents Display */}
+            {selectedAgents.length > 0 && (
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm text-muted-foreground">Selected Advisors:</span>
+                {selectedAgents.map(key => (
+                  <Badge key={key} variant="secondary">
+                    {AI_AGENTS[key as keyof typeof AI_AGENTS].name}
+                  </Badge>
                 ))}
               </div>
-
-              {selectedAgents.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-sm text-muted-foreground">Selected:</span>
-                  {selectedAgents.map(key => (
-                    <Badge key={key} variant="secondary">
-                      {AI_AGENTS[key as keyof typeof AI_AGENTS].name}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
 
             <Button
               type="submit"

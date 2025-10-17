@@ -74,7 +74,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   return (
     <div className="flex h-screen bg-background">
       {/* Left Sidebar - Agent Filter */}
-      <AgentFilterSidebar selectedAgents={selectedAgents} />
+      <AgentFilterSidebar 
+        selectedAgents={selectedAgents}
+        onToggleAgent={toggleAgent}
+        onToggleAll={toggleAll}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
@@ -103,8 +107,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               onSubmit={handleRunMeeting} 
               isLoading={isLoading} 
               selectedAgents={selectedAgents}
-              onToggleAgent={toggleAgent}
-              onToggleAll={toggleAll}
             />
 
             {/* Results */}

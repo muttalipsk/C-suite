@@ -1,14 +1,19 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { AI_AGENTS } from "@shared/schema";
 import { Brain, CheckCircle2 } from "lucide-react";
 
 interface AgentFilterSidebarProps {
   selectedAgents: string[];
+  onToggleAgent: (agentKey: string) => void;
+  onToggleAll: () => void;
 }
 
-export function AgentFilterSidebar({ selectedAgents }: AgentFilterSidebarProps) {
+export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll }: AgentFilterSidebarProps) {
+  const allSelected = selectedAgents.length === Object.keys(AI_AGENTS).length;
+  
   return (
     <div className="w-72 border-r bg-sidebar h-screen flex flex-col">
       <div className="p-6 border-b">
@@ -16,7 +21,16 @@ export function AgentFilterSidebar({ selectedAgents }: AgentFilterSidebarProps) 
           <Brain className="w-5 h-5 text-primary" />
           AI Leaders
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">Available advisors</p>
+        <p className="text-sm text-muted-foreground mt-1">Select advisors</p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={onToggleAll}
+          className="mt-3 w-full"
+          data-testid="button-toggle-all-agents"
+        >
+          {allSelected ? 'Deselect All' : 'Select All'}
+        </Button>
       </div>
 
       <ScrollArea className="flex-1">
@@ -24,9 +38,10 @@ export function AgentFilterSidebar({ selectedAgents }: AgentFilterSidebarProps) 
           {Object.entries(AI_AGENTS).map(([key, agent]) => {
             const isSelected = selectedAgents.includes(key);
             return (
-              <div
+              <button
                 key={key}
-                className={`w-full p-3 rounded-lg border transition-all ${
+                onClick={() => onToggleAgent(key)}
+                className={`w-full p-3 rounded-lg border transition-all text-left hover-elevate ${
                   isSelected
                     ? "border-primary bg-sidebar-accent"
                     : "border-sidebar-border opacity-60"
@@ -49,7 +64,7 @@ export function AgentFilterSidebar({ selectedAgents }: AgentFilterSidebarProps) 
                     </Badge>
                   </div>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
