@@ -143,11 +143,54 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   const handleSelectConversation = async (runId: string, agentKey: string) => {
     try {
-      // Fetch the run data
-      const response = await fetch(`/api/runs`);
-      if (!response.ok) throw new Error("Failed to fetch runs");
+      // First try to fetch from agent memory (saved recommendations)
+      const memoryResponse = await fetch(`/api/agent-memory`);
+      if (memoryResponse.ok) {
+        const memoryData = await memoryResponse.json();
+        const savedItem = memoryData.memories?.find((m: any) => 
+          (m.runId === runId || m.id.toString() === runId) && m.agent === agentKey
+        );
 
-      const runs = await response.json();
+        if (savedItem) {
+          // Clear previous state first to force re-render
+          setResults(null);
+          
+          // Set the results to show the agent card with a slight delay
+          setTimeout(() => {
+            setResults({
+              runId: savedItem.runId || savedItem.id.toString(),
+              recommendations: { [agentKey]: savedItem.content },
+              selectedAgents: [agentKey],
+              selectedAgentKey: agentKey
+            });
+            
+            setCurrentRunId(savedItem.runId || savedItem.id.toString());
+            setRecommendations({ [agentKey]: savedItem.content });
+            setSelectedConversation({ runId, agentKey });
+
+            // Scroll to the results section and the specific agent card
+            setTimeout(() => {
+              const resultsSection = document.querySelector('[data-results-section]');
+              resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              
+              // Scroll to the specific agent card after a brief delay
+              setTimeout(() => {
+                const agentCard = document.querySelector(`[data-agent-card="${agentKey}"]`);
+                if (agentCard) {
+                  agentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }, 300);
+            }, 100);
+          }, 50);
+          return;
+        }
+      }
+
+      // Fallback: try to fetch from runs if not found in memory
+      const runsResponse = await fetch(`/api/runs`);
+      if (!runsResponse.ok) throw new Error("Failed to fetch runs");
+
+      const runs = await runsResponse.json();
       const selectedRun = runs.find((r: any) => r.id === runId);
 
       if (selectedRun) {
@@ -160,7 +203,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             runId: selectedRun.id,
             recommendations: selectedRun.recommendations,
             selectedAgents: selectedRun.agents,
-            selectedAgentKey: agentKey // Track which agent was clicked
+            selectedAgentKey: agentKey
           });
           
           setCurrentRunId(selectedRun.id);
