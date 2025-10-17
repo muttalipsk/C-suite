@@ -1,0 +1,27 @@
+Build a full-stack web application called "AI Leaders C-Suite Boardroom"  using Python (FastAPI) for the backend, React for the frontend, and PostgreSQL for the database. The app simulates digital twins of 5 AI leaders (Sam Altman/OpenAI CEO, Jensen Huang/NVIDIA CEO, Andrew Ng/DeepLearning.AI Founder, Demis Hassabis/Google DeepMind CEO, Fei-Fei Li/Stanford AI Lab Co-Director) that provide personalized strategy recommendations and conversational follow-ups. Users must sign up/login to access features, with user data stored in Postgres. Use modular code structure for backend (separate files: constants.py, models.py, utils.py, agents.py, main.py,etc). Ensure the app runs seamlessly  with env vars for secrets (Gemini API key, Postgres URL), and include CORS for frontend-backend communication. Handle file uploads (e.g., user photos, knowledge PDFs) securely. The frontend UI should resemble a modern dataset viewer/chat interface ( clean, tabular for data, expandable messages/images, search/filter,  with sections for forms/results/chats).
+
+### Core Features
+- **User Authentication**:
+  - **Signup **: Form collects: Photo (file upload), Name (str), Email (str, unique), Company Name (str), Designation (str), Brief Description About Your Role (text), What Are You Looking From This Product? (text), Company Website URL (str), Details About Your Current Role (text), Professional Goal for Next 1 Year (text), Professional Goal for Next 5 Years (text). Hash password (bcrypt), upload photo to /uploads folder (or Replit storage), store in Postgres . 
+  - **Login **: Email or Username + Password. Validate.
+  - 
+- **Knowledge Ingestion **: Auth required. Upload PDF/txt/md for a persona, extract text (PyPDF2), chunk/store in Postgres 'corpus' table (persona_id, chunk_text, embedding vector via Gemini embeddings), build/update  index per persona (store index paths ).
+- **Run Meeting **: Auth required. JSON body: {task: str, user_profile: str (auto-populate from user DB if empty), turns: int (default 1), agents: array of str (default all)}. Use LangGraph for parallel agents: Each generates/refines recommendations (structured: Summary, Key Recommendations, Rationale, Next Steps) via Gemini LLM, integrating RAG (FAISS for relevant chunks from corpus), user profile, and agent memory. Save run to Postgres 'runs' table (user_id, run_id (auto-inc), task, user_profile, recommendations JSONB). Return {run_id, recommendations}.
+- **Chat **: Auth required. JSON body: {run_id: str, agent: str, message: str}. Load run/task/profile/recommendation from DB, load chat history , fetch agent knowledge/chunks/memory. Build conversational prompt (integrate all), invoke Gemini, append to history in DB. Return {response: str}.
+- **Get Chat History **: Auth required. Query params: run_id, agent. Return {history: array of {user: str, agent: str}}.
+- **User Profile **: Auth required. Fetch/edit user data from DB.
+- **Memory Management**: Per-agent long-term memory (append recommendations to 'agent_memory' table). Sidebar in frontend to view/edit.
+
+### Backend Tech Stack and Modular Structure
+- **Framework**: FastAPI (async, auto-docs at /docs).
+- **AI/ML**: LangChain/LangGraph for orchestration, Google Gemini (gemini-2.0-flash) for LLM/embeddings, FAISS for RAG indexes (per persona).
+- **use node js for call the python api**
+
+### Frontend (React) Structure and UI
+- **Framework**: Create React App (CRA), 
+- **Components** :
+  - Auth: SignupForm (Photo (file upload), Name (str), Email (str, unique), Company Name (str), Designation (str), Brief Description About Your Role (text), What Are You Looking From This Product? (text), Company Website URL (str), Details About Your Current Role (text), Professional Goal for Next 1 Year (text), Professional Goal for Next 5 Years (text). Hash password (bcrypt), ), LoginForm (email/username + password).
+  - Dashboard: Sidebar (agent list with memory previews, user profile), IngestForm (persona select left side of dash board), MeetingForm (task textarea, auto-fill user_profile from DB, agent checkboxes with select-all and all select agent show in single single box in chatbox top and every agent recomendation take separet box for lapto or large screen it come 3 box in row and small screen 1 box per row), Results (per-agent cards: recommendation display, ChatBox below), ChatBox (history list with user/agent bubbles, input/send button;) in top right coner show user profile (user photo , name company name ,position in company and setting where he can see all profile details and update, and also logout option).aget history (write side show each agent history with agent name for each session)
+- **UI Design**: Dark blue theme (like Hugging Face: #0e1117 bg, white text, tables for data previews). Responsive: Forms in sections, results as expandable cards with images (e.g., agent avatars), search/filter for history. Use Material-UI or Tailwind for styling. Sidebar fixed left and wright (agents/memory), main content tabular/chat-like (e.g., message bubbles with timestamps/images if applicable).
+-
+
