@@ -27,17 +27,15 @@ export function AgentCard({
   runId,
   autoOpenChat = false,
 }: AgentCardProps) {
-  const [showChat, setShowChat] = useState(false);
+  const [showChat, setShowChat] = useState(autoOpenChat);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const { toast } = useToast();
 
-  // Auto-open chat when autoOpenChat is true
+  // Update chat state when autoOpenChat changes
   useEffect(() => {
-    if (autoOpenChat) {
-      setShowChat(true);
-    }
+    setShowChat(autoOpenChat);
   }, [autoOpenChat]);
 
   // Parse recommendation into structured sections
