@@ -388,13 +388,31 @@ Role Details: ${user.roleDetails}
     }
   });
 
+  // Update user profile
   app.put("/api/profile", requireAuth, async (req, res) => {
     try {
       const updates = req.body;
-      delete updates.id;
-      delete updates.password; // Don't allow password updates this way
+      // Ensure we only update allowed fields and prevent modification of sensitive ones
+      const allowedUpdates = [
+        'name',
+        'companyName',
+        'designation',
+        'roleDescription',
+        'productExpectations',
+        'companyWebsite',
+        'roleDetails',
+        'goalOneYear',
+        'goalFiveYears',
+        'photo'
+      ];
+      const sanitizedUpdates: Record<string, any> = {};
+      for (const key of allowedUpdates) {
+        if (updates.hasOwnProperty(key)) {
+          sanitizedUpdates[key] = updates[key];
+        }
+      }
 
-      const user = await storage.updateUser(req.session.userId!, updates);
+      const user = await storage.updateUser(req.session.userId!, sanitizedUpdates);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -402,6 +420,7 @@ Role Details: ${user.roleDetails}
       const { password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error) {
+      console.error("Failed to update profile:", error);
       res.status(500).json({ error: "Failed to update profile" });
     }
   });

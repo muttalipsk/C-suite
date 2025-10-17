@@ -9,6 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Brain } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface DashboardPageProps {
   onLogout: () => void;
@@ -44,7 +46,41 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   } | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedUser, setEditedUser] = useState<any>(null);
 
+
+  const handleEditProfile = () => {
+    setEditedUser({ ...user });
+    setIsEditMode(true);
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const response = await fetch("/api/auth/update-profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editedUser),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUser(updatedUser);
+        setIsEditMode(false);
+        setEditedUser(null);
+      } else {
+        alert("Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+      alert("Failed to update profile");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setEditedUser(null);
+  };
 
   const toggleAgent = useCallback((agentKey: string) => {
     setSelectedAgents(prev => {
@@ -234,59 +270,153 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
       {/* Profile Dialog */}
       {showProfile && user && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowProfile(false)}>
-          <div className="bg-card border border-card-border rounded-xl p-6 max-w-2xl w-full m-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setShowProfile(false); setIsEditMode(false); }}>
+          <div className="bg-card border border-card-border rounded-xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-6">
               <h2 className="text-2xl font-bold">Your Profile</h2>
-              <Button variant="ghost" size="sm" onClick={() => setShowProfile(false)}>×</Button>
+              <div className="flex gap-2">
+                {!isEditMode ? (
+                  <Button variant="outline" size="sm" onClick={handleEditProfile}>Edit</Button>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleCancelEdit}>Cancel</Button>
+                    <Button variant="default" size="sm" onClick={handleSaveProfile}>Save</Button>
+                  </>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => { setShowProfile(false); setIsEditMode(false); }}>×</Button>
+              </div>
             </div>
             
-            <div className="space-y-4">
-              {user.photo && (
+            <div className="space-y-6">
+              {(user.photo || isEditMode) && (
                 <div className="flex justify-center">
-                  <img src={user.photo} alt={user.name} className="w-32 h-32 rounded-full object-cover" />
+                  {user.photo && <img src={user.photo} alt={user.name} className="w-32 h-32 rounded-full object-cover border-4 border-primary/20" />}
                 </div>
               )}
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-muted-foreground">Name</label>
-                  <p className="font-medium">{user.name}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Name</label>
+                  {isEditMode ? (
+                    <Input 
+                      value={editedUser?.name || ""} 
+                      onChange={(e) => setEditedUser({...editedUser, name: e.target.value})}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="font-medium mt-1">{user.name}</p>
+                  )}
                 </div>
                 
                 <div>
-                  <label className="text-sm text-muted-foreground">Email</label>
-                  <p className="font-medium">{user.email}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <p className="font-medium mt-1">{user.email}</p>
                 </div>
                 
-                {user.company && (
-                  <div>
-                    <label className="text-sm text-muted-foreground">Company</label>
-                    <p className="font-medium">{user.company}</p>
-                  </div>
-                )}
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Company Name</label>
+                  {isEditMode ? (
+                    <Input 
+                      value={editedUser?.companyName || ""} 
+                      onChange={(e) => setEditedUser({...editedUser, companyName: e.target.value})}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="font-medium mt-1">{user.companyName || "Not provided"}</p>
+                  )}
+                </div>
                 
-                {user.role && (
-                  <div>
-                    <label className="text-sm text-muted-foreground">Role</label>
-                    <p className="font-medium">{user.role}</p>
-                  </div>
-                )}
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Designation</label>
+                  {isEditMode ? (
+                    <Input 
+                      value={editedUser?.designation || ""} 
+                      onChange={(e) => setEditedUser({...editedUser, designation: e.target.value})}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="font-medium mt-1">{user.designation || "Not provided"}</p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-muted-foreground">Role Description</label>
+                  {isEditMode ? (
+                    <Textarea 
+                      value={editedUser?.roleDescription || ""} 
+                      onChange={(e) => setEditedUser({...editedUser, roleDescription: e.target.value})}
+                      className="mt-1 min-h-20"
+                    />
+                  ) : (
+                    <p className="mt-1">{user.roleDescription || "Not provided"}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Company Website</label>
+                  {isEditMode ? (
+                    <Input 
+                      value={editedUser?.companyWebsite || ""} 
+                      onChange={(e) => setEditedUser({...editedUser, companyWebsite: e.target.value})}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="mt-1">{user.companyWebsite || "Not provided"}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Role Details</label>
+                  {isEditMode ? (
+                    <Input 
+                      value={editedUser?.roleDetails || ""} 
+                      onChange={(e) => setEditedUser({...editedUser, roleDetails: e.target.value})}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="mt-1">{user.roleDetails || "Not provided"}</p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-muted-foreground">Product Expectations</label>
+                  {isEditMode ? (
+                    <Textarea 
+                      value={editedUser?.productExpectations || ""} 
+                      onChange={(e) => setEditedUser({...editedUser, productExpectations: e.target.value})}
+                      className="mt-1 min-h-20"
+                    />
+                  ) : (
+                    <p className="mt-1">{user.productExpectations || "Not provided"}</p>
+                  )}
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-muted-foreground">1-Year Goals</label>
+                  {isEditMode ? (
+                    <Textarea 
+                      value={editedUser?.goalOneYear || ""} 
+                      onChange={(e) => setEditedUser({...editedUser, goalOneYear: e.target.value})}
+                      className="mt-1 min-h-20"
+                    />
+                  ) : (
+                    <p className="mt-1">{user.goalOneYear || "Not provided"}</p>
+                  )}
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-muted-foreground">5-Year Goals</label>
+                  {isEditMode ? (
+                    <Textarea 
+                      value={editedUser?.goalFiveYears || ""} 
+                      onChange={(e) => setEditedUser({...editedUser, goalFiveYears: e.target.value})}
+                      className="mt-1 min-h-20"
+                    />
+                  ) : (
+                    <p className="mt-1">{user.goalFiveYears || "Not provided"}</p>
+                  )}
+                </div>
               </div>
-              
-              {user.goals && (
-                <div>
-                  <label className="text-sm text-muted-foreground">Goals</label>
-                  <p className="mt-1">{user.goals}</p>
-                </div>
-              )}
-              
-              {user.challenges && (
-                <div>
-                  <label className="text-sm text-muted-foreground">Challenges</label>
-                  <p className="mt-1">{user.challenges}</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
