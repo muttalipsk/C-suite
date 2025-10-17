@@ -103,11 +103,23 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           selectedAgents: selectedRun.agents,
           selectedAgentKey: agentKey // Track which agent was clicked
         });
+        
+        setCurrentRunId(selectedRun.id);
+        setRecommendations(selectedRun.recommendations);
+        setSelectedConversation({ runId, agentKey });
 
-        // Scroll to the results section
+        // Scroll to the results section and the specific agent card
         setTimeout(() => {
           const resultsSection = document.querySelector('[data-results-section]');
           resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          
+          // Scroll to the specific agent card after a brief delay
+          setTimeout(() => {
+            const agentCard = document.querySelector(`[data-agent-card="${agentKey}"]`);
+            if (agentCard) {
+              agentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 300);
         }, 100);
       }
     } catch (error) {

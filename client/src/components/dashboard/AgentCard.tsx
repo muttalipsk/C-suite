@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,18 @@ export function AgentCard({
   runId,
   autoOpenChat = false,
 }: AgentCardProps) {
-  const [showChat, setShowChat] = useState(autoOpenChat);
+  const [showChat, setShowChat] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const { toast } = useToast();
+
+  // Auto-open chat when autoOpenChat is true
+  useEffect(() => {
+    if (autoOpenChat) {
+      setShowChat(true);
+    }
+  }, [autoOpenChat]);
 
   // Parse recommendation into structured sections
   const parseRecommendation = (text: string) => {
@@ -102,7 +109,7 @@ export function AgentCard({
   };
 
   return (
-    <Card className="hover-elevate transition-all w-full">
+    <Card className="hover-elevate transition-all w-full" data-agent-card={agentKey}>
       <CardHeader className="space-y-4">
         <div className="flex items-start gap-4">
           <Avatar className="w-16 h-16 border-2 border-primary/20">
