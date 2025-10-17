@@ -190,6 +190,7 @@ Role Details: ${user.roleDetails}
 
           // Save to agent memory
           await storage.addAgentMemory(
+            req.session.userId!,
             agentKey,
             `Recommendation for task: "${task}". Summary: ${recommendation.substring(0, 200)}...`
           );
