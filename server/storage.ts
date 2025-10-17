@@ -113,7 +113,7 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(agentMemory)
-      .where(eq(agentMemory.agentKey, agentKey))
+      .where(eq(agentMemory.agent, agentKey))
       .orderBy(desc(agentMemory.createdAt))
       .limit(limit);
   }
