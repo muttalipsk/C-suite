@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { MeetingForm } from "@/components/dashboard/MeetingForm";
 import { AgentCard } from "@/components/dashboard/AgentCard";
 import { AgentFilterSidebar } from "@/components/dashboard/AgentFilterSidebar";
@@ -18,46 +18,63 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [currentRunId, setCurrentRunId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const toggleAgent = (agentKey: string) => {
-    if (selectedAgents.includes(agentKey)) {
-      setSelectedAgents(selectedAgents.filter(k => k !== agentKey));
-    } else {
-      setSelectedAgents([...selectedAgents, agentKey]);
-    }
-  };
+  const toggleAgent = useCallback((agentKey: string) => {
+    setSelectedAgents(prev => {
+      if (prev.includes(agentKey)) {
+        return prev.filter(k => k !== agentKey);
+      } else {
+        return [...prev, agentKey];
+      }
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    setSelectedAgents(prev => {
+      if (prev.length === Object.keys(AI_AGENTS).length) {
+        return [];
+      } else {
+        return Object.keys(AI_AGENTS);
+      }
+    });
+  }, []);
 
   const handleRunMeeting = async (data: any) => {
     setIsLoading(true);
-    // Simulate API call - will be implemented in integration phase
-    setTimeout(() => {
-      const mockRecommendations: Record<string, string> = {};
-      data.selectedAgents.forEach((agent: string) => {
-        mockRecommendations[agent] = `**Summary**: Based on your query about "${data.task}", here's my strategic recommendation tailored to your role and context.
-
-**Key Recommendations**:
-- Implement a phased approach starting with pilot projects in controlled environments
-- Build internal AI expertise through training programs and strategic hiring
-- Establish clear governance frameworks and ethical guidelines
-- Partner with established AI providers to accelerate implementation
-- Monitor industry developments and adjust strategy quarterly
-
-**Rationale and Balance**: This approach balances innovation with risk management, ensuring sustainable AI adoption while building organizational capabilities.
-
-**Next Steps or Considerations**: Schedule a follow-up session to discuss specific implementation timelines and resource allocation.`;
+    try {
+      console.log("Running meeting with agents:", data.selectedAgents);
+      console.log("Current selectedAgents state:", selectedAgents);
+      
+      const response = await fetch("/api/meeting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: data.task,
+          agents: data.selectedAgents,
+          turns: data.turns || 1,
+        }),
       });
-      setRecommendations(mockRecommendations);
-      setCurrentRunId("mock-run-" + Date.now());
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to run meeting");
+      }
+
+      console.log("Meeting results:", Object.keys(result.recommendations));
+      setRecommendations(result.recommendations);
+      setCurrentRunId(result.runId);
+    } catch (error: any) {
+      console.error("Meeting error:", error);
+      alert(error.message || "Failed to run meeting. Please try again.");
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   return (
     <div className="flex h-screen bg-background">
       {/* Left Sidebar - Agent Filter */}
-      <AgentFilterSidebar
-        selectedAgents={selectedAgents}
-        onToggleAgent={toggleAgent}
-      />
+      <AgentFilterSidebar selectedAgents={selectedAgents} />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
@@ -82,7 +99,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         <ScrollArea className="flex-1">
           <div className="p-6 max-w-7xl mx-auto space-y-6">
             {/* Meeting Form */}
-            <MeetingForm onSubmit={handleRunMeeting} isLoading={isLoading} />
+            <MeetingForm 
+              onSubmit={handleRunMeeting} 
+              isLoading={isLoading} 
+              selectedAgents={selectedAgents}
+              onToggleAgent={toggleAgent}
+              onToggleAll={toggleAll}
+            />
 
             {/* Results */}
             {Object.keys(recommendations).length > 0 && (

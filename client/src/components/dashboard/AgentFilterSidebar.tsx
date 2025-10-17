@@ -2,14 +2,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AI_AGENTS } from "@shared/schema";
-import { Brain } from "lucide-react";
+import { Brain, CheckCircle2 } from "lucide-react";
 
 interface AgentFilterSidebarProps {
   selectedAgents: string[];
-  onToggleAgent: (agentKey: string) => void;
 }
 
-export function AgentFilterSidebar({ selectedAgents, onToggleAgent }: AgentFilterSidebarProps) {
+export function AgentFilterSidebar({ selectedAgents }: AgentFilterSidebarProps) {
   return (
     <div className="w-72 border-r bg-sidebar h-screen flex flex-col">
       <div className="p-6 border-b">
@@ -17,37 +16,42 @@ export function AgentFilterSidebar({ selectedAgents, onToggleAgent }: AgentFilte
           <Brain className="w-5 h-5 text-primary" />
           AI Leaders
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">Select advisors</p>
+        <p className="text-sm text-muted-foreground mt-1">Available advisors</p>
       </div>
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-2">
-          {Object.entries(AI_AGENTS).map(([key, agent]) => (
-            <button
-              key={key}
-              onClick={() => onToggleAgent(key)}
-              className={`w-full p-3 rounded-lg border transition-all text-left hover-elevate ${
-                selectedAgents.includes(key)
-                  ? "border-primary bg-sidebar-accent"
-                  : "border-sidebar-border"
-              }`}
-              data-testid={`sidebar-agent-${key}`}
-            >
-              <div className="flex items-start gap-3">
-                <Avatar className="w-12 h-12 border-2 border-primary/20">
-                  <AvatarImage src={agent.avatar} alt={agent.name} />
-                  <AvatarFallback>{agent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{agent.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{agent.company}</p>
-                  <Badge variant="outline" className="mt-1 text-xs">
-                    {agent.role}
-                  </Badge>
+          {Object.entries(AI_AGENTS).map(([key, agent]) => {
+            const isSelected = selectedAgents.includes(key);
+            return (
+              <div
+                key={key}
+                className={`w-full p-3 rounded-lg border transition-all ${
+                  isSelected
+                    ? "border-primary bg-sidebar-accent"
+                    : "border-sidebar-border opacity-60"
+                }`}
+                data-testid={`sidebar-agent-${key}`}
+              >
+                <div className="flex items-start gap-3">
+                  <Avatar className="w-12 h-12 border-2 border-primary/20">
+                    <AvatarImage src={agent.avatar} alt={agent.name} />
+                    <AvatarFallback>{agent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">{agent.name}</p>
+                      {isSelected && <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{agent.company}</p>
+                    <Badge variant="outline" className="mt-1 text-xs">
+                      {agent.role}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </ScrollArea>
     </div>

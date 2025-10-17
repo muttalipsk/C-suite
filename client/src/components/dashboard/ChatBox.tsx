@@ -41,19 +41,45 @@ export function ChatBox({ agentKey, agentName, runId }: ChatBoxProps) {
     };
 
     setMessages([...messages, userMessage]);
+    const currentInput = input;
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response (will be replaced with actual API call)
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          runId,
+          agent: agentKey,
+          message: currentInput,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Chat failed");
+      }
+
       const agentMessage: Message = {
         sender: "agent",
-        content: "This is a placeholder response. Will be connected to the AI backend in the integration phase.",
+        content: result.response,
         timestamp: new Date(),
       };
+      
       setMessages(prev => [...prev, agentMessage]);
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      const errorMessage: Message = {
+        sender: "agent",
+        content: "I'm having trouble responding right now. Please try again.",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

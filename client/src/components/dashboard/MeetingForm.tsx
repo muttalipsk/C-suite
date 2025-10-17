@@ -22,40 +22,23 @@ interface MeetingFormData {
 interface MeetingFormProps {
   onSubmit: (data: MeetingFormData) => void;
   isLoading?: boolean;
+  selectedAgents: string[];
+  onToggleAgent: (agentKey: string) => void;
+  onToggleAll: () => void;
 }
 
-export function MeetingForm({ onSubmit, isLoading = false }: MeetingFormProps) {
-  const [selectedAgents, setSelectedAgents] = useState<string[]>(Object.keys(AI_AGENTS));
+export function MeetingForm({ onSubmit, isLoading = false, selectedAgents, onToggleAgent, onToggleAll }: MeetingFormProps) {
 
   const form = useForm<MeetingFormData>({
     defaultValues: {
       task: "",
       meetingType: "board",
-      selectedAgents: Object.keys(AI_AGENTS),
       turns: 1,
     },
   });
 
-  const toggleAgent = (agentKey: string) => {
-    const newSelection = selectedAgents.includes(agentKey)
-      ? selectedAgents.filter(k => k !== agentKey)
-      : [...selectedAgents, agentKey];
-    setSelectedAgents(newSelection);
-    form.setValue("selectedAgents", newSelection);
-  };
-
-  const toggleAll = () => {
-    if (selectedAgents.length === Object.keys(AI_AGENTS).length) {
-      setSelectedAgents([]);
-      form.setValue("selectedAgents", []);
-    } else {
-      const allKeys = Object.keys(AI_AGENTS);
-      setSelectedAgents(allKeys);
-      form.setValue("selectedAgents", allKeys);
-    }
-  };
-
   const handleSubmit = (data: MeetingFormData) => {
+    console.log("MeetingForm handleSubmit - selectedAgents from props:", selectedAgents);
     onSubmit({ ...data, selectedAgents });
   };
 
@@ -136,7 +119,7 @@ export function MeetingForm({ onSubmit, isLoading = false }: MeetingFormProps) {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={toggleAll}
+                  onClick={onToggleAll}
                   data-testid="button-toggle-all"
                 >
                   {selectedAgents.length === Object.keys(AI_AGENTS).length ? "Deselect All" : "Select All"}
@@ -147,15 +130,14 @@ export function MeetingForm({ onSubmit, isLoading = false }: MeetingFormProps) {
                 {Object.entries(AI_AGENTS).map(([key, agent]) => (
                   <div
                     key={key}
-                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer hover-elevate ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
                       selectedAgents.includes(key) ? "border-primary bg-primary/5" : "border-border"
                     }`}
-                    onClick={() => toggleAgent(key)}
                     data-testid={`agent-card-${key}`}
                   >
                     <Checkbox
                       checked={selectedAgents.includes(key)}
-                      onCheckedChange={() => toggleAgent(key)}
+                      onCheckedChange={() => onToggleAgent(key)}
                       data-testid={`checkbox-${key}`}
                     />
                     <Avatar className="w-10 h-10">

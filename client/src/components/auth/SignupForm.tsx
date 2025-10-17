@@ -50,9 +50,25 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   };
 
   const onSubmit = async (data: InsertUser) => {
-    // Will be implemented in integration phase
-    console.log("Signup data:", data);
-    onSuccess();
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Signup failed");
+      }
+
+      onSuccess();
+    } catch (error: any) {
+      form.setError("root", {
+        message: error.message || "Signup failed. Please try again.",
+      });
+    }
   };
 
   const nextStep = async () => {
@@ -343,18 +359,23 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
                   )}
                 />
 
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1" data-testid="button-back-step-3">
-                    Back
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className="flex-1" 
-                    disabled={form.formState.isSubmitting}
-                    data-testid="button-signup"
-                  >
-                    {form.formState.isSubmitting ? "Creating Account..." : "Create Account"}
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1" data-testid="button-back-step-3">
+                      Back
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="flex-1" 
+                      disabled={form.formState.isSubmitting}
+                      data-testid="button-signup"
+                    >
+                      {form.formState.isSubmitting ? "Creating Account..." : "Create Account"}
+                    </Button>
+                  </div>
+                  {form.formState.errors.root && (
+                    <p className="text-sm text-destructive text-center">{form.formState.errors.root.message}</p>
+                  )}
                 </div>
               </div>
             )}

@@ -21,9 +21,25 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   });
 
   const onSubmit = async (data: LoginInput) => {
-    // Will be implemented in integration phase
-    console.log("Login data:", data);
-    onSuccess();
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Login failed");
+      }
+
+      onSuccess();
+    } catch (error: any) {
+      form.setError("root", {
+        message: error.message || "Login failed. Please try again.",
+      });
+    }
   };
 
   return (
@@ -82,6 +98,10 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
               <LogIn className="w-4 h-4 mr-2" />
               {form.formState.isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
+
+            {form.formState.errors.root && (
+              <p className="text-sm text-destructive text-center">{form.formState.errors.root.message}</p>
+            )}
           </form>
         </Form>
       </CardContent>

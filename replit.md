@@ -1,0 +1,131 @@
+# AI Leaders C-Suite Boardroom
+
+## Overview
+
+AI Leaders C-Suite Boardroom is a full-stack web application that provides C-suite executives with personalized strategic recommendations from digital twins of prominent AI industry leaders. The platform simulates advisory conversations with AI personas including Sam Altman (OpenAI), Jensen Huang (NVIDIA), Andrew Ng (DeepLearning.AI), Demis Hassabis (Google DeepMind), and Fei-Fei Li (Stanford AI Lab).
+
+The application enables users to:
+- Upload their professional profile and goals
+- Run strategic advisory meetings with selected AI leaders
+- Receive tailored recommendations based on their specific context
+- Engage in follow-up conversations with individual advisors
+- Access knowledge bases from each leader's writings and expertise
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+
+**Framework & Build System:**
+- React with TypeScript for type-safe component development
+- Vite as the build tool and development server
+- Client-side rendering with no server-side rendering (RSR: false)
+
+**UI Component System:**
+- Shadcn/ui component library with "new-york" style variant
+- Radix UI primitives for accessible, unstyled components
+- Tailwind CSS for utility-first styling with custom design tokens
+- Dark mode as primary theme (Hugging Face-inspired color palette)
+
+**State Management:**
+- React Query (TanStack Query) for server state management
+- React Hook Form with Zod validation for form handling
+- Session-based authentication state
+
+**Key Design Decisions:**
+- Component-based architecture with clear separation between auth, dashboard, and UI layers
+- Custom path aliases (@/, @shared/, @assets/) for clean imports
+- Progressive disclosure pattern for multi-step signup form
+- Responsive grid layouts (3-column desktop, 2-column tablet, single-column mobile)
+
+### Backend Architecture
+
+**Framework & Runtime:**
+- Node.js with Express.js for HTTP server
+- TypeScript with ESM module system
+- Session-based authentication using express-session
+
+**API Design:**
+- RESTful endpoints under /api prefix
+- JSON request/response format
+- Session cookies for authentication state
+- PostgreSQL session store for persistence
+
+**AI Integration Layer:**
+- Google Gemini AI (gemini-2.5-flash model) for generating recommendations
+- System prompts designed for C-suite strategic advisory context
+- Structured response format (Summary, Key Recommendations, Rationale, Next Steps)
+- Temperature set to 0.2 for consistent, focused responses
+
+**Key Architectural Patterns:**
+- Middleware pipeline for session management and authentication
+- Centralized error handling
+- Request/response logging for API routes
+- Separation of concerns: routes, storage, AI logic in distinct modules
+
+### Data Storage
+
+**Database:**
+- PostgreSQL via Neon serverless with WebSocket connections
+- Drizzle ORM for type-safe database queries
+- Schema-first approach with shared types between frontend and backend
+
+**Data Models:**
+1. **Users Table** - Extended profile with professional details, goals, company info, and photo
+2. **Runs Table** - Meeting sessions with task, selected agents, and JSON recommendations
+3. **Chats Table** - Conversation history linked to runs and agents
+4. **Agent Memory Table** - Long-term memory storage per agent
+5. **Corpus Table** - Knowledge base chunks with embeddings per agent
+
+**Session Management:**
+- PostgreSQL-backed session store (connect-pg-simple)
+- 30-day cookie expiration
+- HTTP-only cookies with secure flag in production
+
+**Key Design Decisions:**
+- User profiles auto-populate meeting context
+- Recommendations stored as JSONB for flexible querying
+- Chat history maintains sender attribution (user/agent)
+- Agent memory enables continuity across conversations
+
+### External Dependencies
+
+**AI & Machine Learning:**
+- Google Gemini API (@google/genai) - Primary LLM for generating strategic recommendations
+- API Key required: GEMINI_API_KEY environment variable
+- Model: gemini-2.5-flash for balanced performance and quality
+
+**Database & Infrastructure:**
+- Neon Postgres (@neondatabase/serverless) - Serverless PostgreSQL database
+- WebSocket support for serverless connections
+- DATABASE_URL environment variable required
+
+**Authentication & Security:**
+- bcrypt - Password hashing (v6.0.0)
+- express-session - Session management
+- connect-pg-simple - PostgreSQL session store
+
+**Development Tools:**
+- Drizzle Kit - Database migrations and schema management
+- Vite plugins for Replit integration (@replit/vite-plugin-*)
+- ESBuild for server-side bundling
+
+**UI Dependencies:**
+- Radix UI - Accessible component primitives (15+ packages)
+- Tailwind CSS - Utility-first styling
+- Lucide React - Icon library
+- date-fns - Date formatting utilities
+
+**Type Safety:**
+- Zod - Runtime schema validation
+- drizzle-zod - Schema-to-Zod conversion
+- TypeScript strict mode enabled
+
+**Key Integration Points:**
+- Session secret configurable via SESSION_SECRET environment variable
+- All database operations use connection pooling
+- AI responses parsed for structured recommendation display
+- File uploads converted to base64 for photo storage
