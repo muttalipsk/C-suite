@@ -19,12 +19,30 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [currentRunId, setCurrentRunId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<{runId: string, agentKey: string} | null>(null);
+
+  // Fetch user data
+  useState(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/auth/me");
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      }
+    };
+    fetchUser();
+  });
   const [results, setResults] = useState<{
     runId: string;
     recommendations: Record<string, string>;
     selectedAgents: string[];
     selectedAgentKey?: string;
   } | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
 
   const toggleAgent = useCallback((agentKey: string) => {
@@ -159,8 +177,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             </div>
           </div>
           <UserProfileButton
+            user={user}
             onLogout={onLogout}
-            onViewProfile={() => console.log("View profile")}
+            onViewProfile={() => setShowProfile(true)}
           />
         </header>
 
@@ -211,6 +230,66 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
       {/* Right Sidebar - Conversation History */}
       <ConversationHistory onSelectConversation={handleSelectConversation} />
+
+      {/* Profile Dialog */}
+      {showProfile && user && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowProfile(false)}>
+          <div className="bg-card border border-card-border rounded-xl p-6 max-w-2xl w-full m-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-6">
+              <h2 className="text-2xl font-bold">Your Profile</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowProfile(false)}>×</Button>
+            </div>
+            
+            <div className="space-y-4">
+              {user.photo && (
+                <div className="flex justify-center">
+                  <img src={user.photo} alt={user.name} className="w-32 h-32 rounded-full object-cover" />
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-muted-foreground">Name</label>
+                  <p className="font-medium">{user.name}</p>
+                </div>
+                
+                <div>
+                  <label className="text-sm text-muted-foreground">Email</label>
+                  <p className="font-medium">{user.email}</p>
+                </div>
+                
+                {user.company && (
+                  <div>
+                    <label className="text-sm text-muted-foreground">Company</label>
+                    <p className="font-medium">{user.company}</p>
+                  </div>
+                )}
+                
+                {user.role && (
+                  <div>
+                    <label className="text-sm text-muted-foreground">Role</label>
+                    <p className="font-medium">{user.role}</p>
+                  </div>
+                )}
+              </div>
+              
+              {user.goals && (
+                <div>
+                  <label className="text-sm text-muted-foreground">Goals</label>
+                  <p className="mt-1">{user.goals}</p>
+                </div>
+              )}
+              
+              {user.challenges && (
+                <div>
+                  <label className="text-sm text-muted-foreground">Challenges</label>
+                  <p className="mt-1">{user.challenges}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
