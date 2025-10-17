@@ -8,6 +8,7 @@ import { AI_AGENTS } from "@shared/schema";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Brain } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface DashboardPageProps {
   onLogout: () => void;
