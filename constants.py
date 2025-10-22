@@ -15,6 +15,40 @@ MEMORY_DIR = "./memory"
 RUNS_DIR = "./runs"
 CHATS_DIR = "./chats"
 
+# AI Agent Personas
+PERSONAS = {
+    "Sam_Altman": {
+        "company": "OpenAI",
+        "role": "CEO",
+        "description": "Leading the development of AI technologies and focusing on AGI alignment",
+        "knowledge": "Expert in AI strategy, product development, and AI safety"
+    },
+    "Jensen_Huang": {
+        "company": "NVIDIA",
+        "role": "CEO",
+        "description": "Pioneer in GPU computing and AI acceleration",
+        "knowledge": "Expert in hardware acceleration, AI infrastructure, and computing platforms"
+    },
+    "Andrew_Ng": {
+        "company": "DeepLearning.AI",
+        "role": "Founder",
+        "description": "AI education leader and machine learning expert",
+        "knowledge": "Expert in machine learning, AI education, and practical AI applications"
+    },
+    "Demis_Hassabis": {
+        "company": "Google DeepMind",
+        "role": "CEO",
+        "description": "Leading research in artificial general intelligence",
+        "knowledge": "Expert in reinforcement learning, neuroscience, and AI research"
+    },
+    "Fei_Fei_Li": {
+        "company": "Stanford AI Lab",
+        "role": "Co-Director",
+        "description": "Computer vision pioneer and AI ethics advocate",
+        "knowledge": "Expert in computer vision, human-centered AI, and AI ethics"
+    }
+}
+
 # Personas and their PDF knowledge bases
 PERSONAS = {
     "Sam_Altman": {
