@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, loginSchema, AI_AGENTS } from "@shared/schema";
-import { generateRecommendation, generateChatResponse } from "./gemini";
+import { callPythonMeeting, callPythonChat, callPythonGetChat, healthCheckPython } from "./python-api-client";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -162,54 +162,31 @@ Role Details: ${user.roleDetails}
 
       const userProfile = buildUserProfile(user);
 
-      // Generate recommendations from all selected agents in parallel
-      const recommendations: Record<string, string> = {};
+      // Call Python API for meeting
+      const pythonResult = await callPythonMeeting(task, userProfile, agents, turns);
 
-      await Promise.all(
-        agents.map(async (agentKey: string) => {
-          const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
-          if (!agent) return;
+      // Save recommendations to agent memory
+      for (const [agentKey, recommendation] of Object.entries(pythonResult.recommendations)) {
+        await storage.addAgentMemory(
+          req.session.userId!,
+          agentKey,
+          `Recommendation for task: "${task}". Summary: ${(recommendation as string).substring(0, 200)}...`
+        );
+      }
 
-          // Get agent memory
-          const memoryRecords = await storage.getAgentMemory(agentKey, 5);
-          const memory = memoryRecords.map(m => m.content).join('\n');
-
-          // Generate recommendation
-          const recommendation = await generateRecommendation(
-            agent.name,
-            agent.company,
-            agent.role,
-            `AI industry leader specializing in ${agent.company} domain`,
-            task,
-            userProfile,
-            "", // knowledge - would be loaded from corpus in full implementation
-            memory
-          );
-
-          recommendations[agentKey] = recommendation;
-
-          // Save to agent memory
-          await storage.addAgentMemory(
-            req.session.userId!,
-            agentKey,
-            `Recommendation for task: "${task}". Summary: ${recommendation.substring(0, 200)}...`
-          );
-        })
-      );
-
-      // Save run
+      // Save run to database
       const run = await storage.createRun({
         userId: req.session.userId!,
         task,
         userProfile,
         turns,
         agents,
-        recommendations,
+        recommendations: pythonResult.recommendations,
       });
 
       res.json({
         runId: run.id,
-        recommendations,
+        recommendations: pythonResult.recommendations,
       });
     } catch (error: any) {
       console.error("Meeting error:", error);
@@ -238,36 +215,10 @@ Role Details: ${user.roleDetails}
         return res.status(400).json({ error: "Invalid agent" });
       }
 
-      // Get chat history
-      const history = await storage.getChatsByRunAndAgent(runId, agent);
-      const chatHistory = history.map(h => ({
-        user: h.sender === "user" ? h.message : "",
-        agent: h.sender === "agent" ? h.message : "",
-      })).filter(h => h.user || h.agent);
+      // Call Python API for chat response
+      const pythonResult = await callPythonChat(runId, agent, message);
 
-      // Get agent memory
-      const memoryRecords = await storage.getAgentMemory(agent, 5);
-      const memory = memoryRecords.map(m => m.content).join('\n');
-
-      // Get previous recommendation
-      const recommendation = run.recommendations[agent] || "";
-
-      // Generate response
-      const response = await generateChatResponse(
-        agentInfo.name,
-        agentInfo.company,
-        agentInfo.role,
-        `AI industry leader specializing in ${agentInfo.company} domain`,
-        run.task,
-        run.userProfile || "",
-        recommendation,
-        chatHistory,
-        message,
-        "", // knowledge
-        memory
-      );
-
-      // Save messages
+      // Save messages to database
       await storage.createChat({
         runId,
         agent,
@@ -278,11 +229,11 @@ Role Details: ${user.roleDetails}
       await storage.createChat({
         runId,
         agent,
-        message: response,
+        message: pythonResult.response,
         sender: "agent",
       });
 
-      res.json({ response });
+      res.json({ response: pythonResult.response });
     } catch (error: any) {
       console.error("Chat error:", error);
       res.status(500).json({ error: error.message || "Chat failed" });
