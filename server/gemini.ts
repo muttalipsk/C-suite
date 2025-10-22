@@ -1,11 +1,11 @@
 
-import { GoogleGenerativeAI } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 if (!process.env.GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY must be set in environment variables");
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 interface AgentPersona {
   name: string;
@@ -59,7 +59,7 @@ export async function generateAgentRecommendation(
     throw new Error(`Unknown agent: ${agentKey}`);
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.models.generateContent;
 
   const systemPrompt = `
 You are ${persona.name} from ${persona.company}, acting in your ${persona.role}: ${persona.description}. You are serving as a moderator and advisor to C-suite level executives. They seek your help for strategies after board meetings, client meetings, or personal doubts.
@@ -100,9 +100,11 @@ Provide an improved recommendation in the same structured format.
     prompt = `Provide a recommendation for the query: '${task}', based on the user's role and profile. In your point of view, what should your strategy be if you are in the user's place?`;
   }
 
-  const result = await model.generateContent(`${systemPrompt}\n\n${prompt}`);
-  const response = await result.response;
-  return response.text();
+  const result = await genAI.models.generateContent({
+    model: "gemini-1.5-flash",
+    contents: `${systemPrompt}\n\n${prompt}`
+  });
+  return result.text;
 }
 
 export async function generateChatResponse(
@@ -117,8 +119,6 @@ export async function generateChatResponse(
   if (!persona) {
     throw new Error(`Unknown agent: ${agentKey}`);
   }
-
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const historyText = chatHistory
     .map(h => `${h.sender === 'user' ? 'User' : persona.name}: ${h.message}`)
@@ -141,7 +141,9 @@ User's new message: ${userMessage}
 Respond as ${persona.name}, providing helpful guidance based on your expertise. Be conversational, insightful, and address the user's specific question while staying true to your perspective and experience.
 `;
 
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  return response.text();
+  const result = await genAI.models.generateContent({
+    model: "gemini-1.5-flash",
+    contents: prompt
+  });
+  return result.text;
 }
