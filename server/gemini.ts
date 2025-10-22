@@ -101,10 +101,20 @@ Provide an improved recommendation in the same structured format.
   }
 
   const result = await genAI.models.generateContent({
-    model: "gemini-1.5-flash",
-    contents: `${systemPrompt}\n\n${prompt}`
+    model: "gemini-2.0-flash-exp",
+    contents: [{
+      role: "user",
+      parts: [{ text: `${systemPrompt}\n\n${prompt}` }]
+    }]
   });
-  return result.text;
+  
+  if (result.response && result.response.text) {
+    return result.response.text();
+  } else if (result.text) {
+    return result.text;
+  }
+  
+  return "Unable to generate response";
 }
 
 export async function generateChatResponse(
@@ -142,8 +152,18 @@ Respond as ${persona.name}, providing helpful guidance based on your expertise. 
 `;
 
   const result = await genAI.models.generateContent({
-    model: "gemini-1.5-flash",
-    contents: prompt
+    model: "gemini-2.0-flash-exp",
+    contents: [{
+      role: "user",
+      parts: [{ text: prompt }]
+    }]
   });
-  return result.text;
+  
+  if (result.response && result.response.text) {
+    return result.response.text();
+  } else if (result.text) {
+    return result.text;
+  }
+  
+  return "Unable to generate response";
 }
