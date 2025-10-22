@@ -1,7 +1,8 @@
 
 import axios from 'axios';
 
-const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://127.0.0.1:8000';
+// Configure this environment variable to point to your external Python API
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://your-python-api-url.com';
 
 const pythonApiClient = axios.create({
   baseURL: PYTHON_API_URL,
