@@ -199,7 +199,7 @@ export function AgentCard({
           </Button>
         </div>
 
-        {showChat && (
+        {showChat && runId && (
           <div className="pt-4 border-t">
             <ChatBox agentKey={agentKey} agentName={agentName} runId={runId} />
           </div>

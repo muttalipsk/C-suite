@@ -154,7 +154,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         if (savedItem) {
           // Clear previous state first to force re-render
           setResults(null);
-          
+
           // Set the results to show the agent card with a slight delay
           setTimeout(() => {
             setResults({
@@ -163,7 +163,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               selectedAgents: [agentKey],
               selectedAgentKey: agentKey
             });
-            
+
             setCurrentRunId(savedItem.runId || savedItem.id.toString());
             setRecommendations({ [agentKey]: savedItem.content });
             setSelectedConversation({ runId, agentKey });
@@ -172,7 +172,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             setTimeout(() => {
               const resultsSection = document.querySelector('[data-results-section]');
               resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              
+
               // Scroll to the specific agent card after a brief delay
               setTimeout(() => {
                 const agentCard = document.querySelector(`[data-agent-card="${agentKey}"]`);
@@ -196,7 +196,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       if (selectedRun) {
         // Clear previous state first to force re-render
         setResults(null);
-        
+
         // Set the results to show the agent cards with a slight delay
         setTimeout(() => {
           setResults({
@@ -205,7 +205,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             selectedAgents: selectedRun.agents,
             selectedAgentKey: agentKey
           });
-          
+
           setCurrentRunId(selectedRun.id);
           setRecommendations(selectedRun.recommendations);
           setSelectedConversation({ runId, agentKey });
@@ -214,7 +214,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           setTimeout(() => {
             const resultsSection = document.querySelector('[data-results-section]');
             resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            
+
             // Scroll to the specific agent card after a brief delay
             setTimeout(() => {
               const agentCard = document.querySelector(`[data-agent-card="${agentKey}"]`);
@@ -229,6 +229,30 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       console.error("Failed to load conversation:", error);
     }
   };
+
+  const handleAgentToggle = useCallback((agentKey: string) => {
+    setSelectedAgents(prev =>
+      prev.includes(agentKey)
+        ? prev.filter(a => a !== agentKey)
+        : [...prev, agentKey]
+    );
+  }, []);
+
+  const handleLoadChat = useCallback((runId: string, agentKey: string, recommendation: string) => {
+    // Set the current run ID
+    setCurrentRunId(runId);
+
+    // Set recommendations with the saved content
+    setRecommendations({
+      [agentKey]: recommendation
+    });
+
+    // Scroll to results
+    setTimeout(() => {
+      document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }, []);
+
 
   // Mock AGENT_DATA and results for the changes to apply correctly
   // In a real scenario, these would be fetched or defined elsewhere.
@@ -275,7 +299,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
             {/* Results */}
             {results && (
-                  <div className="space-y-6" data-results-section>
+                  <div className="space-y-6" data-results-section id="results-section">
                     <div className="flex items-center justify-between">
                       <h2 className="text-2xl font-bold">AI Leaders' Recommendations</h2>
                       <Badge variant="outline" className="text-sm">
@@ -309,7 +333,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       </div>
 
       {/* Right Sidebar - Conversation History */}
-      <ConversationHistory onSelectConversation={handleSelectConversation} />
+      <ConversationHistory onSelectConversation={handleSelectConversation} onLoadChat={handleLoadChat} />
 
       {/* Profile Dialog */}
       {showProfile && user && (
@@ -329,14 +353,14 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                 <Button variant="ghost" size="sm" onClick={() => { setShowProfile(false); setIsEditMode(false); }}>×</Button>
               </div>
             </div>
-            
+
             <div className="space-y-6">
               {(user.photo || isEditMode) && (
                 <div className="flex justify-center">
                   {user.photo && <img src={user.photo} alt={user.name} className="w-32 h-32 rounded-full object-cover border-4 border-primary/20" />}
                 </div>
               )}
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Name</label>
@@ -350,12 +374,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <p className="font-medium mt-1">{user.name}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Email</label>
                   <p className="font-medium mt-1">{user.email}</p>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Company Name</label>
                   {isEditMode ? (
@@ -368,7 +392,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <p className="font-medium mt-1">{user.companyName || "Not provided"}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Designation</label>
                   {isEditMode ? (
@@ -433,7 +457,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <p className="mt-1">{user.productExpectations || "Not provided"}</p>
                   )}
                 </div>
-                
+
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium text-muted-foreground">1-Year Goals</label>
                   {isEditMode ? (
@@ -446,7 +470,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <p className="mt-1">{user.goalOneYear || "Not provided"}</p>
                   )}
                 </div>
-                
+
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium text-muted-foreground">5-Year Goals</label>
                   {isEditMode ? (

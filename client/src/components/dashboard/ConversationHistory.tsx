@@ -16,9 +16,10 @@ interface SavedRecommendation {
 
 interface ConversationHistoryProps {
   onSelectConversation?: (runId: string, agentKey: string) => void;
+  onLoadChat?: (runId: string, agentKey: string, recommendation: string) => void;
 }
 
-export function ConversationHistory({ onSelectConversation }: ConversationHistoryProps) {
+export function ConversationHistory({ onSelectConversation, onLoadChat }: ConversationHistoryProps) {
   const [savedRecommendations, setSavedRecommendations] = useState<SavedRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -82,7 +83,7 @@ export function ConversationHistory({ onSelectConversation }: ConversationHistor
                   key={saved.id}
                   variant="ghost"
                   className="w-full p-3 h-auto rounded-lg border border-sidebar-border hover-elevate transition-all justify-start"
-                  onClick={() => onSelectConversation?.(saved.runId || saved.id.toString(), saved.agent)}
+                  onClick={() => onLoadChat?.(saved.runId || saved.id.toString(), saved.agent, saved.content)}
                   data-testid={`saved-${saved.id}`}
                 >
                   <div className="flex items-start gap-3 w-full">
