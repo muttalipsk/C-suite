@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, loginSchema, AI_AGENTS } from "@shared/schema";
-import { callPythonMeeting, callPythonChat, callPythonGetChat, healthCheckPython } from "./python-api-client";
+import { generateAgentRecommendation, generateChatResponse } from "./gemini";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -162,15 +162,29 @@ Role Details: ${user.roleDetails}
 
       const userProfile = buildUserProfile(user);
 
-      // Call Python API for meeting
-      const pythonResult = await callPythonMeeting(task, userProfile, agents, turns);
+      // Generate recommendations for each agent
+      const recommendations: Record<string, string> = {};
+      
+      for (let turn = 0; turn < turns; turn++) {
+        for (const agentKey of agents) {
+          const previousRec = turn > 0 ? recommendations[agentKey] : undefined;
+          const recommendation = await generateAgentRecommendation(
+            agentKey,
+            task,
+            userProfile,
+            previousRec,
+            turn
+          );
+          recommendations[agentKey] = recommendation;
+        }
+      }
 
       // Save recommendations to agent memory
-      for (const [agentKey, recommendation] of Object.entries(pythonResult.recommendations)) {
+      for (const [agentKey, recommendation] of Object.entries(recommendations)) {
         await storage.addAgentMemory(
           req.session.userId!,
           agentKey,
-          `Recommendation for task: "${task}". Summary: ${(recommendation as string).substring(0, 200)}...`
+          `Recommendation for task: "${task}". Summary: ${recommendation.substring(0, 200)}...`
         );
       }
 
@@ -181,12 +195,12 @@ Role Details: ${user.roleDetails}
         userProfile,
         turns,
         agents,
-        recommendations: pythonResult.recommendations,
+        recommendations,
       });
 
       res.json({
         runId: run.id,
-        recommendations: pythonResult.recommendations,
+        recommendations,
       });
     } catch (error: any) {
       console.error("Meeting error:", error);
@@ -215,8 +229,21 @@ Role Details: ${user.roleDetails}
         return res.status(400).json({ error: "Invalid agent" });
       }
 
-      // Call Python API for chat response
-      const pythonResult = await callPythonChat(runId, agent, message);
+      // Get chat history
+      const chatHistory = await storage.getChatsByRunAndAgent(runId, agent);
+      
+      // Get recommendation for this agent from the run
+      const recommendation = run.recommendations[agent] || "";
+
+      // Generate chat response
+      const response = await generateChatResponse(
+        agent,
+        run.task,
+        run.userProfile,
+        recommendation,
+        chatHistory.map(h => ({ sender: h.sender, message: h.message })),
+        message
+      );
 
       // Save messages to database
       await storage.createChat({
@@ -229,11 +256,11 @@ Role Details: ${user.roleDetails}
       await storage.createChat({
         runId,
         agent,
-        message: pythonResult.response,
+        message: response,
         sender: "agent",
       });
 
-      res.json({ response: pythonResult.response });
+      res.json({ response });
     } catch (error: any) {
       console.error("Chat error:", error);
       res.status(500).json({ error: error.message || "Chat failed" });
