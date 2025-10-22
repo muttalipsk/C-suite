@@ -22,7 +22,7 @@ externalPort = 3001
 PORT = "5000"
 
 [workflows]
-runButton = "Project"
+runButton = "Start Both Servers"
 
 [[workflows.workflow]]
 name = "Project"
@@ -41,6 +41,19 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Start Both Servers"
+author = 47053963
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
 
 [agent]
 integrations = ["javascript_database:1.0.0", "javascript_gemini:1.0.0"]
