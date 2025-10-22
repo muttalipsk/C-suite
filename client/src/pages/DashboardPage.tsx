@@ -152,36 +152,32 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         );
 
         if (savedItem) {
-          // Clear previous state first to force re-render
-          setResults(null);
+          const useRunId = savedItem.runId || savedItem.id.toString();
+          
+          // Set the results to show the agent card
+          setResults({
+            runId: useRunId,
+            recommendations: { [agentKey]: savedItem.content },
+            selectedAgents: [agentKey],
+            selectedAgentKey: agentKey
+          });
 
-          // Set the results to show the agent card with a slight delay
+          setCurrentRunId(useRunId);
+          setRecommendations({ [agentKey]: savedItem.content });
+          setSelectedConversation({ runId: useRunId, agentKey });
+
+          // Scroll to the results section and the specific agent card
           setTimeout(() => {
-            setResults({
-              runId: savedItem.runId || savedItem.id.toString(),
-              recommendations: { [agentKey]: savedItem.content },
-              selectedAgents: [agentKey],
-              selectedAgentKey: agentKey
-            });
+            const resultsSection = document.querySelector('[data-results-section]');
+            resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-            setCurrentRunId(savedItem.runId || savedItem.id.toString());
-            setRecommendations({ [agentKey]: savedItem.content });
-            setSelectedConversation({ runId, agentKey });
-
-            // Scroll to the results section and the specific agent card
             setTimeout(() => {
-              const resultsSection = document.querySelector('[data-results-section]');
-              resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-              // Scroll to the specific agent card after a brief delay
-              setTimeout(() => {
-                const agentCard = document.querySelector(`[data-agent-card="${agentKey}"]`);
-                if (agentCard) {
-                  agentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }, 300);
-            }, 100);
-          }, 50);
+              const agentCard = document.querySelector(`[data-agent-card="${agentKey}"]`);
+              if (agentCard) {
+                agentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 300);
+          }, 100);
           return;
         }
       }
@@ -194,36 +190,28 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       const selectedRun = runs.find((r: any) => r.id === runId);
 
       if (selectedRun) {
-        // Clear previous state first to force re-render
-        setResults(null);
+        setResults({
+          runId: selectedRun.id,
+          recommendations: selectedRun.recommendations,
+          selectedAgents: selectedRun.agents,
+          selectedAgentKey: agentKey
+        });
 
-        // Set the results to show the agent cards with a slight delay
+        setCurrentRunId(selectedRun.id);
+        setRecommendations(selectedRun.recommendations);
+        setSelectedConversation({ runId: selectedRun.id, agentKey });
+
         setTimeout(() => {
-          setResults({
-            runId: selectedRun.id,
-            recommendations: selectedRun.recommendations,
-            selectedAgents: selectedRun.agents,
-            selectedAgentKey: agentKey
-          });
+          const resultsSection = document.querySelector('[data-results-section]');
+          resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-          setCurrentRunId(selectedRun.id);
-          setRecommendations(selectedRun.recommendations);
-          setSelectedConversation({ runId, agentKey });
-
-          // Scroll to the results section and the specific agent card
           setTimeout(() => {
-            const resultsSection = document.querySelector('[data-results-section]');
-            resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-            // Scroll to the specific agent card after a brief delay
-            setTimeout(() => {
-              const agentCard = document.querySelector(`[data-agent-card="${agentKey}"]`);
-              if (agentCard) {
-                agentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }
-            }, 300);
-          }, 100);
-        }, 50);
+            const agentCard = document.querySelector(`[data-agent-card="${agentKey}"]`);
+            if (agentCard) {
+              agentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 300);
+        }, 100);
       }
     } catch (error) {
       console.error("Failed to load conversation:", error);

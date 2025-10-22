@@ -83,7 +83,14 @@ export function ConversationHistory({ onSelectConversation, onLoadChat }: Conver
                   key={saved.id}
                   variant="ghost"
                   className="w-full p-3 h-auto rounded-lg border border-sidebar-border hover-elevate transition-all justify-start"
-                  onClick={() => onLoadChat?.(saved.runId || saved.id.toString(), saved.agent, saved.content)}
+                  onClick={() => {
+                    const runId = saved.runId || saved.id.toString();
+                    if (onSelectConversation) {
+                      onSelectConversation(runId, saved.agent);
+                    } else if (onLoadChat) {
+                      onLoadChat(runId, saved.agent, saved.content);
+                    }
+                  }}
                   data-testid={`saved-${saved.id}`}
                 >
                   <div className="flex items-start gap-3 w-full">
