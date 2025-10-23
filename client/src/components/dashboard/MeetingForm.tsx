@@ -86,26 +86,6 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
               )}
             />
 
-            {/* Task Input */}
-            <FormField
-              control={form.control}
-              name="task"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Your Strategic Challenge or Question</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Example: We're considering implementing AI across our operations. What strategy should we adopt for the next quarter considering our limited AI expertise?"
-                      className="min-h-32 resize-none"
-                      {...field}
-                      data-testid="input-task"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             {/* Selected Agents Display */}
             {selectedAgents.length > 0 && (
               <div className="space-y-2">
@@ -127,6 +107,26 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
                 </div>
               </div>
             )}
+
+            {/* Task Input */}
+            <FormField
+              control={form.control}
+              name="task"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Your Strategic Challenge or Question</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Example: We're considering implementing AI across our operations. What strategy should we adopt for the next quarter considering our limited AI expertise?"
+                      className="min-h-32 resize-none"
+                      {...field}
+                      data-testid="input-task"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <Button
               type="submit"
