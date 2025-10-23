@@ -1,0 +1,11 @@
+{
+  "task": "agi development",
+  "user_profile": "Name: Muttalip sk\nCompany: redpluto\nDesignation: cto\nRole Description: i am the cto of company\nProduct Expectations: recomendation\nCompany Website: https://redplutoanalytics.sharepoint.com/\nRole Details: i am cto of the company\n1-Year Goal: mony\n5-Year Goal: mony",
+  "turns": 1,
+  "agents": [
+    "Fei_Fei_Li"
+  ],
+  "recommendations": {
+    "Fei_Fei_Li": "Fallback recommendation for Fei_Fei_Li"
+  }
+}
