@@ -1,6 +1,38 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { spawn } from "child_process";
+
+// Start Python FastAPI server
+log("Starting Python FastAPI server on port 8000...");
+const pythonServer = spawn("python", ["-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"], {
+  cwd: process.cwd(),
+  stdio: ["ignore", "pipe", "pipe"],
+  detached: false
+});
+
+pythonServer.stdout?.on("data", (data) => {
+  log(`[python] ${data.toString().trim()}`);
+});
+
+pythonServer.stderr?.on("data", (data) => {
+  console.error(`[python] ${data.toString().trim()}`);
+});
+
+pythonServer.on("exit", (code) => {
+  console.error(`[python] Server exited with code ${code}`);
+});
+
+process.on("SIGINT", () => {
+  log("Shutting down servers...");
+  pythonServer.kill();
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  pythonServer.kill();
+  process.exit(0);
+});
 
 const app = express();
 app.use(express.json());
