@@ -17,9 +17,10 @@ interface SavedRecommendation {
 interface ConversationHistoryProps {
   onSelectConversation?: (runId: string, agentKey: string) => void;
   onLoadChat?: (runId: string, agentKey: string, recommendation: string) => void;
+  selectedConversation?: { runId: string; agentKey: string } | null;
 }
 
-export function ConversationHistory({ onSelectConversation, onLoadChat }: ConversationHistoryProps) {
+export function ConversationHistory({ onSelectConversation, onLoadChat, selectedConversation }: ConversationHistoryProps) {
   const [savedRecommendations, setSavedRecommendations] = useState<SavedRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -78,13 +79,17 @@ export function ConversationHistory({ onSelectConversation, onLoadChat }: Conver
               const agent = AI_AGENTS[saved.agent as keyof typeof AI_AGENTS];
               if (!agent) return null;
               
+              const runId = saved.runId || saved.id.toString();
+              const isSelected = selectedConversation?.runId === runId && selectedConversation?.agentKey === saved.agent;
+              
               return (
                 <Button
                   key={saved.id}
-                  variant="ghost"
-                  className="w-full p-3 h-auto rounded-lg border border-sidebar-border hover-elevate transition-all justify-start"
+                  variant={isSelected ? "secondary" : "ghost"}
+                  className={`w-full p-3 h-auto rounded-lg border transition-all justify-start ${
+                    isSelected ? 'border-primary bg-primary/10' : 'border-sidebar-border hover-elevate'
+                  }`}
                   onClick={() => {
-                    const runId = saved.runId || saved.id.toString();
                     if (onSelectConversation) {
                       onSelectConversation(runId, saved.agent);
                     } else if (onLoadChat) {

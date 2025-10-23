@@ -104,6 +104,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   const handleRunMeeting = async (data: any) => {
     setIsLoading(true);
+    // Clear previous conversation state
+    setSelectedConversation(null);
+    setResults(null);
+    setRecommendations({});
+    setCurrentRunId("");
+    
     try {
       console.log("Running meeting with agents:", data.selectedAgents);
       console.log("Current selectedAgents state:", selectedAgents);
@@ -127,12 +133,17 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       console.log("Meeting results:", Object.keys(result.recommendations));
       setRecommendations(result.recommendations);
       setCurrentRunId(result.runId);
-      setSelectedConversation(null);
       setResults({
         runId: result.runId,
         recommendations: result.recommendations,
         selectedAgents: data.selectedAgents,
       });
+
+      // Scroll to results after a brief delay
+      setTimeout(() => {
+        const resultsSection = document.querySelector('[data-results-section]');
+        resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     } catch (error: any) {
       console.error("Meeting error:", error);
       alert(error.message || "Failed to run meeting. Please try again.");
@@ -321,7 +332,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       </div>
 
       {/* Right Sidebar - Conversation History */}
-      <ConversationHistory onSelectConversation={handleSelectConversation} onLoadChat={handleLoadChat} />
+      <ConversationHistory 
+        onSelectConversation={handleSelectConversation} 
+        onLoadChat={handleLoadChat}
+        selectedConversation={selectedConversation}
+      />
 
       {/* Profile Dialog */}
       {showProfile && user && (
