@@ -145,7 +145,7 @@ Role Details: ${user.roleDetails}
     }
   });
 
-  // MEETING/RUN ROUTES
+  // MEETING/RUN ROUTES - Forwards ALL agent operations to Python API
   app.post("/api/meeting", requireAuth, async (req, res) => {
     try {
       const { task, agents, turns = 1 } = req.body;
@@ -162,33 +162,19 @@ Role Details: ${user.roleDetails}
 
       const userProfile = buildUserProfile(user);
 
-      // Generate recommendations for each agent
-      const recommendations: Record<string, string> = {};
-      
-      for (let turn = 0; turn < turns; turn++) {
-        for (const agentKey of agents) {
-          const previousRec = turn > 0 ? recommendations[agentKey] : undefined;
-          const recommendation = await generateAgentRecommendation(
-            agentKey,
-            task,
-            userProfile,
-            previousRec,
-            turn
-          );
-          recommendations[agentKey] = recommendation;
-        }
-      }
+      // Forward ALL agent operations to Python API with ChromaDB memory
+      const axios = await import('axios');
+      const pythonResponse = await axios.default.post("http://localhost:8000/meeting", {
+        task,
+        user_profile: userProfile,
+        turns,
+        agents,
+        user_id: req.session.userId!.toString(),  // Pass user ID for VectorDB tracking
+      });
 
-      // Save recommendations to agent memory
-      for (const [agentKey, recommendation] of Object.entries(recommendations)) {
-        await storage.addAgentMemory(
-          req.session.userId!,
-          agentKey,
-          `Recommendation for task: "${task}". Summary: ${recommendation.substring(0, 200)}...`
-        );
-      }
+      const { run_id: pythonRunId, recommendations } = pythonResponse.data;
 
-      // Save run to database
+      // Save run to PostgreSQL database (Node.js handles DB persistence)
       const run = await storage.createRun({
         userId: req.session.userId!,
         task,
@@ -198,25 +184,7 @@ Role Details: ${user.roleDetails}
         recommendations,
       });
 
-      // Also save run to JSON file for Python API compatibility
-      const fs = await import('fs');
-      const path = await import('path');
-      const runsDir = path.join(process.cwd(), 'runs');
-      
-      // Create runs directory if it doesn't exist
-      if (!fs.existsSync(runsDir)) {
-        fs.mkdirSync(runsDir, { recursive: true });
-      }
-      
-      // Write run data to JSON file that Python expects
-      const runFilePath = path.join(runsDir, `run_${run.id}.json`);
-      fs.writeFileSync(runFilePath, JSON.stringify({
-        task,
-        user_profile: userProfile,
-        turns,
-        agents,
-        recommendations
-      }, null, 2));
+      console.log(`Meeting completed: DB ID ${run.id}, Python Run ID ${pythonRunId}`);
 
       res.json({
         runId: run.id,
