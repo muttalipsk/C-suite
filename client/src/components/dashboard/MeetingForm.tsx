@@ -108,13 +108,23 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
 
             {/* Selected Agents Display */}
             {selectedAgents.length > 0 && (
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-sm text-muted-foreground">Selected Advisors:</span>
-                {selectedAgents.map(key => (
-                  <Badge key={key} variant="secondary">
-                    {AI_AGENTS[key as keyof typeof AI_AGENTS].name}
-                  </Badge>
-                ))}
+              <div className="space-y-2">
+                <span className="text-sm font-medium text-muted-foreground">Selected Advisors:</span>
+                <div className="flex flex-wrap gap-2">
+                  {selectedAgents.map(key => {
+                    const agent = AI_AGENTS[key as keyof typeof AI_AGENTS];
+                    return (
+                      <div key={key} className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg border border-primary/20">
+                        <Avatar className="w-6 h-6">
+                          <AvatarImage src={agent.avatar} alt={agent.name} />
+                          <AvatarFallback>{agent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">{agent.name}</span>
+                        <Badge variant="outline" className="text-xs">{agent.company}</Badge>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
