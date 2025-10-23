@@ -47,7 +47,7 @@ export const chats = pgTable("chats", {
 export const agentMemory = pgTable("agent_memory", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  runId: varchar("run_id").references(() => runs.id, { onDelete: "cascade" }),
+  runId: varchar("run_id"), // Nullable - memories can exist independently
   agent: text("agent").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
