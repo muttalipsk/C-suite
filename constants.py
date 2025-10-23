@@ -2,7 +2,9 @@
 import os
 
 # Environment variables
-GEMINI_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyB6Y9yI4DrmK5hF4Oe8troddIXHI-szq1c")
+GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable must be set")
 MODEL = "gemini-2.0-flash"
 EMBEDDING_MODEL = "models/embedding-001"
 TURNS = int(os.getenv("TURNS", 1))

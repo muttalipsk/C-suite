@@ -67,10 +67,17 @@ Preferred communication style: Simple, everyday language.
 
 **VectorDB Chat Storage:**
 - ChromaDB (lightweight vector database) for chat history
-- Sentence-Transformers (all-MiniLM-L6-v2) for embedding generation
+- **Gemini Embedding Model (models/embedding-001)** for embedding generation (replaced sentence-transformers for faster startup)
 - Agent-specific collections (e.g., chat_history_sam_altman, chat_history_jensen_huang)
 - Semantic search capabilities for finding similar past conversations
 - Metadata: run_id, user_id, sender, timestamp stored with each message
+
+**Recent Changes (October 23, 2025):**
+- Replaced sentence-transformers with Gemini embedding API to fix slow Python server startup
+- Removed LangChain LLM wrappers, now using genai.GenerativeModel directly for better performance
+- Moved genai.configure() to FastAPI startup event with proper error handling
+- Added ensure_genai_configured() function for lazy initialization
+- Fixed run ID mismatch: Node.js now returns Python's UUID instead of Postgres ID to /chat endpoint
 
 **Key Architectural Patterns:**
 - Middleware pipeline for session management and authentication
