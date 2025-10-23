@@ -16,11 +16,14 @@ def create_agent_node(persona: str):
     role = PERSONAS[persona]["role"]
     description = PERSONAS[persona]["description"]
     
-    def agent_node(state: AgentState):
+    def agent_node(state):
         try:
             print(f"[{persona}] Starting recommendation with VectorDB memory...")
-            task = state["task"]
-            user_profile = state["user_profile"] or "No specific user profile provided; provide general advice."
+            # Handle both dict and Pydantic model
+            task = state.get("task") if isinstance(state, dict) else state.task
+            user_profile = (state.get("user_profile") if isinstance(state, dict) else state.user_profile) or "No specific user profile provided; provide general advice."
+            current_turn = state.get("current_turn", 0) if isinstance(state, dict) else state.current_turn
+            recommendations = state.get("recommendations", {}) if isinstance(state, dict) else state.recommendations
             
             # Retrieve relevant chunks from knowledge base
             relevant_chunks = retrieve_relevant_chunks(persona, task, CORPUS_DIR, INDEX_DIR)
@@ -45,8 +48,8 @@ Output Format:
 4. **Next Steps**: Any follow-up actions or considerations
 """
             
-            if state["current_turn"] > 0:
-                human_content = f"Refine your previous recommendation for: '{task}'\nPrevious: {state['recommendations'].get(persona, '')}"
+            if current_turn > 0:
+                human_content = f"Refine your previous recommendation for: '{task}'\nPrevious: {recommendations.get(persona, '')}"
             else:
                 human_content = f"Provide a recommendation for: '{task}'"
             
@@ -67,23 +70,27 @@ Output Format:
     return agent_node
 
 # Update Memory Node - Stores in ChromaDB VectorDB
-def update_memory_node(state: AgentState):
+def update_memory_node(state):
     """Store agent recommendations in ChromaDB vector database"""
     try:
-        run_id = state.get("run_id", str(uuid.uuid4()))
-        user_id = state.get("user_id", "system")
+        # Handle both dict and Pydantic model
+        run_id = state.get("run_id", str(uuid.uuid4())) if isinstance(state, dict) else getattr(state, "run_id", str(uuid.uuid4()))
+        user_id = state.get("user_id", "system") if isinstance(state, dict) else getattr(state, "user_id", "system")
+        recommendations = state.get("recommendations", {}) if isinstance(state, dict) else state.recommendations
+        task = state.get("task", "") if isinstance(state, dict) else state.task
+        agents = state.get("agents", []) if isinstance(state, dict) else state.agents
         
-        for persona in state["agents"]:
-            recommendation = state["recommendations"].get(persona, "")
+        for persona in agents:
+            recommendation = recommendations.get(persona, "")
             if recommendation:
                 # Store recommendation as memory in ChromaDB
                 store_chat_message(
                     agent_name=persona,
                     run_id=run_id,
                     user_id=user_id,
-                    message=f"Strategy for '{state['task']}': {recommendation[:500]}...",
+                    message=f"Strategy for '{task}': {recommendation[:500]}...",
                     sender="agent",
-                    metadata={"type": "recommendation", "task": state["task"]}
+                    metadata={"type": "recommendation", "task": task}
                 )
                 print(f"[{persona}] Memory stored in VectorDB")
     except Exception as e:
