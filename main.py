@@ -4,11 +4,8 @@ import json
 import uvicorn
 from fastapi import FastAPI, UploadFile, File, Form, Body 
 from fastapi.middleware.cors import CORSMiddleware
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema import SystemMessage, HumanMessage
 from pypdf import PdfReader
 import io
-from langchain_google_genai import ChatGoogleGenerativeAI
 from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
 from fastapi.responses import JSONResponse
 from models import ChatInput, MeetingInput
@@ -131,15 +128,14 @@ Base your response on:
     
     human_content = f"User's follow-up message: {input.message}"
     
-    prompt = ChatPromptTemplate.from_messages([
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=human_content)
-    ])
-    llm = ChatGoogleGenerativeAI(model=model, google_api_key=gemini_key, temperature=TEMP)
-
+    # Use Gemini directly without LangChain
     try:
-        response = llm.invoke(prompt.format_messages())
-        agent_response = response.content
+        chat_model = genai.GenerativeModel(model)
+        response = chat_model.generate_content(
+            f"{system_prompt}\n\n{human_content}",
+            generation_config=genai.GenerationConfig(temperature=TEMP)
+        )
+        agent_response = response.text
     except Exception as e:
         print(f"Error in chat with {agent}: {e}")
         agent_response = "Sorry, I encountered an issue. Please try again."

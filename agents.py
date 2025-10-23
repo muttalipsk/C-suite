@@ -1,21 +1,17 @@
 
 from typing import Dict, List
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 from models import AgentState
 from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, TURNS, CORPUS_DIR, INDEX_DIR
 from utils import load_knowledge, retrieve_relevant_chunks, load_memory_from_vectordb, merge_recommendations
 from chat_vectordb import store_chat_message
-from langchain_google_genai import ChatGoogleGenerativeAI
 import json
 import os
 import uuid
+import google.generativeai as genai
 
 # Agent Node Factory - Uses ChromaDB VectorDB Memory
 def create_agent_node(persona: str):
-    # Initialize LLM inside function to avoid blocking import
-    llm = ChatGoogleGenerativeAI(model=MODEL, google_api_key=GEMINI_KEY, temperature=TEMP)
     company = PERSONAS[persona]["company"]
     role = PERSONAS[persona]["role"]
     description = PERSONAS[persona]["description"]
@@ -53,13 +49,14 @@ Output Format:
                 human_content = f"Refine your previous recommendation for: '{task}'\nPrevious: {state['recommendations'].get(persona, '')}"
             else:
                 human_content = f"Provide a recommendation for: '{task}'"
-                
-            prompt = ChatPromptTemplate.from_messages([
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=human_content)
-            ])
-            response = llm.invoke(prompt.format_messages())
-            recommendation = response.content
+            
+            # Use Gemini directly without LangChain wrapper
+            chat_model = genai.GenerativeModel(MODEL)
+            response = chat_model.generate_content(
+                f"{system_prompt}\n\n{human_content}",
+                generation_config=genai.GenerationConfig(temperature=TEMP)
+            )
+            recommendation = response.text
             print(f"[{persona}] Recommendation completed!")
             return {"recommendations": {persona: recommendation}}
         except Exception as e:

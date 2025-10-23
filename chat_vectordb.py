@@ -10,21 +10,25 @@ from datetime import datetime
 from typing import List, Dict, Optional
 import chromadb
 from chromadb.config import Settings
+import google.generativeai as genai
+from constants import GEMINI_KEY, EMBEDDING_MODEL
+
+# Configure Gemini
+genai.configure(api_key=GEMINI_KEY)
 
 # Lazy initialization to avoid blocking imports
-_embedding_model = None
 _client = None
 
 CHROMA_DB_DIR = "./chroma_chat_db"
 
-def get_embedding_model():
-    """Lazy load embedding model to avoid blocking import"""
-    global _embedding_model
-    if _embedding_model is None:
-        # Import only when needed to avoid blocking
-        from sentence_transformers import SentenceTransformer
-        _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-    return _embedding_model
+def get_embedding(text: str) -> List[float]:
+    """Get embedding using Gemini embedding model"""
+    result = genai.embed_content(
+        model=EMBEDDING_MODEL,
+        content=text,
+        task_type="retrieval_document"
+    )
+    return result['embedding']
 
 def get_chroma_client():
     """Lazy load ChromaDB client to avoid blocking import"""
@@ -82,9 +86,8 @@ def store_chat_message(
     """
     collection = get_agent_collection(agent_name)
     
-    # Generate embedding for the message
-    embedding_model = get_embedding_model()
-    embedding = embedding_model.encode(message).tolist()
+    # Generate embedding for the message using Gemini
+    embedding = get_embedding(message)
     
     # Create unique message ID
     message_id = str(uuid.uuid4())
@@ -180,9 +183,8 @@ def get_similar_conversations(
     """
     collection = get_agent_collection(agent_name)
     
-    # Generate embedding for query
-    embedding_model = get_embedding_model()
-    query_embedding = embedding_model.encode(query_text).tolist()
+    # Generate embedding for query using Gemini
+    query_embedding = get_embedding(query_text)
     
     try:
         results = collection.query(
