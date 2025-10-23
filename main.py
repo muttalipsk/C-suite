@@ -12,12 +12,12 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
 from fastapi.responses import JSONResponse
 from models import ChatInput, MeetingInput
-from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory
+from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory_from_vectordb
 from agents import run_meeting
 import google.generativeai as genai
 from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats
 
-genai.configure(api_key=GEMINI_KEY)
+genai.configure(api_key=gemini_key)
 
 # Create directories
 os.makedirs(CORPUS_DIR, exist_ok=True)
@@ -112,7 +112,7 @@ async def chat_endpoint(input: ChatInput):
     role = PERSONAS[agent]["role"]
     description = PERSONAS[agent]["description"]
     relevant_chunks = retrieve_relevant_chunks(agent, task + " " + input.message, CORPUS_DIR, INDEX_DIR)
-    memory = load_memory(agent, MEMORY_DIR)
+    memory = load_memory_from_vectordb(agent, limit=5)
     
     system_prompt = f"""
 You are {agent} from {company}, acting in your {role}: {description}. You are serving as a moderator and advisor to C-suite level executives. Respond in a natural, conversational manner, providing balanced, insightful advice based on your expertise.

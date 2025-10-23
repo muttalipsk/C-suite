@@ -12,10 +12,10 @@ import json
 import os
 import uuid
 
-llm = ChatGoogleGenerativeAI(model=MODEL, google_api_key=GEMINI_KEY, temperature=TEMP)
-
 # Agent Node Factory - Uses ChromaDB VectorDB Memory
 def create_agent_node(persona: str):
+    # Initialize LLM inside function to avoid blocking import
+    llm = ChatGoogleGenerativeAI(model=MODEL, google_api_key=GEMINI_KEY, temperature=TEMP)
     company = PERSONAS[persona]["company"]
     role = PERSONAS[persona]["role"]
     description = PERSONAS[persona]["description"]

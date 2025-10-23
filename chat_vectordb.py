@@ -10,22 +10,35 @@ from datetime import datetime
 from typing import List, Dict, Optional
 import chromadb
 from chromadb.config import Settings
-from sentence_transformers import SentenceTransformer
 
-# Initialize embedding model
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+# Lazy initialization to avoid blocking imports
+_embedding_model = None
+_client = None
 
-# Initialize ChromaDB client with persistence
 CHROMA_DB_DIR = "./chroma_chat_db"
-os.makedirs(CHROMA_DB_DIR, exist_ok=True)
 
-client = chromadb.PersistentClient(
-    path=CHROMA_DB_DIR,
-    settings=Settings(
-        anonymized_telemetry=False,
-        allow_reset=True
-    )
-)
+def get_embedding_model():
+    """Lazy load embedding model to avoid blocking import"""
+    global _embedding_model
+    if _embedding_model is None:
+        # Import only when needed to avoid blocking
+        from sentence_transformers import SentenceTransformer
+        _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+    return _embedding_model
+
+def get_chroma_client():
+    """Lazy load ChromaDB client to avoid blocking import"""
+    global _client
+    if _client is None:
+        os.makedirs(CHROMA_DB_DIR, exist_ok=True)
+        _client = chromadb.PersistentClient(
+            path=CHROMA_DB_DIR,
+            settings=Settings(
+                anonymized_telemetry=False,
+                allow_reset=True
+            )
+        )
+    return _client
 
 
 def get_agent_collection(agent_name: str):
@@ -33,6 +46,7 @@ def get_agent_collection(agent_name: str):
     Get or create a ChromaDB collection for a specific agent.
     Each agent has its own collection to keep chat histories separate.
     """
+    client = get_chroma_client()
     collection_name = f"chat_history_{agent_name}".lower().replace(" ", "_")
     try:
         collection = client.get_collection(collection_name)
@@ -69,6 +83,7 @@ def store_chat_message(
     collection = get_agent_collection(agent_name)
     
     # Generate embedding for the message
+    embedding_model = get_embedding_model()
     embedding = embedding_model.encode(message).tolist()
     
     # Create unique message ID
@@ -166,6 +181,7 @@ def get_similar_conversations(
     collection = get_agent_collection(agent_name)
     
     # Generate embedding for query
+    embedding_model = get_embedding_model()
     query_embedding = embedding_model.encode(query_text).tolist()
     
     try:

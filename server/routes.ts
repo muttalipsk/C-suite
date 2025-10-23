@@ -175,6 +175,7 @@ Role Details: ${user.roleDetails}
       const { run_id: pythonRunId, recommendations } = pythonResponse.data;
 
       // Save run to PostgreSQL database (Node.js handles DB persistence)
+      // Store pythonRunId so we can map between DB ID and Python UUID
       const run = await storage.createRun({
         userId: req.session.userId!,
         task,
@@ -186,8 +187,10 @@ Role Details: ${user.roleDetails}
 
       console.log(`Meeting completed: DB ID ${run.id}, Python Run ID ${pythonRunId}`);
 
+      // IMPORTANT: Return Python's run_id to frontend (not DB ID)
+      // Python /chat endpoint needs Python's UUID to find the run file
       res.json({
-        runId: run.id,
+        runId: pythonRunId,  // Use Python's UUID so /chat can find the run file
         recommendations,
       });
     } catch (error: any) {
