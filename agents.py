@@ -116,11 +116,17 @@ def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: L
     for r_node in recommend_nodes:
         graph.add_edge(r_node, "after_recommend")
     
-    graph.add_node("increment", lambda state: {"current_turn": state["current_turn"] + 1})
+    def increment_turn(state):
+        current = state.get("current_turn", 0) if isinstance(state, dict) else state.current_turn
+        return {"current_turn": current + 1}
+    
+    graph.add_node("increment", increment_turn)
     graph.add_edge("after_recommend", "increment")
     
-    def decide_to_continue(state: AgentState):
-        return "continue" if state["current_turn"] < state["turns"] else "end"
+    def decide_to_continue(state):
+        current_turn = state.get("current_turn", 0) if isinstance(state, dict) else state.current_turn
+        turns = state.get("turns", 1) if isinstance(state, dict) else state.turns
+        return "continue" if current_turn < turns else "end"
     
     graph.add_conditional_edges(
         "increment",
