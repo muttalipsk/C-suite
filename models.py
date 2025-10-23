@@ -1,7 +1,9 @@
 
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Annotated
 from langchain_core.messages import BaseMessage
+from typing_extensions import TypedDict
+import operator
 
 class ChatInput(BaseModel):
     run_id: str
@@ -16,14 +18,16 @@ class MeetingInput(BaseModel):
     agents: Optional[List[str]] = None
     user_id: str = "system"
 
-class AgentState(BaseModel):
-    messages: List[BaseMessage] = []
-    recommendations: Dict[str, str] = {}
+# Define a merge function for dictionaries
+def merge_dicts(left: Dict[str, str], right: Dict[str, str]) -> Dict[str, str]:
+    """Merge two dictionaries, with right taking precedence"""
+    return {**left, **right}
+
+class AgentState(TypedDict):
+    messages: Annotated[List[BaseMessage], operator.add]
+    recommendations: Annotated[Dict[str, str], merge_dicts]
     task: str
     user_profile: str
     current_turn: int
     agents: List[str]
     turns: int
-    
-    class Config:
-        arbitrary_types_allowed = True

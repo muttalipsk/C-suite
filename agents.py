@@ -19,11 +19,11 @@ def create_agent_node(persona: str):
     def agent_node(state):
         try:
             print(f"[{persona}] Starting recommendation with VectorDB memory...")
-            # Handle both dict and Pydantic model
-            task = state.get("task") if isinstance(state, dict) else state.task
-            user_profile = (state.get("user_profile") if isinstance(state, dict) else state.user_profile) or "No specific user profile provided; provide general advice."
-            current_turn = state.get("current_turn", 0) if isinstance(state, dict) else state.current_turn
-            recommendations = state.get("recommendations", {}) if isinstance(state, dict) else state.recommendations
+            # AgentState is TypedDict, access as dict
+            task = state.get("task", "")
+            user_profile = state.get("user_profile", "") or "No specific user profile provided; provide general advice."
+            current_turn = state.get("current_turn", 0)
+            recommendations = state.get("recommendations", {})
             
             # Retrieve relevant chunks from knowledge base
             relevant_chunks = retrieve_relevant_chunks(persona, task, CORPUS_DIR, INDEX_DIR)
@@ -73,12 +73,12 @@ Output Format:
 def update_memory_node(state):
     """Store agent recommendations in ChromaDB vector database"""
     try:
-        # Handle both dict and Pydantic model
-        run_id = state.get("run_id", str(uuid.uuid4())) if isinstance(state, dict) else getattr(state, "run_id", str(uuid.uuid4()))
-        user_id = state.get("user_id", "system") if isinstance(state, dict) else getattr(state, "user_id", "system")
-        recommendations = state.get("recommendations", {}) if isinstance(state, dict) else state.recommendations
-        task = state.get("task", "") if isinstance(state, dict) else state.task
-        agents = state.get("agents", []) if isinstance(state, dict) else state.agents
+        # AgentState is TypedDict, access as dict
+        run_id = state.get("run_id", str(uuid.uuid4()))
+        user_id = state.get("user_id", "system")
+        recommendations = state.get("recommendations", {})
+        task = state.get("task", "")
+        agents = state.get("agents", [])
         
         for persona in agents:
             recommendation = recommendations.get(persona, "")
@@ -99,7 +99,7 @@ def update_memory_node(state):
     return state
 
 # Run Meeting with LangGraph - Uses ChromaDB VectorDB Memory
-def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] = None, user_id: str = "system") -> Dict:
+def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] | None = None, user_id: str = "system") -> Dict:
     if not agents:
         agents = list(PERSONAS.keys())
     
@@ -113,26 +113,26 @@ def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: L
         recommend_nodes.append(recommend_node_name)
     
     graph.add_node("update_memory", update_memory_node)
-    graph.add_node("start_recommend", lambda s: s)
+    graph.add_node("start_recommend", lambda state: state)
     graph.add_edge(START, "start_recommend")
     
     for r_node in recommend_nodes:
         graph.add_edge("start_recommend", r_node)
     
-    graph.add_node("after_recommend", lambda s: s)
+    graph.add_node("after_recommend", lambda state: state)
     for r_node in recommend_nodes:
         graph.add_edge(r_node, "after_recommend")
     
     def increment_turn(state):
-        current = state.get("current_turn", 0) if isinstance(state, dict) else state.current_turn
+        current = state.get("current_turn", 0)
         return {"current_turn": current + 1}
     
     graph.add_node("increment", increment_turn)
     graph.add_edge("after_recommend", "increment")
     
     def decide_to_continue(state):
-        current_turn = state.get("current_turn", 0) if isinstance(state, dict) else state.current_turn
-        turns = state.get("turns", 1) if isinstance(state, dict) else state.turns
+        current_turn = state.get("current_turn", 0)
+        turns = state.get("turns", 1)
         return "continue" if current_turn < turns else "end"
     
     graph.add_conditional_edges(
