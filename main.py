@@ -12,9 +12,7 @@ from models import ChatInput, MeetingInput
 from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory_from_vectordb
 from agents import run_meeting
 import google.generativeai as genai
-from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats
-
-genai.configure(api_key=gemini_key)
+from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats, ensure_genai_configured
 
 # Create directories
 os.makedirs(CORPUS_DIR, exist_ok=True)
@@ -34,6 +32,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Configure Gemini on startup with proper error handling"""
+    try:
+        if not gemini_key:
+            print("WARNING: GEMINI_API_KEY is not set!")
+        else:
+            ensure_genai_configured()
+            print("✓ Gemini API configured successfully")
+    except Exception as e:
+        print(f"ERROR configuring Gemini API: {e}")
 
 # Routes/Endpoints
 @app.get("/", response_class=JSONResponse)
@@ -130,6 +140,7 @@ Base your response on:
     
     # Use Gemini directly without LangChain
     try:
+        ensure_genai_configured()
         chat_model = genai.GenerativeModel(model)
         response = chat_model.generate_content(
             f"{system_prompt}\n\n{human_content}",

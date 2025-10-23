@@ -13,16 +13,24 @@ from chromadb.config import Settings
 import google.generativeai as genai
 from constants import GEMINI_KEY, EMBEDDING_MODEL
 
-# Configure Gemini
-genai.configure(api_key=GEMINI_KEY)
-
 # Lazy initialization to avoid blocking imports
 _client = None
+_genai_configured = False
 
 CHROMA_DB_DIR = "./chroma_chat_db"
 
+def ensure_genai_configured():
+    """Ensure Gemini is configured before use"""
+    global _genai_configured
+    if not _genai_configured:
+        if not GEMINI_KEY:
+            raise ValueError("GEMINI_API_KEY environment variable is not set")
+        genai.configure(api_key=GEMINI_KEY)
+        _genai_configured = True
+
 def get_embedding(text: str) -> List[float]:
     """Get embedding using Gemini embedding model"""
+    ensure_genai_configured()
     result = genai.embed_content(
         model=EMBEDDING_MODEL,
         content=text,

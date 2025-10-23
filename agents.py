@@ -4,7 +4,7 @@ from langgraph.graph import StateGraph, START, END
 from models import AgentState
 from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, TURNS, CORPUS_DIR, INDEX_DIR
 from utils import load_knowledge, retrieve_relevant_chunks, load_memory_from_vectordb, merge_recommendations
-from chat_vectordb import store_chat_message
+from chat_vectordb import store_chat_message, ensure_genai_configured
 import json
 import os
 import uuid
@@ -51,6 +51,7 @@ Output Format:
                 human_content = f"Provide a recommendation for: '{task}'"
             
             # Use Gemini directly without LangChain wrapper
+            ensure_genai_configured()
             chat_model = genai.GenerativeModel(MODEL)
             response = chat_model.generate_content(
                 f"{system_prompt}\n\n{human_content}",
