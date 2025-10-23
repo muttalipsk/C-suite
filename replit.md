@@ -43,16 +43,21 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend Architecture
 
-**Framework & Runtime:**
-- Node.js with Express.js for HTTP server
-- TypeScript with ESM module system
-- Session-based authentication using express-session
+**Dual-Backend System:**
+1. **Node.js Express Server** (Port 5000)
+   - TypeScript with ESM module system
+   - Session-based authentication using express-session
+   - RESTful endpoints under /api prefix
+   - JSON request/response format
+   - PostgreSQL session store for persistence
+   - Forwards chat operations to Python API
 
-**API Design:**
-- RESTful endpoints under /api prefix
-- JSON request/response format
-- Session cookies for authentication state
-- PostgreSQL session store for persistence
+2. **Python FastAPI Server** (Port 8000)
+   - Python 3.11 with FastAPI framework
+   - ChromaDB vector database for chat history storage
+   - Sentence-Transformers for text embeddings
+   - Google Gemini AI integration for chat responses
+   - Each agent has separate ChromaDB collection
 
 **AI Integration Layer:**
 - Google Gemini AI (gemini-2.5-flash model) for generating recommendations
@@ -60,11 +65,19 @@ Preferred communication style: Simple, everyday language.
 - Structured response format (Summary, Key Recommendations, Rationale, Next Steps)
 - Temperature set to 0.2 for consistent, focused responses
 
+**VectorDB Chat Storage:**
+- ChromaDB (lightweight vector database) for chat history
+- Sentence-Transformers (all-MiniLM-L6-v2) for embedding generation
+- Agent-specific collections (e.g., chat_history_sam_altman, chat_history_jensen_huang)
+- Semantic search capabilities for finding similar past conversations
+- Metadata: run_id, user_id, sender, timestamp stored with each message
+
 **Key Architectural Patterns:**
 - Middleware pipeline for session management and authentication
 - Centralized error handling
 - Request/response logging for API routes
 - Separation of concerns: routes, storage, AI logic in distinct modules
+- Inter-service communication: Node.js → Python API for chat operations
 
 ### Data Storage
 
@@ -74,11 +87,18 @@ Preferred communication style: Simple, everyday language.
 - Schema-first approach with shared types between frontend and backend
 
 **Data Models:**
+
+*PostgreSQL Database:*
 1. **Users Table** - Extended profile with professional details, goals, company info, and photo
 2. **Runs Table** - Meeting sessions with task, selected agents, and JSON recommendations
-3. **Chats Table** - Conversation history linked to runs and agents
-4. **Agent Memory Table** - Long-term memory storage per agent
-5. **Corpus Table** - Knowledge base chunks with embeddings per agent
+3. **Agent Memory Table** - Long-term memory storage per agent (recommendations saved by user)
+4. **Session Table** - Express session storage
+
+*ChromaDB Vector Database:*
+1. **Chat Collections** - One collection per agent (e.g., chat_history_sam_altman)
+   - Documents: Chat message text
+   - Embeddings: 384-dimensional vectors from sentence-transformers
+   - Metadata: run_id, user_id, sender (user/agent), timestamp
 
 **Session Management:**
 - PostgreSQL-backed session store (connect-pg-simple)
@@ -88,8 +108,9 @@ Preferred communication style: Simple, everyday language.
 **Key Design Decisions:**
 - User profiles auto-populate meeting context
 - Recommendations stored as JSONB for flexible querying
-- Chat history maintains sender attribution (user/agent)
+- **Chat history now stored in VectorDB with separate collections per agent**
 - Agent memory enables continuity across conversations
+- Vector embeddings enable semantic search of past conversations
 
 ### External Dependencies
 

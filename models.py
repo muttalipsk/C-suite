@@ -7,6 +7,7 @@ class ChatInput(BaseModel):
     run_id: str
     agent: str
     message: str
+    user_id: str
 
 class MeetingInput(BaseModel):
     task: str

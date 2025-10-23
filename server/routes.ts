@@ -208,7 +208,7 @@ Role Details: ${user.roleDetails}
     }
   });
 
-  // CHAT ROUTES
+  // CHAT ROUTES - Now uses Python VectorDB API
   app.post("/api/chat", requireAuth, async (req, res) => {
     try {
       const { runId, agent, message } = req.body;
@@ -217,50 +217,24 @@ Role Details: ${user.roleDetails}
         return res.status(400).json({ error: "runId, agent, and message are required" });
       }
 
-      // Get run
-      const run = await storage.getRun(runId);
-      if (!run) {
-        return res.status(404).json({ error: "Run not found" });
-      }
-
-      // Get agent info
-      const agentInfo = AI_AGENTS[agent as keyof typeof AI_AGENTS];
-      if (!agentInfo) {
-        return res.status(400).json({ error: "Invalid agent" });
-      }
-
-      // Get chat history
-      const chatHistory = await storage.getChatsByRunAndAgent(runId, agent);
-      
-      // Get recommendation for this agent from the run
-      const recommendation = run.recommendations[agent] || "";
-
-      // Generate chat response
-      const response = await generateChatResponse(
-        agent,
-        run.task,
-        run.userProfile,
-        recommendation,
-        chatHistory.map(h => ({ sender: h.sender, message: h.message })),
-        message
-      );
-
-      // Save messages to database
-      await storage.createChat({
-        runId,
-        agent,
-        message,
-        sender: "user",
+      // Forward to Python API with VectorDB chat storage
+      const pythonResponse = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          run_id: runId,
+          agent,
+          message,
+          user_id: req.session.userId
+        })
       });
 
-      await storage.createChat({
-        runId,
-        agent,
-        message: response,
-        sender: "agent",
-      });
+      if (!pythonResponse.ok) {
+        throw new Error(`Python API error: ${pythonResponse.statusText}`);
+      }
 
-      res.json({ response });
+      const data = await pythonResponse.json();
+      res.json({ response: data.response });
     } catch (error: any) {
       console.error("Chat error:", error);
       res.status(500).json({ error: error.message || "Chat failed" });
@@ -271,16 +245,25 @@ Role Details: ${user.roleDetails}
     try {
       const { runId, agent } = req.params;
 
-      const history = await storage.getChatsByRunAndAgent(runId, agent);
+      // Fetch from Python VectorDB API (agent-specific collection)
+      const pythonResponse = await fetch(`http://localhost:8000/get_chat?run_id=${runId}&agent=${agent}`);
+      
+      if (!pythonResponse.ok) {
+        throw new Error(`Python API error: ${pythonResponse.statusText}`);
+      }
 
-      res.json({
-        history: history.map(h => ({
-          sender: h.sender,
-          message: h.message,
-          timestamp: h.createdAt,
-        })),
-      });
+      const data = await pythonResponse.json();
+      
+      // Convert format to match frontend expectations
+      const history = data.history.map((h: any) => ({
+        sender: h.user ? "user" : "agent",
+        message: h.user || h.agent,
+        timestamp: new Date().toISOString()
+      }));
+
+      res.json({ history });
     } catch (error) {
+      console.error("Get chat error:", error);
       res.status(500).json({ error: "Failed to get chat history" });
     }
   });

@@ -15,6 +15,7 @@ from models import ChatInput, MeetingInput
 from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory
 from agents import run_meeting
 import google.generativeai as genai
+from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats
 
 genai.configure(api_key=GEMINI_KEY)
 
@@ -80,6 +81,10 @@ async def meeting(input_data: MeetingInput = Body(...)):
 
 @app.post("/chat")
 async def chat_endpoint(input: ChatInput):
+    """
+    Handle chat messages and store them in ChromaDB vector database.
+    Each agent has its own collection in ChromaDB.
+    """
     agent = input.agent
     if agent not in PERSONAS:
         return JSONResponse(status_code=400, content={"error": "Invalid agent"})
@@ -95,11 +100,11 @@ async def chat_endpoint(input: ChatInput):
     user_profile = run["user_profile"]
     recommendation = run["recommendations"].get(agent, "")
     
-    chat_path = os.path.join(CHATS_DIR, f"{input.run_id}_{agent}.json")
-    history = []
-    if os.path.exists(chat_path):
-        with open(chat_path, "r") as f:
-            history = json.load(f)
+    # Fetch chat history from ChromaDB (agent-specific)
+    history_messages = get_chat_history(agent, input.run_id, limit=50)
+    history = [{"user": msg.get("message") if msg.get("sender") == "user" else "", 
+                "agent": msg.get("message") if msg.get("sender") == "agent" else ""} 
+               for msg in history_messages]
     
     knowledge = load_knowledge(agent)
     company = PERSONAS[agent]["company"]
@@ -138,23 +143,61 @@ Base your response on:
         print(f"Error in chat with {agent}: {e}")
         agent_response = "Sorry, I encountered an issue. Please try again."
     
-    history.append({"user": input.message, "agent": agent_response})
-    with open(chat_path, "w") as f:
-        json.dump(history, f)
+    # Store user message in ChromaDB vector database
+    store_chat_message(
+        agent_name=agent,
+        run_id=input.run_id,
+        user_id=input.user_id,
+        message=input.message,
+        sender="user"
+    )
+    
+    # Store agent response in ChromaDB vector database
+    store_chat_message(
+        agent_name=agent,
+        run_id=input.run_id,
+        user_id=input.user_id,
+        message=agent_response,
+        sender="agent"
+    )
     
     return {"response": agent_response}
 
 @app.get("/get_chat")
 async def get_chat(run_id: str, agent: str):
+    """
+    Retrieve chat history from ChromaDB vector database for a specific agent.
+    Each agent maintains its own separate chat history collection.
+    """
     if agent not in PERSONAS:
         return JSONResponse(status_code=400, content={"error": "Invalid agent"})
     
-    chat_path = os.path.join(CHATS_DIR, f"{run_id}_{agent}.json")
-    if os.path.exists(chat_path):
-        with open(chat_path, "r") as f:
-            history = json.load(f)
-        return {"history": history}
-    return {"history": []}
+    # Fetch from ChromaDB (agent-specific collection)
+    history_messages = get_chat_history(agent, run_id, limit=100)
+    
+    # Format for frontend compatibility
+    history = []
+    for msg in history_messages:
+        if msg.get("sender") == "user":
+            history.append({"user": msg.get("message"), "agent": ""})
+        else:
+            if history and not history[-1].get("agent"):
+                history[-1]["agent"] = msg.get("message")
+            else:
+                history.append({"user": "", "agent": msg.get("message")})
+    
+    return {"history": history}
+
+@app.get("/agent_stats/{agent}")
+async def agent_stats(agent: str):
+    """
+    Get statistics about an agent's chat history in ChromaDB.
+    """
+    if agent not in PERSONAS:
+        return JSONResponse(status_code=400, content={"error": "Invalid agent"})
+    
+    stats = get_agent_stats(agent)
+    return stats
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
