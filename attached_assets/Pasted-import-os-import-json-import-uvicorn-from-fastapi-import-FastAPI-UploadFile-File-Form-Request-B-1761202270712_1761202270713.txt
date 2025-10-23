@@ -1,21 +1,21 @@
-
 import os
 import json
 import uvicorn
-from fastapi import FastAPI, UploadFile, File, Form, Body 
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, UploadFile, File, Form, Request, Body 
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import SystemMessage, HumanMessage
 from pypdf import PdfReader
 import io
 from langchain_google_genai import ChatGoogleGenerativeAI
-from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
-from fastapi.responses import JSONResponse
+from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS,TURNS
+from fastapi.responses import HTMLResponse, JSONResponse
+# from fastapi.staticfiles import StaticFiles
+# from fastapi.templating import Jinja2Templates
+from constants import GEMINI_KEY, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS,TURNS
 from models import ChatInput, MeetingInput
 from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory
 from agents import run_meeting
 import google.generativeai as genai
-from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats
 
 genai.configure(api_key=GEMINI_KEY)
 
@@ -28,20 +28,13 @@ os.makedirs(CHATS_DIR, exist_ok=True)
 
 # FastAPI App
 app = FastAPI()
-
-# Add CORS middleware to allow Node.js server to call this API
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+# templates = Jinja2Templates(directory="templates")
 
 # Routes/Endpoints
 @app.get("/", response_class=JSONResponse)
 async def root():
-    return {"message": "Python AI Backend is running!", "status": "healthy"}
+    return {"message": "Backend API is running! Frontend at http://localhost:3000"}
 
 @app.post("/ingest")
 async def ingest(persona: str = Form(...), file: UploadFile = File(...)):
@@ -69,23 +62,32 @@ async def ingest(persona: str = Form(...), file: UploadFile = File(...)):
     build_or_update_index(persona, CORPUS_DIR, INDEX_DIR)
     return {"status": "Index updated"}
 
+# @app.post("/meeting")
+# async def meeting(
+#     task: str = Form(...), 
+#     user_profile: str = Form(""),
+#     turns: int = Form(TURNS), 
+#     agents: list[str] = Form(default=[])
+# ):
+#     if not agents:
+#         agents = list(PERSONAS.keys())
+    
+#     print(f"Selected agents: {agents}")
+#     result = run_meeting(task, user_profile, turns, agents)
+#     return result
+
 @app.post("/meeting")
 async def meeting(input_data: MeetingInput = Body(...)):
     task = input_data.task
     user_profile = input_data.user_profile
     turns = input_data.turns
-    agents = input_data.agents or list(PERSONAS.keys())
-    user_id = input_data.user_id or "system"
-    print(f"Selected agents: {agents}, User ID: {user_id}")
-    result = run_meeting(task, user_profile, turns, agents, user_id)
+    agents = input_data.agents or list(PERSONAS.keys())  # Default to all
+    print(f"Selected agents: {agents}")
+    result = run_meeting(task, user_profile, turns, agents)
     return result
 
 @app.post("/chat")
 async def chat_endpoint(input: ChatInput):
-    """
-    Handle chat messages and store them in ChromaDB vector database.
-    Each agent has its own collection in ChromaDB.
-    """
     agent = input.agent
     if agent not in PERSONAS:
         return JSONResponse(status_code=400, content={"error": "Invalid agent"})
@@ -101,12 +103,13 @@ async def chat_endpoint(input: ChatInput):
     user_profile = run["user_profile"]
     recommendation = run["recommendations"].get(agent, "")
     
-    # Fetch chat history from ChromaDB (agent-specific)
-    history_messages = get_chat_history(agent, input.run_id, limit=50)
-    history = [{"user": msg.get("message") if msg.get("sender") == "user" else "", 
-                "agent": msg.get("message") if msg.get("sender") == "agent" else ""} 
-               for msg in history_messages]
+    chat_path = os.path.join(CHATS_DIR, f"{input.run_id}_{agent}.json")
+    history = []
+    if os.path.exists(chat_path):
+        with open(chat_path, "r") as f:
+            history = json.load(f)
     
+    # Load agent details
     knowledge = load_knowledge(agent)
     company = PERSONAS[agent]["company"]
     role = PERSONAS[agent]["role"]
@@ -114,6 +117,7 @@ async def chat_endpoint(input: ChatInput):
     relevant_chunks = retrieve_relevant_chunks(agent, task + " " + input.message, CORPUS_DIR, INDEX_DIR)
     memory = load_memory(agent, MEMORY_DIR)
     
+    # Build prompt for chat (same as original)
     system_prompt = f"""
 You are {agent} from {company}, acting in your {role}: {description}. You are serving as a moderator and advisor to C-suite level executives. Respond in a natural, conversational manner, providing balanced, insightful advice based on your expertise.
 
@@ -144,61 +148,24 @@ Base your response on:
         print(f"Error in chat with {agent}: {e}")
         agent_response = "Sorry, I encountered an issue. Please try again."
     
-    # Store user message in ChromaDB vector database
-    store_chat_message(
-        agent_name=agent,
-        run_id=input.run_id,
-        user_id=input.user_id,
-        message=input.message,
-        sender="user"
-    )
-    
-    # Store agent response in ChromaDB vector database
-    store_chat_message(
-        agent_name=agent,
-        run_id=input.run_id,
-        user_id=input.user_id,
-        message=agent_response,
-        sender="agent"
-    )
+    # Append to history
+    history.append({"user": input.message, "agent": agent_response})
+    with open(chat_path, "w") as f:
+        json.dump(history, f)
     
     return {"response": agent_response}
 
 @app.get("/get_chat")
 async def get_chat(run_id: str, agent: str):
-    """
-    Retrieve chat history from ChromaDB vector database for a specific agent.
-    Each agent maintains its own separate chat history collection.
-    """
     if agent not in PERSONAS:
         return JSONResponse(status_code=400, content={"error": "Invalid agent"})
     
-    # Fetch from ChromaDB (agent-specific collection)
-    history_messages = get_chat_history(agent, run_id, limit=100)
-    
-    # Format for frontend compatibility
-    history = []
-    for msg in history_messages:
-        if msg.get("sender") == "user":
-            history.append({"user": msg.get("message"), "agent": ""})
-        else:
-            if history and not history[-1].get("agent"):
-                history[-1]["agent"] = msg.get("message")
-            else:
-                history.append({"user": "", "agent": msg.get("message")})
-    
-    return {"history": history}
-
-@app.get("/agent_stats/{agent}")
-async def agent_stats(agent: str):
-    """
-    Get statistics about an agent's chat history in ChromaDB.
-    """
-    if agent not in PERSONAS:
-        return JSONResponse(status_code=400, content={"error": "Invalid agent"})
-    
-    stats = get_agent_stats(agent)
-    return stats
+    chat_path = os.path.join(CHATS_DIR, f"{run_id}_{agent}.json")
+    if os.path.exists(chat_path):
+        with open(chat_path, "r") as f:
+            history = json.load(f)
+        return {"history": history}
+    return {"history": []}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

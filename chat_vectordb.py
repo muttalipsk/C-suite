@@ -243,3 +243,47 @@ def get_agent_stats(agent_name: str) -> Dict:
     except Exception as e:
         print(f"Error getting agent stats: {e}")
         return {"agent": agent_name, "total_messages": 0, "error": str(e)}
+
+
+def get_agent_memory(agent_name: str, limit: int = 5) -> List[Dict]:
+    """
+    Get recent agent memories (agent responses) from ChromaDB.
+    Returns the most recent agent messages for context.
+    
+    Args:
+        agent_name: Name of the AI agent
+        limit: Maximum number of memories to retrieve
+        
+    Returns:
+        List of agent messages with metadata
+    """
+    collection = get_agent_collection(agent_name)
+    
+    try:
+        # Get agent messages (where sender='agent')
+        results = collection.get(
+            where={"sender": "agent"},
+            limit=limit * 2  # Get extra in case we need to filter/sort
+        )
+        
+        if not results['ids']:
+            return []
+        
+        # Format results
+        memories = []
+        for i in range(len(results['ids'])):
+            memories.append({
+                "message": results['documents'][i],
+                "timestamp": results['metadatas'][i].get('timestamp', ''),
+                "run_id": results['metadatas'][i].get('run_id', ''),
+                "user_id": results['metadatas'][i].get('user_id', '')
+            })
+        
+        # Sort by timestamp descending (most recent first)
+        memories.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        
+        return memories[:limit]
+    
+    except Exception as e:
+        print(f"Error getting agent memory for {agent_name}: {e}")
+        return []

@@ -101,3 +101,24 @@ def merge_recommendations(recommendations: dict) -> str:
     for agent, rec in recommendations.items():
         merged.append(f"**{agent}:**\n{rec}\n")
     return "\n".join(merged)
+
+def load_memory_from_vectordb(agent_name: str, limit: int = 5) -> str:
+    """
+    Load agent memory from ChromaDB vector database.
+    Returns the most recent memories for the agent.
+    """
+    try:
+        from chat_vectordb import get_agent_memory
+        memories = get_agent_memory(agent_name, limit=limit)
+        if memories:
+            # Format memories as text for agent context
+            memory_text = "\n".join([
+                f"- {mem['message'][:150]}..." if len(mem['message']) > 150 else f"- {mem['message']}"
+                for mem in memories
+            ])
+            return f"Recent vector memories:\n{memory_text}"
+        return ""
+    except Exception as e:
+        print(f"Error loading vectordb memory for {agent_name}: {e}")
+        # Fallback to file-based memory if vectordb fails
+        return load_memory(agent_name, "memory")

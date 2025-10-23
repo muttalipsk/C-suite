@@ -4,38 +4,42 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 from models import AgentState
-from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, TURNS
-import constants
-from utils import load_knowledge, retrieve_relevant_chunks, load_memory, merge_recommendations
+from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, TURNS, CORPUS_DIR, INDEX_DIR
+from utils import load_knowledge, retrieve_relevant_chunks, load_memory_from_vectordb, merge_recommendations
+from chat_vectordb import store_chat_message
 from langchain_google_genai import ChatGoogleGenerativeAI
 import json
 import os
+import uuid
 
 llm = ChatGoogleGenerativeAI(model=MODEL, google_api_key=GEMINI_KEY, temperature=TEMP)
 
-# Agent Node Factory
+# Agent Node Factory - Uses ChromaDB VectorDB Memory
 def create_agent_node(persona: str):
-    knowledge = load_knowledge(persona)
     company = PERSONAS[persona]["company"]
     role = PERSONAS[persona]["role"]
     description = PERSONAS[persona]["description"]
     
     def agent_node(state: AgentState):
         try:
-            print(f"Recommend node {persona} starting...")
-            task = state.task
-            user_profile = state.user_profile or "No specific user profile provided; provide general advice."
-            relevant_chunks = retrieve_relevant_chunks(persona, task, constants.CORPUS_DIR, constants.INDEX_DIR)
-            memory = load_memory(persona, MEMORY_DIR)
+            print(f"[{persona}] Starting recommendation with VectorDB memory...")
+            task = state["task"]
+            user_profile = state["user_profile"] or "No specific user profile provided; provide general advice."
+            
+            # Retrieve relevant chunks from knowledge base
+            relevant_chunks = retrieve_relevant_chunks(persona, task, CORPUS_DIR, INDEX_DIR)
+            
+            # Load agent memory from ChromaDB vector database
+            vectordb_memory = load_memory_from_vectordb(persona, limit=5)
+            
             system_prompt = f"""
 You are {persona} from {company}, acting in your {role}: {description}. You are serving as a moderator and advisor to C-suite level executives. They seek your help for strategies after board meetings, client meetings, or personal doubts.
 
-Your goal is to provide tailored recommendations based on your point of view and expertise.
+Your goal is to provide tailored recommendations based on your point of view and expertise. Think as if you are in the user's place.
 
 Base your response on:
-- Knowledge: {knowledge}
 - Relevant writings: {relevant_chunks}
-- Recent memory: {memory}
+- Your recent memories from VectorDB: {vectordb_memory}
 - User Profile: {user_profile}
 
 Output Format:
@@ -45,8 +49,8 @@ Output Format:
 4. **Next Steps**: Any follow-up actions or considerations
 """
             
-            if state.current_turn > 0:
-                human_content = f"Refine your previous recommendation for: '{task}'\nPrevious: {state.recommendations.get(persona, '')}"
+            if state["current_turn"] > 0:
+                human_content = f"Refine your previous recommendation for: '{task}'\nPrevious: {state['recommendations'].get(persona, '')}"
             else:
                 human_content = f"Provide a recommendation for: '{task}'"
                 
@@ -56,7 +60,7 @@ Output Format:
             ])
             response = llm.invoke(prompt.format_messages())
             recommendation = response.content
-            print(f"Recommend {persona} success.")
+            print(f"[{persona}] Recommendation completed!")
             return {"recommendations": {persona: recommendation}}
         except Exception as e:
             print(f"Error in recommend_{persona}: {e}")
@@ -64,17 +68,33 @@ Output Format:
     
     return agent_node
 
-# Update Memory Node
+# Update Memory Node - Stores in ChromaDB VectorDB
 def update_memory_node(state: AgentState):
-    for persona in state.agents:
-        memory_file = os.path.join(MEMORY_DIR, f"{persona}_memory.txt")
-        recommendation = state.recommendations.get(persona, "")
-        with open(memory_file, "a") as f:
-            f.write(f"Recommendation for '{state.task}': {recommendation}\n")
+    """Store agent recommendations in ChromaDB vector database"""
+    try:
+        run_id = state.get("run_id", str(uuid.uuid4()))
+        user_id = state.get("user_id", "system")
+        
+        for persona in state["agents"]:
+            recommendation = state["recommendations"].get(persona, "")
+            if recommendation:
+                # Store recommendation as memory in ChromaDB
+                store_chat_message(
+                    agent_name=persona,
+                    run_id=run_id,
+                    user_id=user_id,
+                    message=f"Strategy for '{state['task']}': {recommendation[:500]}...",
+                    sender="agent",
+                    metadata={"type": "recommendation", "task": state["task"]}
+                )
+                print(f"[{persona}] Memory stored in VectorDB")
+    except Exception as e:
+        print(f"Error updating VectorDB memory: {e}")
+    
     return state
 
-# Run Meeting with LangGraph
-def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] = None) -> Dict:
+# Run Meeting with LangGraph - Uses ChromaDB VectorDB Memory
+def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] = None, user_id: str = "system") -> Dict:
     if not agents:
         agents = list(PERSONAS.keys())
     
@@ -98,11 +118,11 @@ def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: L
     for r_node in recommend_nodes:
         graph.add_edge(r_node, "after_recommend")
     
-    graph.add_node("increment", lambda state: {"current_turn": state.current_turn + 1})
+    graph.add_node("increment", lambda state: {"current_turn": state["current_turn"] + 1})
     graph.add_edge("after_recommend", "increment")
     
     def decide_to_continue(state: AgentState):
-        return "continue" if state.current_turn < state.turns else "end"
+        return "continue" if state["current_turn"] < state["turns"] else "end"
     
     graph.add_conditional_edges(
         "increment",
@@ -114,24 +134,34 @@ def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: L
     
     app_graph = graph.compile()
     
-    initial_state = AgentState(
-        messages=[],
-        recommendations={},
-        task=task,
-        user_profile=user_profile,
-        current_turn=0,
-        agents=agents,
-        turns=turns
-    )
-    final_state = app_graph.invoke(initial_state.dict())
+    # Generate run ID
+    run_id = str(uuid.uuid4())
     
-    run_id = str(len(os.listdir(RUNS_DIR)) + 1) if os.path.exists(RUNS_DIR) else "1"
+    initial_state = {
+        "messages": [],
+        "recommendations": {},
+        "task": task,
+        "user_profile": user_profile,
+        "current_turn": 0,
+        "agents": agents,
+        "turns": turns,
+        "run_id": run_id,
+        "user_id": user_id
+    }
+    
+    print(f"🚀 Starting meeting with {len(agents)} agents, {turns} turn(s)...")
+    final_state = app_graph.invoke(initial_state)
+    print(f"✅ Meeting completed! Run ID: {run_id}")
+    # Save run to JSON file (for Node.js compatibility)
+    os.makedirs(RUNS_DIR, exist_ok=True)
     run_path = os.path.join(RUNS_DIR, f"run_{run_id}.json")
     with open(run_path, "w") as f:
         json.dump({
             "task": task,
             "user_profile": user_profile,
+            "turns": turns,
+            "agents": agents,
             "recommendations": final_state["recommendations"]
-        }, f)
+        }, f, indent=2)
     
     return {"run_id": run_id, "recommendations": final_state["recommendations"]}

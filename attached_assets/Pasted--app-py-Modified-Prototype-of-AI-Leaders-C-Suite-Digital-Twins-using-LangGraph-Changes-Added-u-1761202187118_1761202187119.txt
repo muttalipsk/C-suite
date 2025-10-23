@@ -1,0 +1,748 @@
+# app.py - Modified Prototype of AI Leaders C-Suite Digital Twins using LangGraph
+# Changes: Added user profile input to incorporate into agent prompts for personalized recommendations.
+# Agents recommend strategies based on their profile and user's profile.
+# Updated prompts to use "recommend a strategy" instead of "propose a plan".
+# Renamed "proposals" to "recommendations" throughout.
+# Updated refinement to self-reflection on recommendations.
+# Added company to PERSONAS for more context in prompts.
+# UI: Added textarea for user profile in meeting form.
+# If no user profile, agents use general advice.
+# NEW: If no agents selected, default to all.
+# NEW FEATURE: Added chat functionality for each agent after their recommendation.
+
+# Note: This requires additional dependencies for LangGraph/LangChain.
+# Install: pip install langchain langgraph langchain-google-genai google-generative-ai pypdf faiss-cpu numpy pandas fastapi uvicorn jinja2
+
+import os
+import json
+from typing import List, Dict, Annotated, TypedDict
+from pydantic import BaseModel
+from fastapi import FastAPI, UploadFile, File, Form, Request, Body
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+import uvicorn
+import io
+import faiss
+import numpy as np
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import SystemMessage, HumanMessage
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from pypdf import PdfReader  # For PDF text extraction 
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
+import google.generativeai as genai
+
+# Environment variables
+gemini_key = os.getenv("GEMINI_API_KEY", "AIzaSyB6Y9yI4DrmK5hF4Oe8troddIXHI-szq1c")  # Prioritize env var
+model = "gemini-2.0-flash"  # Updated to latest as of Oct 2025
+embeding_model = "models/embedding-001"  # Latest embedding model
+TURNS = int(os.getenv("TURNS", 1))
+TEMP = 0.2
+
+# Directories
+CORPUS_DIR = "./corpus"
+INDEX_DIR = "./indexes"
+MEMORY_DIR = "./memory"
+RUNS_DIR = "./runs"
+CHATS_DIR = "./chats"
+os.makedirs(CORPUS_DIR, exist_ok=True)
+os.makedirs(INDEX_DIR, exist_ok=True)
+os.makedirs(MEMORY_DIR, exist_ok=True)
+os.makedirs(RUNS_DIR, exist_ok=True)
+os.makedirs(CHATS_DIR, exist_ok=True)
+
+# Personas and their PDF knowledge bases (added company)
+PERSONAS = {
+    "Sam_Altman": {
+        "company": "OpenAI",
+        "role": "CEO",
+        "description": "As CEO of OpenAI since 2019, Sam Altman is an American entrepreneur and investor who dropped out of Stanford to found Loopt in 2005 (sold in 2012) and later served as president of Y Combinator (2014–2019). He drives OpenAI's vision for safe artificial general intelligence (AGI), emphasizing ethical development, rapid scaling of AI models like GPT series, and global accessibility. In 2025, he advocates for AI agents integrating into workforces to boost productivity while addressing risks like misinformation and job displacement. Looking for partnerships that advance safe AGI development, broad accessibility, and regulatory frameworks for ethical AI deployment.",
+        "pdf": "Sam_Altman_Knowledge_Dataset1.pdf"
+    },
+    "Jensen_Huang": {
+        "company": "NVIDIA",
+        "role": "CEO",
+        "description": "Jensen Huang, a Taiwanese-born American electrical engineer and businessman, co-founded NVIDIA in 1993 and has served as its president and CEO ever since. With a background in microprocessor design from AMD and Intel, he pioneered GPU technology, leading NVIDIA to dominate AI hardware, data centers, and accelerated computing. In 2025, he continues to push 'Huang's Law' (exponential growth in GPU performance) and innovations in AI infrastructure, autonomous vehicles, and robotics. Looking for collaborations on AI hardware acceleration, compute infrastructure, and deep tech ecosystems to scale AI applications across industries like gaming, healthcare, and automotive.",
+        "pdf": "Jensen_Huang_Knowledge_Dataset.pdf"
+    },
+    "Andrew_Ng": {
+        "company": "DeepLearning.AI",
+        "role": "Founder",
+        "description": "Andrew Ng is a British-American computer scientist and AI pioneer, known for co-founding Google Brain (2011) and leading Baidu's AI group (2014–2017). He founded DeepLearning.AI in 2017 to democratize AI education through online courses, and serves as Managing General Partner of AI Fund (investing in AI startups) and Executive Chairman of LandingAI (focusing on visual AI for manufacturing). A Stanford adjunct professor and co-founder of Coursera (2012), he emphasizes practical machine learning deployment, ethical AI, and accessibility for non-experts. In 2025, his work highlights AI's role in education, business transformation, and solving global challenges like climate change. Looking for opportunities to educate and deploy AI at scale, including partnerships in AI training programs, enterprise adoption, and innovative applications in sectors like healthcare and finance.",
+        "pdf": "Andrew_Ng_Knowledge_Dataset.pdf"
+    },
+    "Demis_Hassabis": {
+        "company": "Google DeepMind",
+        "role": "CEO",
+        "description": "Demis Hassabis, a British neuroscientist and AI researcher, co-founded DeepMind in 2010 (acquired by Google in 2014) and serves as its CEO. A former child chess prodigy and video game designer (e.g., Theme Park), he led breakthroughs like AlphaGo (2016) and AlphaFold (protein structure prediction, earning him the 2024 Nobel Prize in Chemistry). He also founded Isomorphic Labs in 2021 for AI-driven drug discovery. In 2025, as a UK Government AI Adviser, he focuses on AGI development, ethical AI, and using AI to solve scientific problems in biology, physics, and climate. Looking for breakthroughs in AI research and applications, including collaborations on frontier exploration, disease solving, and interdisciplinary projects in healthcare and fundamental science.",
+        "pdf": "Demis_Hassabis_Knowledge_Dataset.pdf"
+    },
+    "Fei-Fei_Li": {
+        "company": "Stanford AI Lab",
+        "role": "Co-Director, Stanford Human-Centered AI Institute",
+        "description": "Fei-Fei Li, a Chinese-American computer scientist, is the inaugural Sequoia Professor at Stanford University's Computer Science Department and Co-Director of the Stanford Human-Centered AI (HAI) Institute since 2019. Known as the 'Godmother of AI' for creating ImageNet (2009), which revolutionized computer vision, she served as Google's VP and Chief Scientist of AI/ML (2017–2018). In 2024, she co-founded and became CEO of World Labs, focusing on spatial intelligence and generative AI. Her work emphasizes ethical AI, diversity in tech, healthcare applications, and human-centered design. In 2025, she advocates for AI in robotics, vision systems, and societal good. Looking for ethical AI innovations and diverse collaborations, including partnerships in AI for healthcare, inclusive tech development, and advancing spatial/generative AI technologies.",
+        "pdf": "Fei-Fei_Li_Knowledge_Dataset.pdf"
+    }
+}
+# Load knowledge from PDF
+def load_knowledge(persona: str) -> str:
+    pdf_path = PERSONAS[persona]["pdf"]
+    if os.path.exists(pdf_path):
+        try:
+            with open(pdf_path, "rb") as f:
+                reader = PdfReader(f)
+                text = ""
+                for page in reader.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+        except Exception as e:
+            print(f"Error reading PDF {pdf_path} as PDF: {e}. Falling back to text read.")
+            with open(pdf_path, "r", encoding="utf-8", errors="ignore") as f:
+                text = f.read()
+        return text
+    return "No baseline knowledge loaded."
+
+genai.configure(api_key=gemini_key)
+
+# Embedding model
+emb_model = GoogleGenerativeAIEmbeddings(model=embeding_model, google_api_key=gemini_key)
+
+def get_embedding(text: str) -> List[float]: 
+    return emb_model.embed_query(text)
+
+# FAISS Index Management
+def build_or_update_index(persona: str):
+    corpus_path = os.path.join(CORPUS_DIR, persona)
+    index_path = os.path.join(INDEX_DIR, f"{persona}.faiss")
+    texts = []
+    if os.path.exists(corpus_path): 
+        for filename in os.listdir(corpus_path):
+            filepath = os.path.join(corpus_path, filename)
+            with open(filepath, "r") as f:
+                texts.append(f.read())
+    if not texts:
+        return None
+    embeddings = [get_embedding(text) for text in texts]
+    dim = len(embeddings[0])
+    index = faiss.IndexFlatL2(dim)
+    index.add(np.array(embeddings))
+    faiss.write_index(index, index_path)
+    return index
+
+def load_index(persona: str):
+    index_path = os.path.join(INDEX_DIR, f"{persona}.faiss")
+    if os.path.exists(index_path):
+        return faiss.read_index(index_path)
+    return None
+
+def retrieve_relevant_chunks(persona: str, query: str, top_k: int = 3) -> str:
+    index = load_index(persona)
+    if index is None:
+        return ""
+    query_emb = np.array([get_embedding(query)])
+    _, indices = index.search(query_emb, top_k)
+    corpus_path = os.path.join(CORPUS_DIR, persona)
+    chunks = []
+    for idx in indices[0]:
+        if idx < len(os.listdir(corpus_path)):
+            filename = os.listdir(corpus_path)[idx]
+            with open(os.path.join(corpus_path, filename), "r") as f:
+                chunks.append(f.read())
+    return "\n\n".join(chunks)
+
+# LangChain LLM
+llm = ChatGoogleGenerativeAI(model=model, google_api_key=gemini_key, temperature=TEMP)
+
+# Reducers for state channels
+def merge_recommendations(current: Dict[str, str], update: Dict[str, str]) -> Dict[str, str]:
+    current.update(update)
+    return current
+
+# Agent State (added user_profile)
+class AgentState(TypedDict):
+    messages: Annotated[List, add_messages]
+    recommendations: Annotated[Dict[str, str], merge_recommendations]
+    task: str
+    user_profile: str
+    current_turn: int
+    agents: List[str]
+    turns: int
+
+# Agent Node Factory
+def create_agent_node(persona: str):
+    knowledge = load_knowledge(persona)
+    company = PERSONAS[persona]["company"]
+    role = PERSONAS[persona]["role"]
+    description = PERSONAS[persona]["description"]
+    memory_file = os.path.join(MEMORY_DIR, f"{persona}_memory.txt")
+    
+    def load_memory():
+        if os.path.exists(memory_file):
+            with open(memory_file, "r") as f:
+                lines = f.readlines()
+            if len(lines) > 10:
+                lines = lines[-10:]
+                with open(memory_file, "w") as f:
+                    f.write("".join(lines))
+            return "".join(lines[-3:])  # Inject last 3
+        return ""
+    
+    def agent_node(state: AgentState):
+        try:
+            print(f"Recommend node {persona} starting...")
+            task = state["task"]
+            user_profile = state["user_profile"] or "No specific user profile provided; provide general advice."
+            relevant_chunks = retrieve_relevant_chunks(persona, task)
+            memory = load_memory()
+            system_prompt = f"""
+You are {persona} from {company}, acting in your {role}: {description}. You are also serving as a moderator and advisor to C-suite level executives. They seek your help for strategies after board meetings, client meetings, or personal doubts. Users may share details from meetings, emails, or chats, and you will respond with the best of your knowledge in an unbiased manner, providing balanced, insightful recommendations.
+
+Your goal is to provide tailored recommendations based on your point of view and expertise. Think as if you are in the user's place: What should your strategy be if you were facing this situation? Draw from your experiences to offer practical, unbiased advice that helps the user navigate challenges and opportunities.
+
+---
+Key Instructions:
+- Always base your recommendation or strategy directly on the user's query ('{task}'), their role, goals, and any other details in the User Profile (e.g., company, meetings shared, doubts).
+- Remain unbiased: Present pros, cons, and balanced perspectives without favoritism.
+- Think step-by-step: 1) Analyze the query, profile, and any shared context (e.g., meetings or emails). 2) Draw relevant insights from your knowledge, writings, and memory. 3) Formulate a strategy as if you were in the user's role, aligning with your expertise.
+- Handle uncertainties: If information is missing (e.g., no profile details), make reasonable assumptions based on common C-suite scenarios and note them.
+- Avoid pitfalls: No generic advice; ensure personalization. Stay focused on strategic help—do not digress into unrelated topics.
+- For post-meeting advice: If the query involves a board/client meeting, address key outcomes, risks, and next steps impartially.
+
+---
+Base your response on:
+- Knowledge: {knowledge}
+- Relevant writings: {relevant_chunks}
+- Recent memory: {memory}
+- User Profile: {user_profile}
+
+---
+Output Format (structure your response exactly like this for clarity and actionability):
+1. **Summary**: A brief, unbiased overview of the recommended strategy, tailored to the user's query, role, and context.
+2. **Key Recommendations**: 3-5 bullet points with specific, actionable steps, thinking as if you were in the user's place.
+3. **Rationale and Balance**: Explain why this strategy fits, including pros/cons, drawing from your expertise and unbiased view.
+4. **Next Steps or Considerations**: Any follow-up actions, potential risks, or questions to clarify doubts.
+"""
+            
+            if state["current_turn"] > 0:
+                human_content = f"""
+Refine your previous recommendation for the query '{task}' through self-reflection:
+- Step-by-step: 1) Review what worked and didn't in the previous version. 2) Improve personalization to the user's role, profile, and any shared meeting/doubt context. 3) Enhance alignment with your expertise while maintaining an unbiased moderator perspective.
+- Previous recommendation: {state['recommendations'].get(persona, '')}
+- Output in the same structured format.
+"""
+            else:
+                human_content = f"Provide a recommendation for the query: '{task}', based on the user's role and profile. In your point of view, what should your strategy be if you are in the user's place."
+            prompt = ChatPromptTemplate.from_messages([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=human_content)
+            ])
+            response = llm.invoke(prompt.format_messages())
+            recommendation = response.content
+            print(f"Recommend {persona} success.")
+            return {"recommendations": {persona: recommendation}}
+        except Exception as e:
+            print(f"Error in recommend_{persona}: {e}")
+            return {"recommendations": {persona: f"Fallback recommendation for {persona}: Focus on {role} strategy in AI business, tailored to user profile."}}
+    
+    return agent_node
+
+# Update Memory Node
+def update_memory_node(state: AgentState):
+    for persona in state["agents"]:
+        memory_file = os.path.join(MEMORY_DIR, f"{persona}_memory.txt")
+        recommendation = state["recommendations"].get(persona, "")
+        with open(memory_file, "a") as f:
+            f.write(f"Recommendation for '{state['task']}': {recommendation}\n")
+    return state
+
+# Run Meeting with LangGraph (added user_profile)
+def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] = list(PERSONAS.keys())) -> Dict:
+    if not agents:
+        agents = list(PERSONAS.keys())
+    graph = StateGraph(AgentState)
+    
+    recommend_nodes = []
+    for persona in agents:
+        agent_node = create_agent_node(persona)
+        recommend_node_name = f"recommend_{persona}"
+        graph.add_node(recommend_node_name, agent_node)
+        recommend_nodes.append(recommend_node_name)
+    
+    graph.add_node("update_memory", update_memory_node)
+    
+    # Add start node for fanout
+    graph.add_node("start_recommend", lambda s: s)
+    graph.add_edge(START, "start_recommend")
+    
+    # Fanout to all recommend nodes
+    for r_node in recommend_nodes:
+        graph.add_edge("start_recommend", r_node)
+    
+    # Join after all recommends
+    graph.add_node("after_recommend", lambda s: s)
+    for r_node in recommend_nodes:
+        graph.add_edge(r_node, "after_recommend")
+    
+    # Increment turn
+    graph.add_node("increment", lambda state: {"current_turn": state["current_turn"] + 1})
+    graph.add_edge("after_recommend", "increment")
+    
+    # Conditional for continuing
+    def decide_to_continue(state: AgentState):
+        if state["current_turn"] < state["turns"]:
+            return "continue"
+        else:
+            return "end"
+    
+    graph.add_conditional_edges(
+        "increment",
+        decide_to_continue,
+        {"continue": "start_recommend", "end": "update_memory"}
+    )
+    
+    graph.add_edge("update_memory", END)
+    
+    # Compile graph
+    app_graph = graph.compile()
+    
+    initial_state = {
+        "messages": [],
+        "recommendations": {},
+        "task": task,
+        "user_profile": user_profile,
+        "current_turn": 0,
+        "agents": agents,
+        "turns": turns
+    }
+    final_state = app_graph.invoke(initial_state)
+    
+    # Save run
+    run_id = str(len(os.listdir(RUNS_DIR)) + 1)
+    run_path = os.path.join(RUNS_DIR, f"run_{run_id}.json")
+    with open(run_path, "w") as f:
+        json.dump({
+            "task": task,
+            "user_profile": user_profile,
+            "recommendations": final_state["recommendations"]
+        }, f)
+    
+    return {"run_id": run_id, "recommendations": final_state["recommendations"]}
+
+# Chat Input Model
+class ChatInput(BaseModel):
+    run_id: str
+    agent: str
+    message: str
+
+# Chat History Model
+class ChatMessage(BaseModel):
+    user: str
+    agent: str
+
+# FastAPI App
+app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+# Create directories for templates and static if not exist
+os.makedirs("templates", exist_ok=True)
+os.makedirs("static", exist_ok=True)
+
+# Basic HTML Template for Nicer Front-End (added user profile textarea)
+with open("templates/index.html", "w") as f:
+    f.write("""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>AI Leaders C-Suite Boardroom</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1, h2 { color: #333; }
+            section { margin-bottom: 40px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+            label { display: block; margin-top: 10px; }
+            button { margin-top: 10px; padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
+            button:hover { background: #0056b3; }
+            
+            /* Checkbox styling */
+            .agents-container {
+                margin-top: 10px;
+                padding: 15px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #f9f9f9;
+            }
+            .agent-checkbox {
+                display: block;
+                margin: 8px 0;
+            }
+            .agent-checkbox input {
+                margin-right: 8px;
+            }
+            .agent-checkbox label {
+                display: inline;
+                cursor: pointer;
+                font-weight: normal;
+            }
+            .select-all-btn {
+                margin-top: 10px;
+                padding: 5px 10px;
+                background: #28a745;
+                font-size: 12px;
+            }
+            .select-all-btn:hover {
+                background: #218838;
+            }
+
+            /* Chat styling */
+            .chat-history {
+                margin-top: 10px;
+                padding: 10px;
+                border: 1px solid #eee;
+                border-radius: 4px;
+                background: #f8f9fa;
+                max-height: 200px;
+                overflow-y: auto;
+            }
+            .chat-history div {
+                margin-bottom: 5px;
+            }
+            .chat-input {
+                margin-top: 10px;
+            }
+            .chat-input input {
+                width: 70%;
+                padding: 5px;
+            }
+            .chat-input button {
+                padding: 5px 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>AI Leaders Digital Twins Boardroom (Powered by LangGraph)</h1>
+        
+        <section>
+            <h2>Ingest Writings/Interviews</h2>
+            <form action="/ingest" method="post" enctype="multipart/form-data">
+                <label for="persona">Persona:</label>
+                <select name="persona" id="persona">
+                    <option value="Sam_Altman">Sam_Altman</option>
+                    <option value="Jensen_Huang">Jensen_Huang</option>
+                    <option value="Andrew_Ng">Andrew_Ng</option>
+                    <option value="Demis_Hassabis">Demis_Hassabis</option>
+                    <option value="Fei-Fei_Li">Fei-Fei_Li</option>
+                </select><br>
+                <label for="file">Upload File (.txt, .md, .pdf):</label>
+                <input type="file" name="file" id="file"><br>
+                <button type="submit">Ingest and Build Index</button>
+            </form>
+        </section>
+        
+        <section>
+            <h2>Run Board Meeting</h2>
+            <form id="meetingForm" action="/meeting" method="post">
+                <label for="task">Task:</label>
+                <textarea name="task" id="task" rows="4" cols="50" required></textarea><br>
+                
+                <label for="user_profile">User Profile (company, role, goals, etc.):</label>
+                <textarea name="user_profile" id="user_profile" rows="3" cols="50"></textarea><br>
+                
+                <label>Select Agents (choose one or more):</label>
+                <div class="agents-container">
+                    <button type="button" class="select-all-btn" onclick="toggleAllAgents()">Select All / Deselect All</button>
+                    <div class="agent-checkbox">
+                        <input type="checkbox" name="agents" value="Sam_Altman" id="agent_sam">
+                        <label for="agent_sam">Sam Altman (CEO, OpenAI)</label>
+                    </div>
+                    <div class="agent-checkbox">
+                        <input type="checkbox" name="agents" value="Jensen_Huang" id="agent_jensen">
+                        <label for="agent_jensen">Jensen Huang (CTO, NVIDIA)</label>
+                    </div>
+                    <div class="agent-checkbox">
+                        <input type="checkbox" name="agents" value="Andrew_Ng" id="agent_andrew">
+                        <label for="agent_andrew">Andrew Ng (Chief Strategy Officer, DeepLearning.AI)</label>
+                    </div>
+                    <div class="agent-checkbox">
+                        <input type="checkbox" name="agents" value="Demis_Hassabis" id="agent_demis">
+                        <label for="agent_demis">Demis Hassabis (Chief Scientist, DeepMind)</label>
+                    </div>
+                    <div class="agent-checkbox">
+                        <input type="checkbox" name="agents" value="Fei-Fei_Li" id="agent_feifei">
+                        <label for="agent_feifei">Fei-Fei Li (Chief Ethics & Innovation Officer, Stanford AI Lab)</label>
+                    </div>
+                </div>
+                
+                <label for="turns">Refinement Rounds:</label>
+                <input type="number" name="turns" id="turns" value="1" min="1"><br>
+                <button type="submit">Run Meeting</button>
+            </form>
+        </section>
+        
+        <section id="results">
+            <!-- Results will be loaded here via JS -->
+        </section>
+        
+        <script>
+            function toggleAllAgents() {
+                const checkboxes = document.querySelectorAll('input[name="agents"]');
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                checkboxes.forEach(cb => cb.checked = !allChecked);
+            }
+
+            async function loadChatHistory(agent, run_id) {
+                try {
+                    const response = await fetch(`/get_chat?run_id=${run_id}&agent=${agent}`);
+                    const data = await response.json();
+                    const hist = document.querySelector(`#chat_${agent} .chat-history`);
+                    hist.innerHTML = ''; // Clear first
+                    for (let msg of data.history) {
+                        hist.innerHTML += `<div><strong>User:</strong> ${msg.user}</div>`;
+                        hist.innerHTML += `<div><strong>${agent.replace('_', ' ')}:</strong> ${msg.agent}</div>`;
+                    }
+                    hist.scrollTop = hist.scrollHeight; // Scroll to bottom
+                } catch (error) {
+                    console.error('Failed to load chat history:', error);
+                }
+            }
+
+            async function sendChat(agent, run_id) {
+                const input = document.getElementById(`msg_${agent}`);
+                const msg = input.value.trim();
+                if (!msg) return;
+                
+                const hist = document.querySelector(`#chat_${agent} .chat-history`);
+                hist.innerHTML += `<div><strong>User:</strong> ${msg}</div>`;
+                hist.scrollTop = hist.scrollHeight;
+                input.value = ''; // Clear input
+                
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ run_id, agent, message: msg })
+                    });
+                    const data = await response.json();
+                    hist.innerHTML += `<div><strong>${agent.replace('_', ' ')}:</strong> ${data.response}</div>`;
+                    hist.scrollTop = hist.scrollHeight;
+                } catch (error) {
+                    hist.innerHTML += `<div><strong>Error:</strong> Failed to send message.</div>`;
+                    console.error('Chat error:', error);
+                }
+            }
+
+            document.getElementById('meetingForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                
+                // Get all checked agents
+                const checkedAgents = Array.from(document.querySelectorAll('input[name="agents"]:checked'))
+                    .map(cb => cb.value);
+                
+                // If no agents selected, show warning
+                if (checkedAgents.length === 0) {
+                    alert('Please select at least one agent, or leave empty to use all agents.');
+                }
+                
+                // Remove existing agents entries and add checked ones
+                formData.delete('agents');
+                checkedAgents.forEach(agent => {
+                    formData.append('agents', agent);
+                });
+                
+                // Show loading message
+                const results = document.getElementById('results');
+                results.innerHTML = '<h2>Meeting in Progress...</h2><p>Please wait while the agents generate their recommendations...</p>';
+                
+                try {
+                    const response = await fetch('/meeting', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    
+                    // Format results nicely
+                    let html = '<h2>Meeting Results</h2>';
+                    if (data.recommendations) {
+                        for (const [agent, recommendation] of Object.entries(data.recommendations)) {
+                            html += `
+                                <div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
+                                    <h3>${agent.replace('_', ' ')}</h3>
+                                    <p style="white-space: pre-wrap;">${recommendation}</p>
+                                    <div id="chat_${agent}" class="chat-section">
+                                        <div class="chat-history"></div>
+                                        <div class="chat-input">
+                                            <input type="text" id="msg_${agent}" placeholder="Chat with ${agent.replace('_', ' ')}...">
+                                            <button onclick="sendChat('${agent}', '${data.run_id}')">Send</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    }
+                    results.innerHTML = html;
+
+                    // Load chat histories for each agent
+                    for (const agent of Object.keys(data.recommendations)) {
+                        await loadChatHistory(agent, data.run_id);
+                    }
+                } catch (error) {
+                    results.innerHTML = '<h2>Error</h2><p>Failed to run meeting: ' + error.message + '</p>';
+                }
+            });
+        </script>
+    </body>
+    </html>
+    """)
+
+# Basic CSS
+with open("static/styles.css", "w") as f:
+    f.write("""
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1, h2 { color: #333; }
+    section { margin-bottom: 40px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+    label { display: block; margin-top: 10px; }
+    button { margin-top: 10px; padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    """)
+
+# Basic JS (not needed since inline in HTML)
+with open("static/script.js", "w") as f:
+    f.write("")
+
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request, "personas": list(PERSONAS.keys())})
+
+@app.post("/ingest")
+async def ingest(persona: str = Form(...), file: UploadFile = File(...)):
+    if persona not in PERSONAS:
+        return JSONResponse(status_code=400, content={"error": "Invalid persona"})
+    
+    corpus_path = os.path.join(CORPUS_DIR, persona)
+    os.makedirs(corpus_path, exist_ok=True)
+    
+    filename = file.filename
+    content = await file.read()
+    
+    if filename.endswith(".pdf"):
+        reader = PdfReader(io.BytesIO(content))
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() + "\n"
+    else:
+        text = content.decode("utf-8")
+    
+    chunk_path = os.path.join(corpus_path, filename + ".txt")
+    with open(chunk_path, "w") as f:
+        f.write(text)
+    
+    build_or_update_index(persona)
+    return {"status": "Index updated"}
+
+@app.post("/meeting")
+async def meeting(
+    task: str = Form(...), 
+    user_profile: str = Form(""),
+    turns: int = Form(TURNS), 
+    agents: List[str] = Form(default=[])
+):
+    # If no agents selected, use all
+    if not agents:
+        agents = list(PERSONAS.keys())
+    
+    print(f"Selected agents: {agents}")  # Debug print to verify
+    result = run_meeting(task, user_profile, turns, agents)
+    return result
+
+@app.post("/chat")
+async def chat_endpoint(input: ChatInput):
+    agent = input.agent
+    if agent not in PERSONAS:
+        return JSONResponse(status_code=400, content={"error": "Invalid agent"})
+    
+    run_path = os.path.join(RUNS_DIR, f"run_{input.run_id}.json")
+    if not os.path.exists(run_path):
+        return JSONResponse(status_code=404, content={"error": "Run not found"})
+    
+    with open(run_path, "r") as f:
+        run = json.load(f)
+    
+    task = run["task"]
+    user_profile = run["user_profile"]
+    recommendation = run["recommendations"].get(agent, "")
+    
+    chat_path = os.path.join(CHATS_DIR, f"{input.run_id}_{agent}.json")
+    history = []
+    if os.path.exists(chat_path):
+        with open(chat_path, "r") as f:
+            history = json.load(f)
+    
+    # Load agent details
+    knowledge = load_knowledge(agent)
+    company = PERSONAS[agent]["company"]
+    role = PERSONAS[agent]["role"]
+    description = PERSONAS[agent]["description"]
+    relevant_chunks = retrieve_relevant_chunks(agent, task + " " + input.message)
+    memory_file = os.path.join(MEMORY_DIR, f"{agent}_memory.txt")
+    memory = ""
+    if os.path.exists(memory_file):
+        with open(memory_file, "r") as f:
+            memory = f.read()
+    
+    # Build prompt for chat
+    system_prompt = f"""
+You are {agent} from {company}, acting in your {role}: {description}. You are serving as a moderator and advisor to C-suite level executives. Respond in a natural, conversational manner, providing balanced, insightful advice based on your expertise.
+
+Remain unbiased, helpful, and focused on the context. Build on your previous recommendation and the conversation history.
+
+Base your response on:
+- Original query: {task}
+- User Profile: {user_profile}
+- Your previous recommendation: {recommendation}
+- Knowledge: {knowledge}
+- Relevant writings: {relevant_chunks}
+- Recent memory: {memory}
+- Conversation history: {json.dumps(history)}
+"""
+    
+    human_content = f"User's follow-up message: {input.message}"
+    
+    prompt = ChatPromptTemplate.from_messages([
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=human_content)
+    ])
+    
+    try:
+        response = llm.invoke(prompt.format_messages())
+        agent_response = response.content
+    except Exception as e:
+        print(f"Error in chat with {agent}: {e}")
+        agent_response = "Sorry, I encountered an issue. Please try again."
+    
+    # Append to history
+    history.append({"user": input.message, "agent": agent_response})
+    with open(chat_path, "w") as f:
+        json.dump(history, f)
+    
+    return {"response": agent_response}
+
+@app.get("/get_chat")
+async def get_chat(run_id: str, agent: str):
+    if agent not in PERSONAS:
+        return JSONResponse(status_code=400, content={"error": "Invalid agent"})
+    
+    chat_path = os.path.join(CHATS_DIR, f"{run_id}_{agent}.json")
+    if os.path.exists(chat_path):
+        with open(chat_path, "r") as f:
+            history = json.load(f)
+        return {"history": history}
+    return {"history": []}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -14,6 +14,7 @@ class MeetingInput(BaseModel):
     user_profile: str = ""
     turns: int = 1
     agents: Optional[List[str]] = None
+    user_id: str = "system"
 
 class AgentState(BaseModel):
     messages: List[BaseMessage] = []
