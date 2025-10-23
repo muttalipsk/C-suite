@@ -198,6 +198,26 @@ Role Details: ${user.roleDetails}
         recommendations,
       });
 
+      // Also save run to JSON file for Python API compatibility
+      const fs = await import('fs');
+      const path = await import('path');
+      const runsDir = path.join(process.cwd(), 'runs');
+      
+      // Create runs directory if it doesn't exist
+      if (!fs.existsSync(runsDir)) {
+        fs.mkdirSync(runsDir, { recursive: true });
+      }
+      
+      // Write run data to JSON file that Python expects
+      const runFilePath = path.join(runsDir, `run_${run.id}.json`);
+      fs.writeFileSync(runFilePath, JSON.stringify({
+        task,
+        user_profile: userProfile,
+        turns,
+        agents,
+        recommendations
+      }, null, 2));
+
       res.json({
         runId: run.id,
         recommendations,
