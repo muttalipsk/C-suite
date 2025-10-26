@@ -10,6 +10,8 @@ The application enables users to:
 - Receive tailored recommendations based on their specific context
 - Engage in follow-up conversations with individual advisors
 - Access knowledge bases from each leader's writings and expertise
+- **NEW: Create personalized digital twins** that mirror their communication style and expertise
+- **NEW: Chat with digital twins** from colleagues within their company domain
 
 ## User Preferences
 
@@ -71,6 +73,16 @@ Preferred communication style: Simple, everyday language.
 - Agent-specific collections (e.g., chat_history_sam_altman, chat_history_jensen_huang)
 - Semantic search capabilities for finding similar past conversations
 - Metadata: run_id, user_id, sender, timestamp stored with each message
+
+**Recent Changes (October 26, 2025):**
+- **Digital Twin Feature**: Complete implementation of personalized digital twins
+  - Dual ChromaDB vector storage: separate Content & Style collections per twin
+  - Semantic chunking using Gemini for intelligent text splitting
+  - RAG workflow: Content retrieval → Profile fallback → Escalation + Style RAG (mandatory)
+  - Company domain-based access control for twin visibility
+  - File upload support (PDF, TXT, DOC, MD) with multer middleware
+  - Frontend: CreateTwinPage and TwinsPage with routing
+  - Navigation: Wouter routing integrated into DashboardPage
 
 **Recent Changes (October 23, 2025):**
 - Replaced sentence-transformers with Gemini embedding API to fix slow Python server startup
