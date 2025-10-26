@@ -34,7 +34,7 @@ export default function CreateTwinPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [sampleMessages, setSampleMessages] = useState<string[]>([""]);
+  const [sampleMessages, setSampleMessages] = useState<string[]>(["", "", ""]);
 
   const form = useForm<TwinFormValues>({
     resolver: zodResolver(twinFormSchema),
@@ -71,7 +71,9 @@ export default function CreateTwinPage() {
   };
 
   const removeSampleMessage = (index: number) => {
-    setSampleMessages(prev => prev.filter((_, i) => i !== index));
+    if (sampleMessages.length > 3) {
+      setSampleMessages(prev => prev.filter((_, i) => i !== index));
+    }
   };
 
   const onSubmit = async (data: TwinFormValues) => {
@@ -250,11 +252,11 @@ export default function CreateTwinPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Professional">Professional</SelectItem>
-                            <SelectItem value="Casual">Casual</SelectItem>
-                            <SelectItem value="Empathetic">Empathetic</SelectItem>
                             <SelectItem value="Direct">Direct</SelectItem>
-                            <SelectItem value="Diplomatic">Diplomatic</SelectItem>
+                            <SelectItem value="Motivational">Motivational</SelectItem>
+                            <SelectItem value="Sarcastic">Sarcastic</SelectItem>
+                            <SelectItem value="Formal">Formal</SelectItem>
+                            <SelectItem value="Humorous">Humorous</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -386,7 +388,7 @@ export default function CreateTwinPage() {
               <CardHeader>
                 <CardTitle>Sample Messages</CardTitle>
                 <CardDescription>
-                  Provide examples of how you typically communicate (emails, messages, responses)
+                  Provide at least 3 examples of how you typically communicate (emails, messages, responses)
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -401,7 +403,7 @@ export default function CreateTwinPage() {
                           className="min-h-[80px]"
                           data-testid={`textarea-sample-message-${index}`}
                         />
-                        {sampleMessages.length > 1 && (
+                        {sampleMessages.length > 3 && (
                           <Button
                             type="button"
                             variant="ghost"
