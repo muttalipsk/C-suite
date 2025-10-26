@@ -1,12 +1,17 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, loginSchema, AI_AGENTS } from "@shared/schema";
+import { insertUserSchema, loginSchema, insertTwinSchema, AI_AGENTS } from "@shared/schema";
 import { generateAgentRecommendation, generateChatResponse } from "./gemini";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
+import axios from "axios";
+import FormData from "form-data";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const PgSession = connectPgSimple(session);
 
@@ -384,6 +389,186 @@ Role Details: ${user.roleDetails}
       res.json(runs);
     } catch (error) {
       res.status(500).json({ error: "Failed to get runs" });
+    }
+  });
+
+  // ==== DIGITAL TWIN ROUTES ====
+
+  // Configure multer for file uploads
+  const upload = multer({
+    dest: 'uploads/',
+    limits: {
+      fileSize: 100 * 1024 * 1024, // 100MB max file size
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['.txt', '.pdf', '.doc', '.docx', '.md'];
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (allowedTypes.includes(ext)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only text files, PDFs, and documents are allowed'));
+      }
+    }
+  });
+
+  // Create a digital twin
+  app.post("/api/twins/create", requireAuth, upload.array('files', 10), async (req, res) => {
+    try {
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Extract company domain from email (e.g., user@company.com -> company.com)
+      const companyDomain = user.email.split('@')[1];
+
+      // Parse JSON data from request
+      const {
+        twinName,
+        toneStyle,
+        riskTolerance,
+        coreValues,
+        emojiPreference,
+        sampleMessages,
+        profileData
+      } = req.body;
+
+      // Validate required fields
+      const parsed = insertTwinSchema.parse({
+        twinName,
+        toneStyle,
+        riskTolerance,
+        coreValues,
+        emojiPreference: emojiPreference || "None",
+        sampleMessages: JSON.parse(sampleMessages),
+        profileData: JSON.parse(profileData),
+        filesUploaded: (req.files as Express.Multer.File[])?.map(f => f.path) || []
+      });
+
+      // Create twin in database
+      const twin = await storage.createTwin({
+        ...parsed,
+        userId: req.session.userId!,
+        companyDomain
+      });
+
+      // Send files to Python API for vector embedding
+      const formData = new FormData();
+      formData.append('twin_id', twin.id);
+      formData.append('sample_messages', sampleMessages);
+      formData.append('profile_data', profileData);
+
+      // Attach files to form data
+      const files = req.files as Express.Multer.File[];
+      if (files && files.length > 0) {
+        for (const file of files) {
+          const fileStream = fs.createReadStream(file.path);
+          formData.append('files', fileStream, file.originalname);
+        }
+      }
+
+      // Call Python API to create vector embeddings
+      try {
+        const pythonResponse = await axios.post(
+          'http://localhost:8000/twin/create',
+          formData,
+          {
+            headers: formData.getHeaders(),
+            timeout: 180000 // 3 minutes for processing
+          }
+        );
+
+        console.log('Twin vectors created:', pythonResponse.data);
+      } catch (pythonError: any) {
+        console.error('Python API error:', pythonError.message);
+        // Don't fail the request - twin is created in DB
+      }
+
+      res.json({
+        success: true,
+        twin: {
+          id: twin.id,
+          twinName: twin.twinName,
+          companyDomain: twin.companyDomain,
+          createdAt: twin.createdAt
+        }
+      });
+    } catch (error: any) {
+      console.error("Twin creation error:", error);
+      res.status(400).json({ error: error.message || "Failed to create twin" });
+    }
+  });
+
+  // Get twins (filtered by company domain)
+  app.get("/api/twins", requireAuth, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const companyDomain = user.email.split('@')[1];
+      const twins = await storage.getTwinsByDomain(companyDomain);
+
+      res.json({ twins });
+    } catch (error) {
+      console.error("Failed to get twins:", error);
+      res.status(500).json({ error: "Failed to get twins" });
+    }
+  });
+
+  // Chat with a digital twin
+  app.post("/api/twins/:id/chat", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { message } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Get twin from database
+      const twin = await storage.getTwin(id);
+      if (!twin) {
+        return res.status(404).json({ error: "Twin not found" });
+      }
+
+      // Verify access (must be from same company domain)
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const userDomain = user.email.split('@')[1];
+      if (twin.companyDomain !== userDomain) {
+        return res.status(403).json({ error: "Access denied - different company domain" });
+      }
+
+      // Call Python API for twin chat
+      const formData = new FormData();
+      formData.append('twin_id', twin.id);
+      formData.append('message', message);
+      formData.append('profile_data', JSON.stringify(twin.profileData));
+      formData.append('tone_style', twin.toneStyle);
+      formData.append('emoji_preference', twin.emojiPreference || "None");
+
+      const pythonResponse = await axios.post(
+        'http://localhost:8000/twin/chat',
+        formData,
+        {
+          headers: formData.getHeaders(),
+          timeout: 60000 // 1 minute
+        }
+      );
+
+      res.json({
+        response: pythonResponse.data.response,
+        escalated: pythonResponse.data.escalated,
+        contentFound: pythonResponse.data.content_found
+      });
+    } catch (error: any) {
+      console.error("Twin chat error:", error);
+      res.status(500).json({ error: error.response?.data?.error || "Failed to chat with twin" });
     }
   });
 

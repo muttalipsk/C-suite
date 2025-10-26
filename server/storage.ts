@@ -1,10 +1,11 @@
 // Reference: javascript_database blueprint
 import { 
-  users, runs, chats, agentMemory, corpus,
+  users, runs, chats, agentMemory, corpus, twins,
   type User, type InsertUser,
   type Run, type InsertRun,
   type Chat, type InsertChat,
-  type AgentMemory, type Corpus
+  type AgentMemory, type Corpus,
+  type Twin, type InsertTwin
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -33,6 +34,13 @@ export interface IStorage {
   // Corpus operations
   addCorpusChunk(agent: string, fileName: string, chunkText: string, embedding?: string): Promise<Corpus>;
   getCorpusByAgent(agent: string): Promise<Corpus[]>;
+
+  // Twin operations
+  createTwin(twin: InsertTwin & { userId: string; companyDomain: string }): Promise<Twin>;
+  getTwin(id: string): Promise<Twin | undefined>;
+  getUserTwins(userId: string): Promise<Twin[]>;
+  getTwinsByDomain(companyDomain: string): Promise<Twin[]>;
+  deleteTwin(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -140,6 +148,39 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(corpus)
       .where(eq(corpus.agent, agent));
+  }
+
+  async createTwin(twin: InsertTwin & { userId: string; companyDomain: string }): Promise<Twin> {
+    const [newTwin] = await db
+      .insert(twins)
+      .values(twin)
+      .returning();
+    return newTwin;
+  }
+
+  async getTwin(id: string): Promise<Twin | undefined> {
+    const [twin] = await db.select().from(twins).where(eq(twins.id, id));
+    return twin || undefined;
+  }
+
+  async getUserTwins(userId: string): Promise<Twin[]> {
+    return await db
+      .select()
+      .from(twins)
+      .where(eq(twins.userId, userId))
+      .orderBy(desc(twins.createdAt));
+  }
+
+  async getTwinsByDomain(companyDomain: string): Promise<Twin[]> {
+    return await db
+      .select()
+      .from(twins)
+      .where(eq(twins.companyDomain, companyDomain))
+      .orderBy(desc(twins.createdAt));
+  }
+
+  async deleteTwin(id: string): Promise<void> {
+    await db.delete(twins).where(eq(twins.id, id));
   }
 }
 

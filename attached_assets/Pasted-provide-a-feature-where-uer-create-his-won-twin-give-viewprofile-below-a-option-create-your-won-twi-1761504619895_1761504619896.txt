@@ -1,0 +1,24 @@
+provide a feature where uer create his won twin. give viewprofile below a option create your won twin ,for creating his won twin use user profile data this are the data you directly take from user profile nameText (string)Yes"Alex Chen"Personalizes responses (e.g., "This is Alex Chen speaking"). Ensures the twin identifies as the CEO.company_nameText (string)Yes"NovaTech"Provides company context in all responses (e.g., "As CEO of NovaTech..."). Grounds answers in reality.q4_goalTextarea (string)Yes"Launch AI product by Dec 31, achieve 20% market share."Fallback for strategy/goal queries (e.g., if no data, use this for Q4 answers). Boosts accuracy on business topics.core_strategyTextarea (string)Yes"Customer-first innovation, move fast and iterate."Fallback for planning/decision queries. Simulates CEO's thinking style.
+remebar here i provid exampl of ceo but any on can create his twin so cearfull.
+and take the data from user using catagori for 
+Personal Communication Data (Style and Tone Foundation)
+
+What to Collect: 10-50 samples of emails, Slack/Teams messages, meeting transcripts, memos, or social posts (e.g., X/Twitter). Aim for 10-20 hours' worth in text form. Include variety: Motivational notes, feedback, crisis responses.provide the access your can provide 
+Why Needed: Captures the CEO's unique voice—tone (blunt/motivational), phrasing (concise/humorous), vocabulary—for RAG to generate "CEO-like" replies. Without this, the twin sounds generic .
+100 MB initial upload.
+Operational and Company Data (Context Grounding)
+
+What to Collect: Real-time feeds or snapshots: KPIs (revenue, margins), CRM/ERP excerpts (e.g., sales metrics), supply chain logs. 
+Why Needed: Provides factual backbone for responses (e.g., "Q4 priorities based on current metrics"). For twins like Deloitte's, this enables simulations of operations.
+
+Decision-Making and Strategic History (Reasoning Core)
+
+What to Collect: Logs of past decisions (e.g., "Why we pivoted Q3 strategy"), board memos, KPI reviews, or a simple form: "Describe 5 key decisions and outcomes." Include timestamps for chronology.
+Why Needed: Simulates the CEO's thinking—risk tolerance, iteration, vision—in multi-agent loops (e.g., propose/critique). Essential for "what-if" scenarios like market risks.
+please this type of data from the user and cata gorize the base content and ton talking style and other thing that are store in two separet vector db.for cunking the data use semantic chunking using gemini model.
+
+this is are the sameple data i provide you think deeply and take data from user and and thing what to you do i want 85-90% accurecy.
+feature : only the twin of the people company where he work(example i am working in redpluto so only whork in redpluto who can see my twin no other can see for this use the mail domain for example @redplutoanalytics.com ) new twin come belo previws twin.
+
+i provid a sample code and sample diagram dont it , take refrence from the code and diagram
+i want 85-90% accurecy so thing in your way and buld it correctly what are need to build this .  use python and call api fron nodejs

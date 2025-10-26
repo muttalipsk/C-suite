@@ -6,6 +6,7 @@ from fastapi import FastAPI, UploadFile, File, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pypdf import PdfReader
 import io
+from typing import List
 from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
 from fastapi.responses import JSONResponse
 from models import ChatInput, MeetingInput
@@ -13,6 +14,7 @@ from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledg
 from agents import run_meeting
 import google.generativeai as genai
 from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats, ensure_genai_configured
+from twin_manager import create_twin_vectors, query_twin_content, query_twin_style, UPLOADS_DIR
 
 # Create directories
 os.makedirs(CORPUS_DIR, exist_ok=True)
@@ -206,6 +208,219 @@ async def agent_stats(agent: str):
     
     stats = get_agent_stats(agent)
     return stats
+
+# ===== DIGITAL TWIN ENDPOINTS =====
+
+@app.post("/twin/create")
+async def create_twin(
+    twin_id: str = Form(...),
+    sample_messages: str = Form(...),  # JSON array string
+    profile_data: str = Form(...),  # JSON object string
+    files: List[UploadFile] = File(default=[])
+):
+    """
+    Create a digital twin with file uploads and semantic chunking.
+    Stores data in dual vector databases (Content + Style).
+    """
+    try:
+        # Parse JSON strings
+        sample_msgs = json.loads(sample_messages)
+        profile = json.loads(profile_data)
+        
+        # Save uploaded files
+        uploaded_paths = []
+        for file in files:
+            if file.filename:
+                file_path = os.path.join(UPLOADS_DIR, f"{twin_id}_{file.filename}")
+                content = await file.read()
+                
+                # Handle PDF and text files
+                if file.filename.endswith(".pdf"):
+                    reader = PdfReader(io.BytesIO(content))
+                    text = ""
+                    for page in reader.pages:
+                        text += page.extract_text() + "\n"
+                    # Save as text file
+                    file_path = file_path.replace(".pdf", ".txt")
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(text)
+                else:
+                    with open(file_path, "wb") as f:
+                        f.write(content)
+                
+                uploaded_paths.append(file_path)
+        
+        # Create vector embeddings
+        stats = create_twin_vectors(
+            twin_id=twin_id,
+            sample_messages=sample_msgs,
+            uploaded_files=uploaded_paths,
+            profile_data=profile
+        )
+        
+        return {
+            "success": True,
+            "twin_id": twin_id,
+            "stats": stats,
+            "files_saved": len(uploaded_paths)
+        }
+        
+    except Exception as e:
+        print(f"Error creating twin: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "success": False}
+        )
+
+
+@app.post("/twin/chat")
+async def twin_chat(
+    twin_id: str = Form(...),
+    message: str = Form(...),
+    profile_data: str = Form(...),  # JSON object with twin config
+    tone_style: str = Form(...),
+    emoji_preference: str = Form(default="None")
+):
+    """
+    Chat with a digital twin using RAG on Content and Style vector databases.
+    
+    Workflow (MANDATORY):
+    1. Content RAG → Query vector DB for relevant content
+    2. If empty → Profile fallback (check specific profile fields)
+    3. If still empty → Escalate with general guidance
+    4. Style RAG → ALWAYS run, must return examples
+    5. LLM with Style + Data → Final Response
+    """
+    try:
+        profile = json.loads(profile_data)
+        
+        # STEP 1: Content RAG - Query vector database
+        print(f"[Twin {twin_id}] STEP 1: Content RAG query for: '{message}'")
+        content_chunks = query_twin_content(twin_id, message, limit=3)
+        content = "\n".join(content_chunks) if content_chunks else ""
+        content_found = bool(content_chunks)
+        
+        print(f"[Twin {twin_id}] Content RAG result: {len(content_chunks)} chunks found")
+        
+        # STEP 2: Profile Fallback - If no content found, check profile
+        if not content.strip():
+            print(f"[Twin {twin_id}] STEP 2: Profile fallback triggered")
+            query_lower = message.lower()
+            
+            # Try to extract relevant profile data based on query keywords
+            if "goal" in query_lower or "q4" in query_lower:
+                content = profile.get("q4_goal", "")
+                if content:
+                    print(f"[Twin {twin_id}] Profile fallback: Found Q4 goal")
+            elif "strategy" in query_lower or "plan" in query_lower:
+                content = profile.get("core_strategy", "")
+                if content:
+                    print(f"[Twin {twin_id}] Profile fallback: Found core strategy")
+            elif "risk" in query_lower:
+                content = profile.get("risk_tolerance", "")
+                if content:
+                    print(f"[Twin {twin_id}] Profile fallback: Found risk tolerance")
+            elif "value" in query_lower or "culture" in query_lower:
+                content = profile.get("core_values", "")
+                if content:
+                    print(f"[Twin {twin_id}] Profile fallback: Found core values")
+            elif "company" in query_lower or "work" in query_lower:
+                content = f"Company: {profile.get('company_name', '')}, Designation: {profile.get('designation', '')}"
+                if content:
+                    print(f"[Twin {twin_id}] Profile fallback: Found company info")
+        
+        # STEP 3: Escalate if still empty - Last resort
+        escalated = False
+        if not content.strip():
+            print(f"[Twin {twin_id}] STEP 3: Escalation triggered - no data available")
+            content = f"[ESCALATED: No specific data found in knowledge base or profile for this query. Providing general guidance based on my role and values.]"
+            escalated = True
+        
+        # STEP 4: Style RAG - ALWAYS run, mandatory
+        print(f"[Twin {twin_id}] STEP 4: Style RAG - retrieving communication examples")
+        style_examples = query_twin_style(twin_id, limit=5)
+        
+        if not style_examples:
+            # Style is mandatory - raise error if empty
+            error_msg = f"[Twin {twin_id}] ERROR: No style examples found in vector DB. Twin needs sample messages to function properly."
+            print(error_msg)
+            return JSONResponse(
+                status_code=500,
+                content={"error": "Twin not properly configured - missing communication style examples"}
+            )
+        
+        examples = "\n".join(style_examples)
+        print(f"[Twin {twin_id}] Style RAG result: {len(style_examples)} examples found")
+        
+        # STEP 5: LLM with Style + Data
+        twin_name = profile.get("twin_name", "Unknown")
+        company = profile.get("company_name", "")
+        designation = profile.get("designation", "")
+        
+        system_prompt = f"""
+You are {twin_name}, {designation} at {company}.
+Respond EXACTLY like them:
+- Tone: {tone_style}
+- Use emoji: {emoji_preference} (if appropriate)
+- Risk approach: {profile.get('risk_tolerance', 'Balanced')}
+- Core values: {profile.get('core_values', 'Integrity and excellence')}
+
+Real communication examples:
+{examples}
+
+Data to use in response:
+{content}
+
+User asked: {message}
+"""
+        
+        ensure_genai_configured()
+        chat_model = genai.GenerativeModel(model)
+        response = chat_model.generate_content(
+            system_prompt,
+            generation_config=genai.GenerationConfig(temperature=0.7)
+        )
+        
+        twin_response = response.text
+        
+        if escalated:
+            twin_response += "\n\n[Note: This response is based on general principles as no specific data was found]"
+        
+        return {
+            "response": twin_response,
+            "escalated": escalated,
+            "content_found": bool(content_chunks)
+        }
+        
+    except Exception as e:
+        print(f"Error in twin chat: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
+
+
+@app.get("/twin/stats/{twin_id}")
+async def twin_stats(twin_id: str):
+    """Get statistics about a twin's vector database"""
+    try:
+        from twin_manager import get_twin_collections
+        content_collection, style_collection = get_twin_collections(twin_id)
+        
+        content_count = content_collection.count()
+        style_count = style_collection.count()
+        
+        return {
+            "twin_id": twin_id,
+            "content_chunks": content_count,
+            "style_chunks": style_count,
+            "total_chunks": content_count + style_count
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
