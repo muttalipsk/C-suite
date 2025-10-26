@@ -422,5 +422,123 @@ async def twin_stats(twin_id: str):
             content={"error": str(e)}
         )
 
+
+@app.post("/email/analyze")
+async def analyze_emails(data: dict = Body(...)):
+    """
+    Analyze emails to extract communication style and decision patterns.
+    Supports both connected email accounts and uploaded email data.
+    
+    Args:
+        emails: List of email objects with subject, body, from, to, date
+        user_profile: User profile for context
+    
+    Returns:
+        Analysis with confidence scores and extracted patterns
+    """
+    try:
+        from email_analyzer import EmailAnalyzer
+        
+        emails = data.get("emails", [])
+        user_profile = data.get("user_profile", {})
+        
+        if not emails:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": False,
+                    "confidence": 0,
+                    "fallback_required": True,
+                    "message": "No emails provided for analysis"
+                }
+            )
+        
+        analyzer = EmailAnalyzer()
+        analysis_result = analyzer.analyze_email_batch(emails, user_profile)
+        
+        # CRITICAL: Handle case where no data is returned (prevent crash)
+        if not analysis_result or analysis_result.get("confidence", 0) == 0:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "confidence": 0,
+                    "fallback_required": True,
+                    "tone": "Professional",
+                    "formality_level": 5,
+                    "decision_style": "Balanced",
+                    "message": "Insufficient email data - using professional defaults"
+                }
+            )
+        
+        return analysis_result
+        
+    except Exception as e:
+        print(f"Error analyzing emails: {e}")
+        # CRITICAL: Return fallback instead of error (prevent frontend crash)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "confidence": 0,
+                "fallback_required": True,
+                "tone": "Professional",
+                "formality_level": 5,
+                "decision_style": "Balanced",
+                "error": str(e),
+                "message": "Analysis failed - using professional defaults"
+            }
+        )
+
+
+@app.post("/email/extract-decisions")
+async def extract_decisions(data: dict = Body(...)):
+    """
+    Extract strategic decisions from email history.
+    
+    Args:
+        emails: List of email objects
+    
+    Returns:
+        List of extracted decisions with rationale and context
+    """
+    try:
+        from email_analyzer import EmailAnalyzer
+        
+        emails = data.get("emails", [])
+        
+        if not emails:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "decisions": [],
+                    "message": "No emails provided"
+                }
+            )
+        
+        analyzer = EmailAnalyzer()
+        decisions = analyzer.extract_decisions(emails)
+        
+        return {
+            "success": True,
+            "decisions": decisions,
+            "count": len(decisions)
+        }
+        
+    except Exception as e:
+        print(f"Error extracting decisions: {e}")
+        # CRITICAL: Return empty array instead of error (prevent crash)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "decisions": [],
+                "error": str(e),
+                "message": "Decision extraction failed"
+            }
+        )
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

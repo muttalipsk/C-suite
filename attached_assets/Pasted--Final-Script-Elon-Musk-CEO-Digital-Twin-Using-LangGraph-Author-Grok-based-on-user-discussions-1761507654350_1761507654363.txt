@@ -1,0 +1,246 @@
+# Final Script: Elon Musk CEO Digital Twin Using LangGraph
+# Author: Grok (based on user discussions)
+# Date: October 25, 2025
+# Purpose: Build a text-based digital twin that responds like Elon Musk, grounded in his data.
+
+import os
+from typing import TypedDict, List
+from dotenv import load_dotenv
+from langgraph.graph import StateGraph, END, START
+from langgraph.prebuilt import ToolNode
+from langgraph.checkpoint.memory import MemorySaver  # For state persistence
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, BaseMessage
+from langchain.prompts import ChatPromptTemplate
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.document_loaders import TextLoader, DirectoryLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# Step 1: Load Environment Variables
+# What: Loads your OpenAI API key from .env file.
+# Why: Securely accesses the LLM (GPT-4o) without hardcoding keys. Needed for all AI calls.
+load_dotenv()
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+if not OPENAI_API_KEY:
+    raise ValueError("Please set OPENAI_API_KEY in .env file.")
+
+# Step 2: Set Up LLM and Embeddings
+# What: Initializes the LLM (ChatOpenAI with GPT-4o) and embeddings model.
+# Why: LLM generates responses; embeddings create vector representations for RAG retrieval. Temperature=0.7 adds slight creativity to mimic Musk's style.
+llm = ChatOpenAI(model="gpt-4o", temperature=0.7, api_key=OPENAI_API_KEY)
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+# Step 3: Define the State
+# What: Creates a TypedDict for the graph's state, tracking messages, retrieved data, style, flags.
+# Why: LangGraph is stateful; this persists info across nodes (e.g., chat history for context). Flags like 'low_confidence' handle data gaps.
+class MuskTwinState(TypedDict):
+    messages: List[BaseMessage]  # Conversation history
+    retrieved_data: str  # RAG-fetched facts
+    musk_style_examples: str  # Fetched style snippets
+    musk_style: str  # Fixed style description
+    action_needed: bool  # For tool calls
+    feedback_loop: bool  # For re-critique
+    low_confidence: bool  # For escalation
+
+# Step 4: Define Tools
+# What: Creates mock tools like querying Tesla metrics.
+# Why: Allows the twin to "act" on data (e.g., fetch KPIs). Bind to LLM for dynamic calls. Expand with real APIs later.
+@tool
+def query_tesla_metrics(quarter: str) -> str:
+    """Fetch operational data like Q3 revenue (mocked for demo)."""
+    if quarter == "Q3 2025":
+        return "Revenue: $28.1B, Deliveries: 500K+, Margin: 5.8%"
+    return "Data not found."
+
+tools = [query_tesla_metrics]
+llm_with_tools = llm.bind_tools(tools)
+
+# Step 5: Data Ingestion Function
+# What: Loads, splits, tags, and saves data to two FAISS vectorstores (content + style).
+# Why: Prepares Musk's data for RAG. Splitting chunks text for better retrieval. Tagging separates facts (content) from personality (style) for dual fetch.
+def ingest_data():
+    # Load sample data files (replace with your paths)
+    loaders = [
+        TextLoader("musk_x_posts.txt"),  # e.g., "This is concerning 😂"
+        TextLoader("tesla_q3_metrics.txt"),  # e.g., "Revenue: $28.1B"
+        DirectoryLoader("transcripts/", glob="*.txt"),  # e.g., Qatar Forum transcript
+        TextLoader("decision_history.txt"),  # e.g., Master Plan details
+        TextLoader("feedback_logs.txt")  # e.g., "96% negative coverage"
+    ]
+    docs = []
+    for loader in loaders:
+        docs.extend(loader.load())
+    
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
+    split_docs = splitter.split_documents(docs)
+    
+    # Tag for style vs. content
+    for doc in split_docs:
+        content = doc.page_content.lower()
+        if "😂" in content or "no excuses" in content or len(content) < 100:  # Casual, short = style
+            doc.metadata["type"] = "style"
+        elif "revenue" in content or "delivery" in content:  # Metrics = content
+            doc.metadata["type"] = "content"
+        elif "master plan" in content or "acquisition" in content:  # Strategies = content
+            doc.metadata["type"] = "content"
+        else:
+            doc.metadata["type"] = "style"  # Default to style for personality
+    
+    # Create separate vectorstores
+    content_docs = [doc for doc in split_docs if doc.metadata["type"] == "content"]
+    style_docs = [doc for doc in split_docs if doc.metadata["type"] == "style"]
+    
+    if content_docs:
+        content_vectorstore = FAISS.from_documents(content_docs, embeddings)
+        content_vectorstore.save_local("musk_content_db")
+    if style_docs:
+        style_vectorstore = FAISS.from_documents(style_docs, embeddings)
+        style_vectorstore.save_local("musk_style_db")
+    
+    print("Data ingested successfully.")
+
+# Step 6: Load Vectorstores
+# What: Loads the saved FAISS DBs as retrievers.
+# Why: Enables fast similarity search for RAG. Run ingest_data() first if DBs don't exist.
+def load_retrievers():
+    content_db = FAISS.load_local("musk_content_db", embeddings, allow_dangerous_deserialization=True)
+    style_db = FAISS.load_local("musk_style_db", embeddings, allow_dangerous_deserialization=True)
+    return content_db.as_retriever(), style_db.as_retriever()
+
+# Step 7: Define Nodes
+# What: Functions for each graph step (retrieve, personalize, decision, escalate, generate).
+# Why: Breaks workflow into modular parts. Retrieve fetches data; personalize enforces style; decision simulates thinking; escalate handles gaps; generate outputs text.
+def retrieve_node(state: MuskTwinState) -> MuskTwinState:
+    query = state["messages"][-1].content
+    content_docs = content_retriever.get_relevant_documents(query)
+    state["retrieved_data"] = "\n".join([doc.page_content for doc in content_docs if doc.score > 0.5])  # Threshold for relevance
+    
+    style_query = "Examples of Elon Musk's tone, thinking, and communication style"
+    style_docs = style_retriever.get_relevant_documents(style_query)[:3]  # Top 3 style examples
+    state["musk_style_examples"] = "\n".join([doc.page_content for doc in style_docs])
+    
+    state["low_confidence"] = len(content_docs) == 0
+    return state
+
+def personalize_node(state: MuskTwinState) -> MuskTwinState:
+    system_prompt = """
+    You are Elon Musk's digital twin. Always respond in his style:
+    - Tone: Blunt, concise, motivational, with humor (use 😂 or similar).
+    - Thinking: Risk-tolerant, innovative, iterative—propose boldly, critique risks, reference big visions like Master Plan.
+    - Other Traits: Autocratic for decisions, hands-on, signal over noise.
+    Examples: {style_examples}
+    Blend with facts: {retrieved_data}
+    """
+    styled_prompt = system_prompt.format(style_examples=state["musk_style_examples"], retrieved_data=state["retrieved_data"])
+    
+    rephrased = llm.invoke(styled_prompt + "\nRephrase facts like Musk would.").content
+    state["retrieved_data"] = rephrased
+    return state
+
+def decision_node(state: MuskTwinState) -> MuskTwinState:
+    proposal_prompt = ChatPromptTemplate.from_messages([
+        SystemMessage("Propose boldly as Musk: Risk-tolerant, visionary. Use style: {style_examples}"),
+        *state["messages"]
+    ])
+    proposal = llm.invoke(proposal_prompt.format(style_examples=state["musk_style_examples"])).content
+    
+    critique_prompt = ChatPromptTemplate.from_messages([
+        SystemMessage("Critique risks using history/feedback"),
+        HumanMessage(proposal)
+    ])
+    critique = llm.invoke(critique_prompt.format()).content
+    
+    moderator_prompt = ChatPromptTemplate.from_messages([
+        SystemMessage("Finalize with data"),
+        HumanMessage(f"Proposal: {proposal}\nCritique: {critique}")
+    ])
+    final = llm_with_tools.invoke(moderator_prompt.format())
+    
+    state["messages"].append(AIMessage(content=final.content))
+    state["action_needed"] = bool(final.tool_calls)
+    state["feedback_loop"] = "negative" in critique.lower()  # Loop if needed
+    return state
+
+def escalate_node(state: MuskTwinState) -> MuskTwinState:
+    msg = "No specific data—escalating to real Elon. Meanwhile, based on style: [brief guess]."
+    state["messages"].append(AIMessage(content=msg))
+    return state
+
+def generate_node(state: MuskTwinState) -> MuskTwinState:
+    final_prompt = ChatPromptTemplate.from_messages([
+        SystemMessage("Synthesize in Musk style"),
+        *state["messages"]
+    ])
+    response = llm.invoke(final_prompt.format())
+    state["messages"].append(AIMessage(content=response.content))
+    return state
+
+# Step 8: Define Routing Function
+# What: Decides next node based on state flags.
+# Why: Makes the graph dynamic—e.g., loop for feedback, escalate for low data, tools for actions.
+def route(state: MuskTwinState) -> str:
+    if state.get("low_confidence", False):
+        return "escalate"
+    if state["action_needed"]:
+        return "tools"
+    if state["feedback_loop"]:
+        return "decision"
+    return "generate"
+
+# Step 9: Build the LangGraph Workflow
+# What: Assembles nodes into a graph with edges and conditionals.
+# Why: Orchestrates the flow: Start → Retrieve → Personalize → Decision → (Tools/Loop/Escalate) → Generate → End. MemorySaver persists sessions.
+def build_graph():
+    workflow = StateGraph(state_schema=MuskTwinState)
+    workflow.add_node("retrieve", retrieve_node)
+    workflow.add_node("personalize", personalize_node)
+    workflow.add_node("decision", decision_node)
+    workflow.add_node("tools", ToolNode(tools))
+    workflow.add_node("escalate", escalate_node)
+    workflow.add_node("generate", generate_node)
+    
+    workflow.add_edge(START, "retrieve")
+    workflow.add_edge("retrieve", "personalize")
+    workflow.add_edge("personalize", "decision")
+    workflow.add_conditional_edges("decision", route, {"escalate": "escalate", "tools": "tools", "decision": "decision", "generate": "generate"})
+    workflow.add_edge("tools", "decision")
+    workflow.add_edge("escalate", END)
+    workflow.add_edge("generate", END)
+    
+    return workflow.compile(checkpointer=MemorySaver())
+
+# Step 10: Main Execution
+# What: Ingests data if needed, loads retrievers, builds graph, and tests with sample queries.
+# Why: Makes the script runnable end-to-end. Prints responses for verification.
+if __name__ == "__main__":
+    # Ingest data (run once; comment out after)
+    ingest_data()
+    
+    # Load retrievers
+    content_retriever, style_retriever = load_retrievers()
+    
+    # Build and get graph
+    graph = build_graph()
+    
+    # Test with sample queries
+    queries = [
+        "What's our Q4 strategy for Tesla deliveries?",
+        "Feedback on this bold acquisition idea?",
+        "Motivate the team on EV resistance."
+    ]
+    
+    for query in queries:
+        initial_state = {
+            "messages": [HumanMessage(content=query)],
+            "retrieved_data": "",
+            "musk_style_examples": "",
+            "musk_style": "Blunt, motivational, risk-tolerant",  # Fixed base style
+            "action_needed": False,
+            "feedback_loop": False,
+            "low_confidence": False
+        }
+        final_state = graph.invoke(initial_state)
+        response = final_state["messages"][-1].content
+        print(f"\nQuery: {query}\nResponse: {response}")

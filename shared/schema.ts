@@ -63,7 +63,51 @@ export const corpus = pgTable("corpus", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Digital Twins - User's AI replicas
+// Email Accounts - Connected email providers
+export const emailAccounts = pgTable("email_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(), // "gmail" or "outlook"
+  emailAddress: text("email_address").notNull(),
+  accessToken: text("access_token"), // Encrypted OAuth token
+  refreshToken: text("refresh_token"), // Encrypted OAuth refresh token
+  tokenExpiry: timestamp("token_expiry"),
+  isActive: text("is_active").notNull().default("true"), // "true" or "false"
+  lastSyncedAt: timestamp("last_synced_at"),
+  emailsAnalyzed: integer("emails_analyzed").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// CRM Connections - Connected business systems
+export const crmConnections = pgTable("crm_connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(), // "hubspot", "salesforce", etc.
+  accessToken: text("access_token"), // Encrypted OAuth token
+  refreshToken: text("refresh_token"),
+  tokenExpiry: timestamp("token_expiry"),
+  isActive: text("is_active").notNull().default("true"),
+  lastSyncedAt: timestamp("last_synced_at"),
+  metadata: jsonb("metadata"), // Provider-specific config
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Decision Logs - Strategic decisions extracted from emails/meetings
+export const decisionLogs = pgTable("decision_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  twinId: varchar("twin_id").references(() => twins.id, { onDelete: "cascade" }),
+  source: text("source").notNull(), // "email", "meeting", "document"
+  sourceId: text("source_id"), // Email ID, meeting ID, etc.
+  decision: text("decision").notNull(),
+  rationale: text("rationale"),
+  outcome: text("outcome"),
+  context: jsonb("context"), // Relevant KPIs, participants, etc.
+  decisionDate: timestamp("decision_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Digital Twins - User's AI replicas with confidence tracking
 export const twins = pgTable("twins", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -76,7 +120,24 @@ export const twins = pgTable("twins", {
   sampleMessages: jsonb("sample_messages").notNull(), // Array of communication samples
   profileData: jsonb("profile_data").notNull(), // {q4Goal, coreStrategy, company, designation, etc.}
   filesUploaded: text("files_uploaded").array(), // Array of file paths in /uploads
+  
+  // NEW: Data ingestion tracking
+  emailAccountId: varchar("email_account_id").references(() => emailAccounts.id, { onDelete: "set null" }),
+  crmConnectionId: varchar("crm_connection_id").references(() => crmConnections.id, { onDelete: "set null" }),
+  ingestionStatus: text("ingestion_status").default("pending"), // "pending", "processing", "completed", "failed"
+  ingestionProgress: jsonb("ingestion_progress"), // {emailsProcessed, crmDataSynced, decisionsExtracted}
+  
+  // NEW: Confidence scoring
+  styleConfidence: integer("style_confidence").default(0), // 0-100 score
+  contextConfidence: integer("context_confidence").default(0), // 0-100 score
+  decisionConfidence: integer("decision_confidence").default(0), // 0-100 score
+  overallConfidence: integer("overall_confidence").default(0), // 0-100 weighted average
+  
+  // NEW: Data source metadata
+  dataSourceStats: jsonb("data_source_stats"), // {emailCount, crmRecords, decisionCount, lastUpdated}
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Zod schemas for validation
@@ -115,11 +176,37 @@ export const insertAgentMemorySchema = createInsertSchema(agentMemory).omit({
   userId: true, // Will be set from session
 });
 
-export const insertTwinSchema = createInsertSchema(twins).omit({
+export const insertEmailAccountSchema = createInsertSchema(emailAccounts).omit({
   id: true,
   createdAt: true,
   userId: true, // Will be set from session
+});
+
+export const insertCrmConnectionSchema = createInsertSchema(crmConnections).omit({
+  id: true,
+  createdAt: true,
+  userId: true, // Will be set from session
+});
+
+export const insertDecisionLogSchema = createInsertSchema(decisionLogs).omit({
+  id: true,
+  createdAt: true,
+  userId: true, // Will be set from session
+});
+
+export const insertTwinSchema = createInsertSchema(twins).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  userId: true, // Will be set from session
   companyDomain: true, // Will be extracted from user's email
+  ingestionStatus: true, // Managed by backend
+  ingestionProgress: true, // Managed by backend
+  styleConfidence: true, // Calculated by system
+  contextConfidence: true, // Calculated by system
+  decisionConfidence: true, // Calculated by system
+  overallConfidence: true, // Calculated by system
+  dataSourceStats: true, // Calculated by system
 }).extend({
   toneStyle: z.enum(["Direct", "Motivational", "Sarcastic", "Formal", "Humorous"]),
   sampleMessages: z.array(z.string()).min(3, "At least 3 sample messages required"),
@@ -143,6 +230,15 @@ export type Corpus = typeof corpus.$inferSelect;
 
 export type Twin = typeof twins.$inferSelect;
 export type InsertTwin = z.infer<typeof insertTwinSchema>;
+
+export type EmailAccount = typeof emailAccounts.$inferSelect;
+export type InsertEmailAccount = z.infer<typeof insertEmailAccountSchema>;
+
+export type CrmConnection = typeof crmConnections.$inferSelect;
+export type InsertCrmConnection = z.infer<typeof insertCrmConnectionSchema>;
+
+export type DecisionLog = typeof decisionLogs.$inferSelect;
+export type InsertDecisionLog = z.infer<typeof insertDecisionLogSchema>;
 
 // AI Agent personas constants
 export const AI_AGENTS = {
