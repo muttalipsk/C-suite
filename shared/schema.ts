@@ -64,13 +64,16 @@ export const corpus = pgTable("corpus", {
 });
 
 // Email Accounts - Connected email providers
+// SECURITY NOTE: In production, accessToken and refreshToken MUST be encrypted at rest
+// using pgcrypto (Postgres) or external KMS (AWS/GCP). Current implementation stores
+// plain text for MVP only. Before deploying: implement encryption layer.
 export const emailAccounts = pgTable("email_accounts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   provider: text("provider").notNull(), // "gmail" or "outlook"
   emailAddress: text("email_address").notNull(),
-  accessToken: text("access_token"), // Encrypted OAuth token
-  refreshToken: text("refresh_token"), // Encrypted OAuth refresh token
+  accessToken: text("access_token"), // TODO: ENCRYPT - OAuth token (currently plain text - SECURITY RISK)
+  refreshToken: text("refresh_token"), // TODO: ENCRYPT - OAuth refresh token (currently plain text - SECURITY RISK)
   tokenExpiry: timestamp("token_expiry"),
   isActive: text("is_active").notNull().default("true"), // "true" or "false"
   lastSyncedAt: timestamp("last_synced_at"),

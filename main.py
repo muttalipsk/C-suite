@@ -282,121 +282,61 @@ async def twin_chat(
     emoji_preference: str = Form(default="None")
 ):
     """
-    Chat with a digital twin using RAG on Content and Style vector databases.
+    Chat with a digital twin using LangGraph workflow.
     
-    Workflow (MANDATORY):
-    1. Content RAG → Query vector DB for relevant content
-    2. If empty → Profile fallback (check specific profile fields)
-    3. If still empty → Escalate with general guidance
-    4. Style RAG → ALWAYS run, must return examples
-    5. LLM with Style + Data → Final Response
+    LangGraph Workflow:
+    1. Retrieve → Triple vector DB retrieval (Style, Business Context, Decisions)
+    2. Personalize → Apply communication style
+    3. Decision → Proposal → Critique → Moderator pattern
+    4. Route → Escalate if low confidence, Generate if sufficient
+    
+    Robust fallback handling at every stage - NEVER crashes!
     """
     try:
+        from twin_langgraph import run_twin_conversation
+        
         profile = json.loads(profile_data)
+        twin_profile = {
+            **profile,
+            "toneStyle": tone_style,
+            "emojiPreference": emoji_preference
+        }
         
-        # STEP 1: Content RAG - Query vector database
-        print(f"[Twin {twin_id}] STEP 1: Content RAG query for: '{message}'")
-        content_chunks = query_twin_content(twin_id, message, limit=3)
-        content = "\n".join(content_chunks) if content_chunks else ""
-        content_found = bool(content_chunks)
+        print(f"[LangGraph Twin {twin_id}] Processing query: '{message}'")
         
-        print(f"[Twin {twin_id}] Content RAG result: {len(content_chunks)} chunks found")
+        # Run LangGraph workflow
+        result = run_twin_conversation(twin_id, twin_profile, message)
         
-        # STEP 2: Profile Fallback - If no content found, check profile
-        if not content.strip():
-            print(f"[Twin {twin_id}] STEP 2: Profile fallback triggered")
-            query_lower = message.lower()
-            
-            # Try to extract relevant profile data based on query keywords
-            if "goal" in query_lower or "q4" in query_lower:
-                content = profile.get("q4_goal", "")
-                if content:
-                    print(f"[Twin {twin_id}] Profile fallback: Found Q4 goal")
-            elif "strategy" in query_lower or "plan" in query_lower:
-                content = profile.get("core_strategy", "")
-                if content:
-                    print(f"[Twin {twin_id}] Profile fallback: Found core strategy")
-            elif "risk" in query_lower:
-                content = profile.get("risk_tolerance", "")
-                if content:
-                    print(f"[Twin {twin_id}] Profile fallback: Found risk tolerance")
-            elif "value" in query_lower or "culture" in query_lower:
-                content = profile.get("core_values", "")
-                if content:
-                    print(f"[Twin {twin_id}] Profile fallback: Found core values")
-            elif "company" in query_lower or "work" in query_lower:
-                content = f"Company: {profile.get('company_name', '')}, Designation: {profile.get('designation', '')}"
-                if content:
-                    print(f"[Twin {twin_id}] Profile fallback: Found company info")
-        
-        # STEP 3: Escalate if still empty - Last resort
-        escalated = False
-        if not content.strip():
-            print(f"[Twin {twin_id}] STEP 3: Escalation triggered - no data available")
-            content = f"[ESCALATED: No specific data found in knowledge base or profile for this query. Providing general guidance based on my role and values.]"
-            escalated = True
-        
-        # STEP 4: Style RAG - ALWAYS run, mandatory
-        print(f"[Twin {twin_id}] STEP 4: Style RAG - retrieving communication examples")
-        style_examples = query_twin_style(twin_id, limit=5)
-        
-        if not style_examples:
-            # Style is mandatory - raise error if empty
-            error_msg = f"[Twin {twin_id}] ERROR: No style examples found in vector DB. Twin needs sample messages to function properly."
-            print(error_msg)
-            return JSONResponse(
-                status_code=500,
-                content={"error": "Twin not properly configured - missing communication style examples"}
-            )
-        
-        examples = "\n".join(style_examples)
-        print(f"[Twin {twin_id}] Style RAG result: {len(style_examples)} examples found")
-        
-        # STEP 5: LLM with Style + Data
-        twin_name = profile.get("twin_name", "Unknown")
-        company = profile.get("company_name", "")
-        designation = profile.get("designation", "")
-        
-        system_prompt = f"""
-You are {twin_name}, {designation} at {company}.
-Respond EXACTLY like them:
-- Tone: {tone_style}
-- Use emoji: {emoji_preference} (if appropriate)
-- Risk approach: {profile.get('risk_tolerance', 'Balanced')}
-- Core values: {profile.get('core_values', 'Integrity and excellence')}
-
-Real communication examples:
-{examples}
-
-Data to use in response:
-{content}
-
-User asked: {message}
-"""
-        
-        ensure_genai_configured()
-        chat_model = genai.GenerativeModel(model)
-        response = chat_model.generate_content(
-            system_prompt,
-            generation_config=genai.GenerationConfig(temperature=0.7)
-        )
-        
-        twin_response = response.text
-        
-        if escalated:
-            twin_response += "\n\n[Note: This response is based on general principles as no specific data was found]"
+        print(f"[LangGraph Twin {twin_id}] Workflow complete - Confidence: {result['confidence']['overall']}%")
         
         return {
-            "response": twin_response,
-            "escalated": escalated,
-            "content_found": bool(content_chunks)
+            "response": result["response"],
+            "escalated": result["escalated"],
+            "confidence": result["confidence"],
+            "metadata": {
+                "proposal": result.get("proposal", ""),
+                "critique": result.get("critique", "")
+            }
         }
         
     except Exception as e:
-        print(f"Error in twin chat: {e}")
+        print(f"Error in LangGraph twin chat: {e}")
+        # CRITICAL: Return fallback response instead of error
         return JSONResponse(
-            status_code=500,
-            content={"error": str(e)}
+            status_code=200,
+            content={
+                "response": f"I apologize, but I encountered an error. To provide accurate responses, please connect your email and business data sources.\n\nError: {str(e)}",
+                "escalated": True,
+                "confidence": {
+                    "style": 0,
+                    "context": 0,
+                    "decision": 0,
+                    "overall": 0
+                },
+                "metadata": {
+                    "error": str(e)
+                }
+            }
         )
 
 
