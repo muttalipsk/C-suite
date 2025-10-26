@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { Route, Switch, Link, useLocation } from "wouter";
 import { MeetingForm } from "@/components/dashboard/MeetingForm";
 import { AgentCard } from "@/components/dashboard/AgentCard";
 import { AgentFilterSidebar } from "@/components/dashboard/AgentFilterSidebar";
@@ -6,17 +7,20 @@ import { ConversationHistory } from "@/components/dashboard/ConversationHistory"
 import { UserProfileButton } from "@/components/dashboard/UserProfileButton";
 import { AI_AGENTS } from "@shared/schema";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Brain } from "lucide-react";
+import { Brain, Sparkles, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import TwinsPage from "./TwinsPage";
+import CreateTwinPage from "./CreateTwinPage";
 
 interface DashboardPageProps {
   onLogout: () => void;
 }
 
 export default function DashboardPage({ onLogout }: DashboardPageProps) {
+  const [location] = useLocation();
   const [selectedAgents, setSelectedAgents] = useState<string[]>(Object.keys(AI_AGENTS));
   const [recommendations, setRecommendations] = useState<Record<string, string>>({});
   const [currentRunId, setCurrentRunId] = useState<string>("");
@@ -259,18 +263,20 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Left Sidebar - Agent Filter */}
-      <AgentFilterSidebar
-        selectedAgents={selectedAgents}
-        onToggleAgent={toggleAgent}
-        onToggleAll={toggleAll}
-      />
+      {/* Left Sidebar - Agent Filter (only show on meeting page) */}
+      {location === "/" && (
+        <AgentFilterSidebar
+          selectedAgents={selectedAgents}
+          onToggleAgent={toggleAgent}
+          onToggleAll={toggleAll}
+        />
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="border-b bg-background px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div className="p-2 bg-primary/10 rounded-lg">
               <Brain className="w-5 h-5 text-primary" />
             </div>
@@ -278,6 +284,30 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               <h1 className="text-xl font-semibold">AI Leaders Boardroom</h1>
               <p className="text-sm text-muted-foreground">Strategic Advisory Platform</p>
             </div>
+            
+            {/* Navigation */}
+            <nav className="ml-8 flex gap-2">
+              <Link href="/">
+                <Button
+                  variant={location === "/" ? "default" : "ghost"}
+                  size="sm"
+                  data-testid="button-nav-meeting"
+                >
+                  <Home className="w-4 h-4 mr-2" />
+                  Meeting
+                </Button>
+              </Link>
+              <Link href="/twins">
+                <Button
+                  variant={location === "/twins" || location === "/create-twin" ? "default" : "ghost"}
+                  size="sm"
+                  data-testid="button-nav-twins"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Digital Twins
+                </Button>
+              </Link>
+            </nav>
           </div>
           <UserProfileButton
             user={user}
@@ -286,57 +316,71 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           />
         </header>
 
-        {/* Main Content Area */}
-        <ScrollArea className="flex-1">
-          <div className="p-6 max-w-7xl mx-auto space-y-6">
-            {/* Meeting Form */}
-            <MeetingForm
-              onSubmit={handleRunMeeting}
-              isLoading={isLoading}
-              selectedAgents={selectedAgents}
-            />
+        {/* Main Content Area with Routing */}
+        <Switch>
+          <Route path="/">
+            <ScrollArea className="flex-1">
+              <div className="p-6 max-w-7xl mx-auto space-y-6">
+                {/* Meeting Form */}
+                <MeetingForm
+                  onSubmit={handleRunMeeting}
+                  isLoading={isLoading}
+                  selectedAgents={selectedAgents}
+                />
 
-            {/* Results */}
-            {results && (
-                  <div className="space-y-6" data-results-section id="results-section">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-2xl font-bold">AI Leaders' Recommendations</h2>
-                      <Badge variant="outline" className="text-sm">
-                        {results.selectedAgents.length} {results.selectedAgents.length === 1 ? 'Agent' : 'Agents'}
-                      </Badge>
-                    </div>
+                {/* Results */}
+                {results && (
+                      <div className="space-y-6" data-results-section id="results-section">
+                        <div className="flex items-center justify-between">
+                          <h2 className="text-2xl font-bold">AI Leaders' Recommendations</h2>
+                          <Badge variant="outline" className="text-sm">
+                            {results.selectedAgents.length} {results.selectedAgents.length === 1 ? 'Agent' : 'Agents'}
+                          </Badge>
+                        </div>
 
-                    <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
-                      {Object.entries(results.recommendations).map(([agentKey, recommendation]) => {
-                        const agent = AGENT_DATA[agentKey as keyof typeof AGENT_DATA];
-                        if (!agent) return null;
+                        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
+                          {Object.entries(results.recommendations).map(([agentKey, recommendation]) => {
+                            const agent = AGENT_DATA[agentKey as keyof typeof AGENT_DATA];
+                            if (!agent) return null;
 
-                        return (
-                          <AgentCard
-                            key={agentKey}
-                            agentKey={agentKey}
-                            agentName={agent.name}
-                            company={agent.company}
-                            avatar={agent.avatar}
-                            recommendation={recommendation}
-                            runId={results.runId}
-                            autoOpenChat={results.selectedAgentKey === agentKey}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-            )}
-          </div>
-        </ScrollArea>
+                            return (
+                              <AgentCard
+                                key={agentKey}
+                                agentKey={agentKey}
+                                agentName={agent.name}
+                                company={agent.company}
+                                avatar={agent.avatar}
+                                recommendation={recommendation}
+                                runId={results.runId}
+                                autoOpenChat={results.selectedAgentKey === agentKey}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                )}
+              </div>
+            </ScrollArea>
+          </Route>
+
+          <Route path="/twins">
+            <TwinsPage />
+          </Route>
+
+          <Route path="/create-twin">
+            <CreateTwinPage />
+          </Route>
+        </Switch>
       </div>
 
-      {/* Right Sidebar - Conversation History */}
-      <ConversationHistory 
-        onSelectConversation={handleSelectConversation} 
-        onLoadChat={handleLoadChat}
-        selectedConversation={selectedConversation}
-      />
+      {/* Right Sidebar - Conversation History (only show on meeting page) */}
+      {location === "/" && (
+        <ConversationHistory 
+          onSelectConversation={handleSelectConversation} 
+          onLoadChat={handleLoadChat}
+          selectedConversation={selectedConversation}
+        />
+      )}
 
       {/* Profile Dialog */}
       {showProfile && user && (
