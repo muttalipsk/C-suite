@@ -123,22 +123,22 @@ export const twins = pgTable("twins", {
   sampleMessages: jsonb("sample_messages").notNull(), // Array of communication samples
   profileData: jsonb("profile_data").notNull(), // {q4Goal, coreStrategy, company, designation, etc.}
   filesUploaded: text("files_uploaded").array(), // Array of file paths in /uploads
-  
+
   // NEW: Data ingestion tracking
   emailAccountId: varchar("email_account_id").references(() => emailAccounts.id, { onDelete: "set null" }),
   crmConnectionId: varchar("crm_connection_id").references(() => crmConnections.id, { onDelete: "set null" }),
   ingestionStatus: text("ingestion_status").default("pending"), // "pending", "processing", "completed", "failed"
   ingestionProgress: jsonb("ingestion_progress"), // {emailsProcessed, crmDataSynced, decisionsExtracted}
-  
+
   // NEW: Confidence scoring
   styleConfidence: integer("style_confidence").default(0), // 0-100 score
   contextConfidence: integer("context_confidence").default(0), // 0-100 score
   decisionConfidence: integer("decision_confidence").default(0), // 0-100 score
   overallConfidence: integer("overall_confidence").default(0), // 0-100 weighted average
-  
+
   // NEW: Data source metadata
   dataSourceStats: jsonb("data_source_stats"), // {emailCount, crmRecords, decisionCount, lastUpdated}
-  
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -249,31 +249,31 @@ export const AI_AGENTS = {
     name: "Sam Altman",
     company: "OpenAI",
     role: "CEO",
-    avatar: "@assets/generated_images/Sam_Altman_professional_headshot_a9283ae5.png",
+    avatar: "/attached_assets/generated_images/Sam_Altman_professional_headshot_a9283ae5.png",
   },
   Jensen_Huang: {
     name: "Jensen Huang",
     company: "NVIDIA",
     role: "CEO",
-    avatar: "@assets/generated_images/Jensen_Huang_professional_headshot_dbf371ed.png",
+    avatar: "/attached_assets/generated_images/Jensen_Huang_professional_headshot_dbf371ed.png",
   },
   Andrew_Ng: {
     name: "Andrew Ng",
     company: "DeepLearning.AI",
     role: "Founder",
-    avatar: "@assets/generated_images/Andrew_Ng_professional_headshot_1ec25e6e.png",
+    avatar: "/attached_assets/generated_images/Andrew_Ng_professional_headshot_1ec25e6e.png",
   },
   Demis_Hassabis: {
     name: "Demis Hassabis",
     company: "Google DeepMind",
     role: "CEO",
-    avatar: "@assets/generated_images/Demis_Hassabis_professional_headshot_ba7b28f2.png",
+    avatar: "/attached_assets/generated_images/Demis_Hassabis_professional_headshot_ba7b28f2.png",
   },
   Fei_Fei_Li: {
     name: "Fei-Fei Li",
     company: "Stanford AI Lab",
     role: "Co-Director",
-    avatar: "@assets/generated_images/Fei-Fei_Li_professional_headshot_516c6cd4.png",
+    avatar: "/attached_assets/generated_images/Fei-Fei_Li_professional_headshot_516c6cd4.png",
   },
 } as const;
 
