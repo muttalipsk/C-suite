@@ -284,30 +284,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               <h1 className="text-xl font-semibold">AI Leaders Boardroom</h1>
               <p className="text-sm text-muted-foreground">Strategic Advisory Platform</p>
             </div>
-            
-            {/* Navigation */}
-            <nav className="ml-8 flex gap-2">
-              <Link href="/">
-                <Button
-                  variant={location === "/" ? "default" : "ghost"}
-                  size="sm"
-                  data-testid="button-nav-meeting"
-                >
-                  <Home className="w-4 h-4 mr-2" />
-                  Meeting
-                </Button>
-              </Link>
-              <Link href="/twins">
-                <Button
-                  variant={location === "/twins" || location === "/create-twin" ? "default" : "ghost"}
-                  size="sm"
-                  data-testid="button-nav-twins"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Digital Twins
-                </Button>
-              </Link>
-            </nav>
           </div>
           <UserProfileButton
             user={user}
