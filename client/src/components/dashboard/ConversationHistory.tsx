@@ -133,7 +133,11 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
                       >
                         <div className="flex items-center gap-3 w-full">
                           <Avatar className="w-10 h-10 shrink-0">
-                            <AvatarImage src={agent.avatar} alt={agent.name} />
+                            <AvatarImage 
+                              src={agent.avatar} 
+                              alt={agent.name}
+                              className="object-cover"
+                            />
                             <AvatarFallback>{agent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0 text-left">

@@ -50,7 +50,14 @@ export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll 
               >
                 <div className="flex items-start gap-3">
                   <Avatar className="w-12 h-12 border-2 border-primary/20">
-                    <AvatarImage src={agent.avatar} alt={agent.name} />
+                    <AvatarImage 
+                      src={agent.avatar} 
+                      alt={agent.name}
+                      className="object-cover"
+                      onError={(e) => {
+                        console.error(`Failed to load avatar for ${agent.name}:`, agent.avatar);
+                      }}
+                    />
                     <AvatarFallback>{agent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">

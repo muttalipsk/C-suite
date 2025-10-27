@@ -111,7 +111,11 @@ export function AgentCard({
       <CardHeader className="space-y-4">
         <div className="flex items-start gap-4">
           <Avatar className="w-16 h-16 border-2 border-primary/20">
-            <AvatarImage src={avatar} alt={agentName} />
+            <AvatarImage 
+              src={avatar} 
+              alt={agentName}
+              className="object-cover"
+            />
             <AvatarFallback>{agentName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
