@@ -53,13 +53,9 @@ export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll 
                     <AvatarImage 
                       src={agent.avatar} 
                       alt={agent.name}
-                      className="object-cover"
-                      onError={(e) => {
-                        console.error(`Failed to load avatar for ${agent.name}:`, agent.avatar);
-                        console.error('Full error:', e);
-                      }}
+                      className="object-cover w-full h-full"
                     />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40 text-foreground">
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40 text-foreground text-xs">
                       {agent.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>

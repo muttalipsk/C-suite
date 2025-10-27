@@ -27,7 +27,10 @@ os.makedirs(CHATS_DIR, exist_ok=True)
 app = FastAPI()
 
 # Mount static files for avatars
-app.mount("/attached_assets", StaticFiles(directory="attached_assets"), name="attached_assets")
+if os.path.exists("attached_assets"):
+    app.mount("/attached_assets", StaticFiles(directory="attached_assets"), name="attached_assets")
+else:
+    print("WARNING: attached_assets directory not found!")
 
 # Add CORS middleware to allow Node.js server to call this API
 app.add_middleware(
