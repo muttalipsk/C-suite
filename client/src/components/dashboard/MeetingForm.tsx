@@ -99,7 +99,7 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
                   <FormControl>
                     <Textarea
                       placeholder="Example: We're considering implementing AI across our operations. What strategy should we adopt for the next quarter considering our limited AI expertise?"
-                      className="min-h-32 resize-none"
+                      className="min-h-48 resize-none"
                       {...field}
                       data-testid="input-task"
                     />
@@ -116,7 +116,7 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
               data-testid="button-run-meeting"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              {isLoading ? "Generating Recommendations..." : "Run Meeting"}
+              {isLoading ? "Generating Recommendations..." : "Submit"}
             </Button>
           </form>
         </Form>

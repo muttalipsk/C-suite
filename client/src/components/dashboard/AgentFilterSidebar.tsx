@@ -13,13 +13,13 @@ interface AgentFilterSidebarProps {
 
 export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll }: AgentFilterSidebarProps) {
   const allSelected = selectedAgents.length === Object.keys(AI_AGENTS).length;
-  
+
   return (
-    <div className="w-72 border-r bg-sidebar h-screen flex flex-col">
+    <aside className="w-64 border-r bg-sidebar h-screen flex flex-col">
       <div className="p-6 border-b">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Brain className="w-5 h-5 text-primary" />
-          AI Leaders
+          AI Leader Twin
         </h2>
         <p className="text-sm text-muted-foreground mt-1">Select advisors</p>
         <Button 
@@ -69,6 +69,6 @@ export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll 
           })}
         </div>
       </ScrollArea>
-    </div>
+    </aside>
   );
 }
