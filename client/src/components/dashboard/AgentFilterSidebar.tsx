@@ -19,7 +19,7 @@ export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll 
       <div className="p-6 border-b">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Brain className="w-5 h-5 text-primary" />
-          AI Leader Twin
+          Digital Twin
         </h2>
         <p className="text-sm text-muted-foreground mt-1">Select advisors</p>
         <Button 
