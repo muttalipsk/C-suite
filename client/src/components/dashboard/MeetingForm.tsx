@@ -42,17 +42,8 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
-          Run AI Boardroom Meeting
-        </CardTitle>
-        <CardDescription>
-          Get strategic recommendations from AI industry leaders
-        </CardDescription>
-      </CardHeader>
       {selectedAgents.length > 0 && (
-        <div className="px-6 pb-4 flex flex-wrap gap-2">
+        <div className="px-6 pt-6 pb-4 flex flex-wrap gap-2">
           {selectedAgents.map(agentKey => {
             const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
             return agent ? (
