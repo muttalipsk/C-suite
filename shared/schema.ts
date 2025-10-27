@@ -249,31 +249,31 @@ export const AI_AGENTS = {
     name: "Sam Altman",
     company: "OpenAI",
     role: "CEO",
-    avatar: "/Sam_Altman_professional_headshot_a9283ae5.png",
+    avatar: "/attached_assets/Sam_Altman_professional_headshot_a9283ae5.png",
   },
   Jensen_Huang: {
     name: "Jensen Huang",
     company: "NVIDIA",
     role: "CEO",
-    avatar: "/Jensen_Huang_professional_headshot_dbf371ed.png",
+    avatar: "/attached_assets/Jensen_Huang_professional_headshot_dbf371ed.png",
   },
   Andrew_Ng: {
     name: "Andrew Ng",
     company: "DeepLearning.AI",
     role: "Founder",
-    avatar: "/Andrew_Ng_professional_headshot_1ec25e6e.png",
+    avatar: "/attached_assets/Andrew_Ng_professional_headshot_1ec25e6e.png",
   },
   Demis_Hassabis: {
     name: "Demis Hassabis",
     company: "Google DeepMind",
     role: "CEO",
-    avatar: "/Demis_Hassabis_professional_headshot_ba7b28f2.png",
+    avatar: "/attached_assets/Demis_Hassabis_professional_headshot_ba7b28f2.png",
   },
   Fei_Fei_Li: {
     name: "Fei-Fei Li",
     company: "Stanford AI Lab",
     role: "Co-Director",
-    avatar: "/Fei-Fei_Li_professional_headshot_516c6cd4.png",
+    avatar: "/attached_assets/Fei-Fei_Li_professional_headshot_516c6cd4.png",
   },
 } as const;
 
