@@ -1,0 +1,37 @@
+task: 'What steps should a company take today to prepare for the emergence of AGI within the next decade?',
+  agents: [
+    'Sam_Altman',
+    'Jensen_Huang',
+    'Andrew_Ng',
+    'Demis_Hassabis',
+    'Fei_Fei_Li'
+  ],
+  turns: 1,
+  meetingType: 'chat'
+}
+Full request body: {
+  task: 'What steps should a company take today to prepare for the emergence of AGI within the next decade?',
+  agents: [
+    'Sam_Altman',
+    'Jensen_Huang',
+    'Andrew_Ng',
+    'Demis_Hassabis',
+    'Fei_Fei_Li'
+  ],
+  turns: 1,
+  meetingType: 'chat'
+}
+7:23:22 PM [express] [python] ✓ Gemini API configured successfully
+Selected agents: ['Sam_Altman', 'Jensen_Huang', 'Andrew_Ng', 'Demis_Hassabis', 'Fei_Fei_Li'], User ID: 56ff7b22-2785-4697-b514-00379beda4c1, Meeting Type: chat
+🚀 Starting meeting with 5 agents, 1 turn(s)...
+[Andrew_Ng] Starting recommendation with VectorDB memory...
+[Demis_Hassabis] Starting recommendation with VectorDB memory...
+[Fei_Fei_Li] Starting recommendation with VectorDB memory...
+[Jensen_Huang] Starting recommendation with VectorDB memory...
+[Sam_Altman] Starting recommendation with VectorDB memory...
+[Andrew_Ng] Error retrieving from knowledge base: Could not connect to tenant default_tenant. Are you sure it exists?
+[Demis_Hassabis] Error retrieving from knowledge base: Could not connect to tenant default_tenant. Are you sure it exists?
+[Fei_Fei_Li] Error retrieving from knowledge base: Could not connect to tenant default_tenant. Are you sure it exists?
+[Fei_Fei_Li] Using meeting type context: chat, and instruction: This is a **General Strategy context**. Provide comprehensive, thoughtful strategic guidance. Balance immediate actions with long-term planning. Be thorough in your analysis, explore multiple angles, and provide deep insights that demonstrate your expertise.
+[Jensen_Huang] No knowledge base documents found
+[Demis_Hassabis] Using meeting type context: chat, and instruction: This is a **General Strategy context**. Provide comprehensive, thoughtful strategic guidance. Balance immediate actions with long-term planning. Be thorough in your analysis, explore multiple angles, and provide deep insights that demonstrate your expertise.
