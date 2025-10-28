@@ -1,0 +1,169 @@
+(venv) user@oldbuddy:~/Downloads/AICSuite$ npm run dev
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[dotenv@17.2.3] injecting env (8) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+4:10:04 PM [express] Starting Python FastAPI server on port 8000...
+4:10:04 PM [express] serving on port 5000
+[python] INFO:     Started server process [215890]
+INFO:     Waiting for application startup.
+[python] INFO:     Application startup complete.
+[python] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+4:10:36 PM [express] GET /api/auth/me 304 in 12ms :: {"id":"56ff7b22-2785-4697-b514-00379beda4c1","e…
+4:10:36 PM [express] GET /api/auth/me 304 in 7ms :: {"id":"56ff7b22-2785-4697-b514-00379beda4c1","em…
+4:10:36 PM [express] GET /api/agent-memory 304 in 6ms :: {"memories":[]}
+4:11:41 PM [express] [python] ✓ Gemini API configured successfully
+Selected agents: ['Sam_Altman', 'Jensen_Huang', 'Andrew_Ng', 'Demis_Hassabis', 'Fei_Fei_Li'], User ID: 56ff7b22-2785-4697-b514-00379beda4c1, Meeting Type: chat
+INFO:     127.0.0.1:60528 - "POST /meeting HTTP/1.1" 500 Internal Server Error
+[python] ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/fastapi/applications.py", line 1134, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/fastapi/routing.py", line 124, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/fastapi/routing.py", line 110, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/fastapi/routing.py", line 390, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/fastapi/routing.py", line 289, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Downloads/AICSuite/main.py", line 96, in meeting
+    result = run_meeting(task, user_profile, turns, agents, user_id, meeting_type)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: run_meeting() takes from 1 to 5 positional arguments but 6 were given
+Meeting error: AxiosError: Request failed with status code 500
+    at settle (file:///home/user/Downloads/AICSuite/node_modules/axios/lib/core/settle.js:19:12)
+    at IncomingMessage.handleStreamEnd (file:///home/user/Downloads/AICSuite/node_modules/axios/lib/adapters/http.js:617:11)
+    at IncomingMessage.emit (node:events:531:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+    at Axios.request (file:///home/user/Downloads/AICSuite/node_modules/axios/lib/core/Axios.js:45:41)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/user/Downloads/AICSuite/server/routes.ts:172:30) {
+  code: 'ERR_BAD_RESPONSE',
+  config: {
+    transitional: {
+      silentJSONParsing: true,
+      forcedJSONParsing: true,
+      clarifyTimeoutError: false
+    },
+    adapter: [ 'xhr', 'http', 'fetch' ],
+    transformRequest: [ [Function: transformRequest] ],
+    transformResponse: [ [Function: transformResponse] ],
+    timeout: 0,
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+    maxContentLength: -1,
+    maxBodyLength: -1,
+    env: { FormData: [Function [FormData]], Blob: [class Blob] },
+    validateStatus: [Function: validateStatus],
+    headers: Object [AxiosHeaders] {
+      Accept: 'application/json, text/plain, */*',
+      'Content-Type': 'application/json',
+      'User-Agent': 'axios/1.12.2',
+      'Content-Length': '2414',
+      'Accept-Encoding': 'gzip, compress, deflate, br'
+    },
+    method: 'post',
+    url: 'http://localhost:8000/meeting',
+    data: `{"task":"What steps should a company take today to prepare for the emergence of AGI within the next decade?\\n","user_profile":"Name: Muttalip sk\\nCompany: redpluto\\nDesignation: cto\\nRole Description: As CTO at RedPluto AI Engineering, I lead the technical vision and execution for AI-powered analytics solutions, driving innovation in data processing, machine learning models, and scalable infrastructure to deliver cutting-edge insights for clients.\\nProduct Expectations: I'm seeking a reliable digital twin to automate routine communications (e.g., status reports to the team or stakeholders), simulate decision-making scenarios for faster strategy iteration, and ensure consistent leadership presence during high-growth phases—ultimately freeing up time for deep R&D while maintaining my authoritative, forward-thinking voice.\\nCompany Website: https://redplutoanalytics.com/\\nRole Details: In my role, I oversee a team of 20+ AI engineers and data scientists, managing everything from prototype development using tools like LangGraph and FAISS for multi-agent systems to deploying production pipelines with FastAPI and vector databases. Key responsibilities include aligning tech roadmap with business goals (e.g., generative AI chatbots and optical character recognition integrations), budgeting for cloud resources, and fostering a culture of ethical AI innovation. Daily challenges involve scaling models for real-time analytics while navigating regulatory hurdles in data privacy.\\n1-Year Goal: Launch and scale a flagship generative AI platform (e.g., an LLM-powered analytics dashboard) to 50+ enterprise clients, achieving 30% YoY revenue growth through seamless integration of FAISS vector search and FastAPI microservices; simultaneously, upskill the team via targeted certifications in cloud-native AI (e.g., AWS SageMaker) to boost internal efficiency by 25%.\\n5-Year Goal: Position RedPluto as a top-3 AI analytics provider in the APAC region by pioneering ethical AI frameworks for real-time data governance, expanding to 200+ employees with global offices, and driving a potential Series B funding round or IPO—ultimately democratizing AI insights to reduce client decision-making time from weeks to hours across industries like finance and retail.","turns":1,"agents":["Sam_Altman","Jensen_Huang","Andrew_Ng","Demis_Hassabis","Fei_Fei_Li"],"user_id":"56ff7b22-2785-4697-b514-00379beda4c1"}`,
+    allowAbsoluteUrls: true
+  },
+  request: <ref *1> ClientRequest {
+    _events: [Object: null prototype] {
+      abort: [Function (anonymous)],
+      aborted: [Function (anonymous)],
+      connect: [Function (anonymous)],
+      error: [Function (anonymous)],
+      socket: [Function (anonymous)],
+      timeout: [Function (anonymous)],
+      finish: [Function: requestOnFinish]
+    },
+    _eventsCount: 7,
+    _maxListeners: undefined,
+    outputData: [],
+    outputSize: 0,
+    writable: true,
+    destroyed: true,
+    _last: false,
+    chunkedEncoding: false,
+    shouldKeepAlive: true,
+    maxRequestsOnConnectionReached: false,
+    _defaultKeepAlive: true,
+    useChunkedEncodingByDefault: true,
+    sendDate: false,
+    _removedConnection: false,
+    _removedContLen: false,
+    _removedTE: false,
+    strictContentLength: false,
+    _contentLength: 2414,
+    _hasBody: true,
+    _trailer: '',
+    finished: true,
+    _headerSent: true,
+    _closed: true,
+    _header: 'POST /meeting HTTP/1.1\r\n' +
+      'Accept: application/json, text/plain, */*\r\n' +
+      'Content-Type: application/json\r\n' +
+      'User-Agent: axios/1.12.2\r\n' +
+      'Content-Length: 2414\r\n' +
+      'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+      'Host: localhost:8000\r\n' +
+      'Connection: keep-alive\r\n' +
+      '\r\n',
+    _keepAliveTimeout: 0,
+    _onPendingData: [Function: nop],
+    agent: Agent {
+      _events: [Object: null prototype],
+      _eventsCount: 2,
+      _maxListeners: undefined,
+      options: [Object: null prototype],
+      defaultPort: 80,
+      protocol: 'http:',
+      requests: [Object: null prototype] {},
+      sockets: [Object: null prototype] {},
+      freeSockets: [Object: null prototype],
+      keepAliveMsecs: 1000,
+      keepAlive: true,
+      maxSockets: Infinity,
