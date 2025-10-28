@@ -125,6 +125,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           task: data.task,
           agents: data.selectedAgents,
           turns: data.turns || 1,
+          meeting_type: data.meetingType || "chat",
         }),
       });
 

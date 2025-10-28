@@ -175,6 +175,7 @@ Role Details: ${user.roleDetails}
         turns,
         agents,
         user_id: req.session.userId!.toString(),  // Pass user ID for VectorDB tracking
+        meeting_type: req.body.meeting_type || "chat",  // Forward meeting type
       });
 
       const { run_id: pythonRunId, recommendations } = pythonResponse.data;
