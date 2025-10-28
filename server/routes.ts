@@ -161,8 +161,11 @@ Role Details: ${user.roleDetails}
     try {
       const { task, agents, turns = 1, meetingType = "board" } = req.body;
 
-      console.log("Server received meetingType:", meetingType);
-      console.log("Full request body:", req.body);
+      console.log("🔴 SERVER: POST /api/meeting received");
+      console.log("  - meetingType:", meetingType);
+      console.log("  - agents:", agents);
+      console.log("  - task:", task?.substring(0, 50) + "...");
+      console.log("  - Full body:", req.body);
 
       // Create a unique key for this request
       const requestKey = `${task}-${agents.join(',')}-${meetingType}`;

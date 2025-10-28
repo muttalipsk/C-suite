@@ -111,6 +111,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const lastSubmitTimeRef = useRef<number>(0);
 
   const handleRunMeeting = useCallback(async (data: any) => {
+    console.log("🔵 handleRunMeeting called with data:", {
+      meetingType: data.meetingType,
+      agents: data.selectedAgents,
+      task: data.task?.substring(0, 50) + "..."
+    });
+
     const now = Date.now();
     
     // Debounce: Ignore if submitted within last 2 seconds
@@ -144,10 +150,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     setCurrentRunId("");
     
     try {
-      console.log("Running meeting with agents:", data.selectedAgents);
-      console.log("Meeting type from form:", data.meetingType);
-      console.log("Current selectedAgents state:", selectedAgents);
-
       const requestBody = {
         task: data.task,
         agents: data.selectedAgents,
@@ -155,7 +157,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         meetingType: data.meetingType || "board",
       };
       
-      console.log("Request body being sent:", requestBody);
+      console.log("📤 Full request body:", requestBody);
 
       const response = await fetch("/api/meeting", {
         method: "POST",
