@@ -2,13 +2,57 @@
 from typing import Dict, List
 from langgraph.graph import StateGraph, START, END
 from models import AgentState
-from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, TURNS, CORPUS_DIR, INDEX_DIR
+from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, TURNS, CORPUS_DIR, INDEX_DIR, CHROMA_DIR
 from utils import load_knowledge, retrieve_relevant_chunks, load_memory_from_vectordb, merge_recommendations
 from chat_vectordb import store_chat_message, ensure_genai_configured
+from chromadb import PersistentClient
 import json
 import os
 import uuid
 import google.generativeai as genai
+
+
+# NEW: Retrieve from knowledge base ChromaDB collection
+def retrieve_from_knowledge_base(agent: str, query: str, n_results: int = 5) -> str:
+    """
+    Retrieve relevant content from agent's knowledge base using RAG.
+    Returns concatenated relevant chunks from knowledge_{agent} collection.
+    """
+    try:
+        chroma_client = PersistentClient(path=CHROMA_DIR)
+        knowledge_collection = chroma_client.get_or_create_collection(
+            name=f"knowledge_{agent}"
+        )
+        
+        # Check if collection has any documents
+        count = knowledge_collection.count()
+        if count == 0:
+            print(f"[{agent}] No knowledge base documents found")
+            return ""
+        
+        # Query for relevant chunks
+        ensure_genai_configured()
+        query_embedding = genai.embed_content(
+            model="models/embedding-001",
+            content=query,
+            task_type="retrieval_query"
+        )
+        
+        results = knowledge_collection.query(
+            query_embeddings=[query_embedding['embedding']],
+            n_results=min(n_results, count)
+        )
+        
+        if results['documents'] and results['documents'][0]:
+            chunks = results['documents'][0]
+            print(f"[{agent}] Retrieved {len(chunks)} knowledge chunks from ChromaDB")
+            return "\n\n".join(chunks)
+        else:
+            return ""
+            
+    except Exception as e:
+        print(f"[{agent}] Error retrieving from knowledge base: {e}")
+        return ""
 
 # Agent Node Factory - Uses ChromaDB VectorDB Memory
 def create_agent_node(persona: str):
@@ -25,11 +69,16 @@ def create_agent_node(persona: str):
             current_turn = state.get("current_turn", 0)
             recommendations = state.get("recommendations", {})
             
-            # Retrieve relevant chunks from knowledge base
-            relevant_chunks = retrieve_relevant_chunks(persona, task, CORPUS_DIR, INDEX_DIR)
+            # NEW: Retrieve from ChromaDB knowledge base using RAG
+            knowledge_chunks = retrieve_from_knowledge_base(persona, task, n_results=5)
             
             # Load agent memory from ChromaDB vector database
             vectordb_memory = load_memory_from_vectordb(persona, limit=5)
+            
+            # Build knowledge context
+            knowledge_context = ""
+            if knowledge_chunks:
+                knowledge_context = f"**Your domain knowledge and expertise:**\n{knowledge_chunks}\n\n"
             
             system_prompt = f"""
 You are {persona} from {company}, acting in your {role}: {description}. You are serving as a moderator and advisor to C-suite level executives. They seek your help for strategies after board meetings, client meetings, or personal doubts.
@@ -37,14 +86,13 @@ You are {persona} from {company}, acting in your {role}: {description}. You are 
 Your goal is to provide tailored recommendations based on your point of view and expertise. Think as if you are in the user's place.
 
 Base your response on:
-- Relevant writings: {relevant_chunks}
-- Your recent memories from VectorDB: {vectordb_memory}
+{knowledge_context}- Your recent memories from VectorDB: {vectordb_memory}
 - User Profile: {user_profile}
 
 Output Format:
 1. **Summary**: A brief overview of the recommended strategy
 2. **Key Recommendations**: 3-5 bullet points with specific, actionable steps
-3. **Rationale**: Explain why this strategy fits
+3. **Rationale**: Explain why this strategy fits based on your knowledge and experience
 4. **Next Steps**: Any follow-up actions or considerations
 """
             

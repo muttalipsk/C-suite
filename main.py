@@ -122,12 +122,20 @@ async def chat_endpoint(input: ChatInput):
                 "agent": msg.get("message") if msg.get("sender") == "agent" else ""} 
                for msg in history_messages]
 
-    knowledge = load_knowledge(agent)
     company = PERSONAS[agent]["company"]
     role = PERSONAS[agent]["role"]
     description = PERSONAS[agent]["description"]
-    relevant_chunks = retrieve_relevant_chunks(agent, task + " " + input.message, CORPUS_DIR, INDEX_DIR)
+    
+    # NEW: Retrieve from ChromaDB knowledge base using RAG
+    from agents import retrieve_from_knowledge_base
+    knowledge_chunks = retrieve_from_knowledge_base(agent, task + " " + input.message, n_results=5)
+    
     memory = load_memory_from_vectordb(agent, limit=5)
+
+    # Build knowledge context
+    knowledge_context = ""
+    if knowledge_chunks:
+        knowledge_context = f"**Your domain knowledge and expertise:**\n{knowledge_chunks}\n\n"
 
     system_prompt = f"""
 You are {agent} from {company}, acting in your {role}: {description}. You are serving as a moderator and advisor to C-suite level executives. Respond in a natural, conversational manner, providing balanced, insightful advice based on your expertise.
@@ -138,9 +146,7 @@ Base your response on:
 - Original query: {task}
 - User Profile: {user_profile}
 - Your previous recommendation: {recommendation}
-- Knowledge: {knowledge}
-- Relevant writings: {relevant_chunks}
-- Recent memory: {memory}
+{knowledge_context}- Recent memory: {memory}
 - Conversation history: {json.dumps(history)}
 """
 
