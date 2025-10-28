@@ -116,17 +116,22 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     
     try {
       console.log("Running meeting with agents:", data.selectedAgents);
+      console.log("Meeting type from form:", data.meetingType);
       console.log("Current selectedAgents state:", selectedAgents);
+
+      const requestBody = {
+        task: data.task,
+        agents: data.selectedAgents,
+        turns: data.turns || 1,
+        meetingType: data.meetingType || "board",
+      };
+      
+      console.log("Request body being sent:", requestBody);
 
       const response = await fetch("/api/meeting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task: data.task,
-          agents: data.selectedAgents,
-          turns: data.turns || 1,
-          meetingType: data.meetingType || "board",
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();

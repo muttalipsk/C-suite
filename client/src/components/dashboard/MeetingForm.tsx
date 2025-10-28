@@ -32,11 +32,14 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
       task: "",
       meetingType: "board",
       turns: 1,
+      selectedAgents: [],
     },
   });
 
   const handleSubmit = (data: MeetingFormData) => {
+    console.log("MeetingForm handleSubmit - data:", data);
     console.log("MeetingForm handleSubmit - selectedAgents from props:", selectedAgents);
+    console.log("MeetingForm handleSubmit - meetingType:", data.meetingType);
     onSubmit({ ...data, selectedAgents });
   };
 

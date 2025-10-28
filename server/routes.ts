@@ -154,6 +154,9 @@ Role Details: ${user.roleDetails}
   app.post("/api/meeting", requireAuth, async (req, res) => {
     try {
       const { task, agents, turns = 1, meetingType = "board" } = req.body;
+      
+      console.log("Server received meetingType:", meetingType);
+      console.log("Full request body:", req.body);
 
       if (!task || !agents || agents.length === 0) {
         return res.status(400).json({ error: "Task and agents are required" });
