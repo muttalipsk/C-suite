@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Route, Switch, Link, useLocation } from "wouter";
 import { MeetingForm } from "@/components/dashboard/MeetingForm";
 import { AgentCard } from "@/components/dashboard/AgentCard";
@@ -107,7 +107,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   }, []);
 
   // Abort controller to cancel duplicate requests
-  const abortControllerRef = useState<AbortController | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleRunMeeting = useCallback(async (data: any) => {
     // Prevent double execution
@@ -117,13 +117,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     }
 
     // Cancel any pending request
-    if (abortControllerRef[0]) {
-      abortControllerRef[0].abort();
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
 
     // Create new abort controller
     const abortController = new AbortController();
-    abortControllerRef[1](abortController);
+    abortControllerRef.current = abortController;
 
     setIsLoading(true);
     // Clear previous conversation state
@@ -184,7 +184,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       alert(error.message || "Failed to run meeting. Please try again.");
     } finally {
       setIsLoading(false);
-      abortControllerRef[1](null);
+      abortControllerRef.current = null;
     }
   }, [isLoading, selectedAgents]);
 

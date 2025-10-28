@@ -1,0 +1,86 @@
+Full request body: {
+  task: 'What steps should a company take today to prepare for the emergence of AGI within the next decade?',
+  agents: [
+    'Sam_Altman',
+    'Jensen_Huang',
+    'Andrew_Ng',
+    'Demis_Hassabis',
+    'Fei_Fei_Li'
+  ],
+  turns: 1,
+  meetingType: 'board'
+}
+Full request body: {
+  task: 'What steps should a company take today to prepare for the emergence of AGI within the next decade?',
+  agents: [
+    'Sam_Altman',
+    'Jensen_Huang',
+    'Andrew_Ng',
+    'Demis_Hassabis',
+    'Fei_Fei_Li'
+  ],
+  turns: 1,
+  meetingType: 'board'
+}
+7:04:46 PM [express] [python] ✓ Gemini API configured successfully
+Selected agents: ['Sam_Altman', 'Jensen_Huang', 'Andrew_Ng', 'Demis_Hassabis', 'Fei_Fei_Li'], User ID: 56ff7b22-2785-4697-b514-00379beda4c1, Meeting Type: board
+🚀 Starting meeting with 5 agents, 1 turn(s)...
+[Andrew_Ng] Starting recommendation with VectorDB memory...
+[Demis_Hassabis] Starting recommendation with VectorDB memory...
+[Fei_Fei_Li] Starting recommendation with VectorDB memory...
+[Jensen_Huang] Starting recommendation with VectorDB memory...
+[Sam_Altman] Starting recommendation with VectorDB memory...
+[Andrew_Ng] Error retrieving from knowledge base: Could not connect to tenant default_tenant. Are you sure it exists?
+[Fei_Fei_Li] No knowledge base documents found
+[Jensen_Huang] No knowledge base documents found
+[Demis_Hassabis] No knowledge base documents found
+[Andrew_Ng] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Demis_Hassabis] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Fei_Fei_Li] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Jensen_Huang] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Sam_Altman] Retrieved 5 knowledge chunks from ChromaDB
+[Sam_Altman] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Demis_Hassabis] Recommendation completed!
+[Andrew_Ng] Recommendation completed!
+[Jensen_Huang] Recommendation completed!
+[Fei_Fei_Li] Recommendation completed!
+[Sam_Altman] Recommendation completed!
+[Sam_Altman] Memory stored in VectorDB
+[Jensen_Huang] Memory stored in VectorDB
+[Andrew_Ng] Memory stored in VectorDB
+[Demis_Hassabis] Memory stored in VectorDB
+[Fei_Fei_Li] Memory stored in VectorDB
+✅ Meeting completed! Run ID: 583a8bb7-ff47-4d8e-bd3e-33074b31030c
+Selected agents: ['Sam_Altman', 'Jensen_Huang', 'Andrew_Ng', 'Demis_Hassabis', 'Fei_Fei_Li'], User ID: 56ff7b22-2785-4697-b514-00379beda4c1
+🚀 Starting meeting with 5 agents, 1 turn(s)...
+[Andrew_Ng] Starting recommendation with VectorDB memory...
+[Andrew_Ng] No knowledge base documents found
+[Demis_Hassabis] Starting recommendation with VectorDB memory...
+[Andrew_Ng] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Fei_Fei_Li] Starting recommendation with VectorDB memory...
+[Jensen_Huang] Starting recommendation with VectorDB memory...
+[Demis_Hassabis] No knowledge base documents found
+[Demis_Hassabis] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Jensen_Huang] No knowledge base documents found
+[Fei_Fei_Li] No knowledge base documents found
+[Sam_Altman] Starting recommendation with VectorDB memory...
+[Jensen_Huang] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Fei_Fei_Li] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Sam_Altman] Retrieved 5 knowledge chunks from ChromaDB
+[Sam_Altman] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Andrew_Ng] Recommendation completed!
+[Jensen_Huang] Recommendation completed!
+[Fei_Fei_Li] Recommendation completed!
+[Demis_Hassabis] Recommendation completed!
+[Sam_Altman] Recommendation completed!
+[Sam_Altman] Memory stored in VectorDB
+[Jensen_Huang] Memory stored in VectorDB
+[Andrew_Ng] Memory stored in VectorDB
+[Demis_Hassabis] Memory stored in VectorDB
+[Fei_Fei_Li] Memory stored in VectorDB
+✅ Meeting completed! Run ID: b2aba64a-ff55-4e49-a90c-25a7181c4158
+INFO:     127.0.0.1:43988 - "POST /meeting HTTP/1.1" 200 OK
+Meeting completed: DB ID 530d5537-f97a-4d61-b5fb-6aeee78448f0, Python Run ID b2aba64a-ff55-4e49-a90c-25a7181c4158
+7:04:46 PM [express] POST /api/meeting 200 in 28348ms :: {"runId":"b2aba64a-ff55-4e49-a90c-25a7181c4…
+
+
