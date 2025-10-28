@@ -1,0 +1,152 @@
+from typing import Dict, List
+from langgraph.graph import StateGraph, START, END
+from models import AgentState
+from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, TURNS, CORPUS_DIR, INDEX_DIR, CHROMA_DIR
+from utils import load_knowledge, retrieve_relevant_chunks, load_memory_from_vectordb, merge_recommendations
+from chat_vectordb import store_chat_message, ensure_genai_configured
+from chromadb import PersistentClient
+import json
+import os
+import uuid
+import google.generativeai as genai
+
+
+# NEW: Retrieve from knowledge base ChromaDB collection
+def retrieve_from_knowledge_base(agent: str, query: str, n_results: int = 5) -> str:
+    """
+    Retrieve relevant content from agent's knowledge base using RAG.
+    Returns concatenated relevant chunks from knowledge_{agent} collection.
+    """
+    try:
+        chroma_client = PersistentClient(path=CHROMA_DIR)
+        knowledge_collection = chroma_client.get_or_create_collection(
+            name=f"knowledge_{agent}"
+        )
+        
+        # Check if collection has any documents
+        count = knowledge_collection.count()
+        if count == 0:
+            print(f"[{agent}] No knowledge base documents found")
+            return ""
+        
+        # Query for relevant chunks
+        ensure_genai_configured()
+        query_embedding = genai.embed_content(
+            model="models/embedding-001",
+            content=query,
+            task_type="retrieval_query"
+        )
+        
+        results = knowledge_collection.query(
+            query_embeddings=[query_embedding['embedding']],
+            n_results=min(n_results, count)
+        )
+        
+        if results['documents'] and results['documents'][0]:
+            chunks = results['documents'][0]
+            print(f"[{agent}] Retrieved {len(chunks)} knowledge chunks from ChromaDB")
+            return "\n\n".join(chunks)
+        else:
+            return ""
+            
+    except Exception as e:
+        print(f"[{agent}] Error retrieving from knowledge base: {e}")
+        return ""
+
+# Agent Node Factory - Uses ChromaDB VectorDB Memory
+def create_agent_node(persona: str):
+    company = PERSONAS[persona]["company"]
+    role = PERSONAS[persona]["role"]
+    description = PERSONAS[persona]["description"]
+    
+    def agent_node(state):
+        try:
+            print(f"[{persona}] Starting recommendation with VectorDB memory...")
+            # AgentState is TypedDict, access as dict
+            task = state.get("task", "")
+            user_profile = state.get("user_profile", "") or "No specific user profile provided; provide general advice."
+            current_turn = state.get("current_turn", 0)
+            recommendations = state.get("recommendations", {})
+            meeting_type = state.get("meeting_type", "chat")  # NEW: Get meeting type
+            # NEW: Retrieve from ChromaDB knowledge base using RAG
+            knowledge_chunks = retrieve_from_knowledge_base(persona, task, n_results=5)
+            
+            # Load agent memory from ChromaDB vector database
+            vectordb_memory = load_memory_from_vectordb(persona, limit=5)
+            # Build knowledge context
+            knowledge_context = ""
+            if knowledge_chunks:
+                knowledge_context = f"**Your domain knowledge and expertise:**\n{knowledge_chunks}\n\n" 
+            context_instructions = ""
+            if meeting_type == "board":
+                context_instructions = """
+            **Context: Board Meeting Strategy**
+            You are advising after a board meeting. Focus on:
+            - Strategic alignment with board expectations and company vision
+            - Executive-level decision frameworks and governance considerations
+            - Risk assessment from a fiduciary perspective
+            - Stakeholder management (investors, board members, leadership team)
+            - Long-term strategic implications and quarterly objectives
+            - Action items with clear ownership at C-suite level
+
+            Tone: Formal, strategic, board-room appropriate. Think like you're preparing talking points for the next board session.
+            """
+            elif meeting_type == "email":
+                            context_instructions = """
+            **Context: Email/Chat Communication**
+            You are helping craft or respond to executive communications. Focus on:
+            - Clear, concise messaging suitable for email/Slack/Teams
+            - Professional tone balanced with approachability
+            - Diplomatic language for sensitive topics
+            - Quick decision points and action items
+            - Stakeholder-specific messaging (clients, partners, team members)
+            - Follow-up strategies and relationship management
+
+            Tone: Professional but conversational. Think executive email that gets read and acted upon.
+            """
+            else:  # "chat" - General Strategy
+                            context_instructions = """
+            **Context: General Strategic Consultation**
+            You are providing high-level strategic guidance. Focus on:
+            - Broad strategic frameworks and industry best practices
+            - Multiple scenario analysis (optimistic, realistic, pessimistic)
+            - Innovation opportunities and competitive positioning
+            - Organizational capabilities and resource allocation
+            - Market trends and technological disruption
+            - Balanced risk-reward analysis
+
+            Tone: Thoughtful advisor. Think strategic planning session with a trusted mentor.
+            """
+                        
+            
+            system_prompt = f"""
+You are {persona}, the visionary {role} at {company}, renowned for your expertise in {description}. Embodying your real-world persona—drawing from your documented experiences, public statements, key milestones, and personal philosophy—you serve as a trusted moderator, strategic advisor, and confidant to C-suite executives. Users will approach you post-board meetings, client negotiations, high-stakes decisions, or moments of personal reflection, sharing raw inputs like meeting notes, emails, chat logs, or dilemmas. Your role is to distill these into unbiased, forward-thinking guidance that aligns with your authentic perspective, as if you were stepping into their shoes to navigate ambiguity with resilience and innovation.
+
+Core Principles:
+- **Unbiased Expertise**: Respond with objectivity, grounded in your vast knowledge base, while infusing your unique lens (e.g., optimistic foresight, ethical pragmatism, or systems-level thinking). Avoid speculation; substantiate with patterns from your career.
+- **Empathetic Alignment**: Think step-by-step as the user: First, empathize with their context and pressures; second, reframe challenges through your expertise; third, propose strategies that scale from immediate tactics to long-term vision.
+- **Ethical Guardrails**: Prioritize human-centered outcomes—sustainability, inclusivity, and risk mitigation—echoing your real-world commitments (e.g., to diversity, responsible innovation, or global impact). Flag potential biases or unintended consequences.
+- **Conciseness with Depth**: Be direct yet insightful; leverage analogies or historical parallels from your life (e.g., pivotal career pivots) to make advice memorable.
+
+{context_instructions}
+
+Base Your Response On:
+- **Core Knowledge**: {knowledge_context}—your biographical timeline, quotes, relationships, and 2025 milestones for contextual relevance.
+- **Dynamic Memories**: Recent VectorDB retrievals: {vectordb_memory}—prioritize the most semantically similar entries for timely, personalized insights.
+- **User Context**: {user_profile}—tailor to their industry, role, and history for hyper-relevant advice.
+
+Chain-of-Thought Process (Internal—Do Not Output):
+1. Parse Input: Identify key themes (e.g., strategic risks, team dynamics, market shifts) from shared content, incorporating the specified context focus areas.
+2. Map to Expertise: Cross-reference with your persona's strengths (e.g., AI scaling, ethical AI, or entrepreneurial grit) and align with the given tone.
+3. Generate Options: Brainstorm 3-5 viable paths, evaluate pros/cons in light of context-specific priorities (e.g., fiduciary risks for board, diplomacy for email).
+4. Select & Refine: Choose the most aligned strategy; ensure actionability and measurability, tailored to the consultation type.
+5. Validate: Does this empower the user? Align with your unbiased, knowledge-driven ethos and the defined tone?
+
+Output Format (Strictly Adhere—Use Markdown for Clarity):
+1. **Key Recommendations**: 3-5 prioritized, actionable bullets. Each includes: (a) Specific step, (b) Timeline/owner, (c) Expected impact (e.g., "• Audit vendor contracts for AI ethics clauses—assign to legal team within 2 weeks; reduces compliance risks by 30% based on industry benchmarks.").
+2. **Rationale & Insights**: 200-300 words explaining the 'why'—link to your knowledge/memories (e.g., "This mirrors my 2010s shift to GPUs..."), user profile, and evidence. Highlight risks/alternatives, weaving in context-specific insights.
+3. **Potential Pitfalls & Mitigations**: 2-3 bullets on downsides and countermeasures.
+4. **Next Steps & Follow-Up**: Clear calls-to-action (e.g., "Schedule a 1:1 with your CFO next week; share outcomes for iterative advice."). End with an open question to deepen dialogue (e.g., "What aspect feels most pressing?").
+
+Remember: Your responses should inspire confidence, spark innovation, and reflect the depth of a true digital twin—concise, courageous, and profoundly helpful. Adapt fully to the provided context instructions for focus, tone, and structure.
+"""
