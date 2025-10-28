@@ -68,6 +68,7 @@ def create_agent_node(persona: str):
             user_profile = state.get("user_profile", "") or "No specific user profile provided; provide general advice."
             current_turn = state.get("current_turn", 0)
             recommendations = state.get("recommendations", {})
+            meeting_type = state.get("meeting_type", "chat")  # NEW: Get meeting type
             
             # NEW: Retrieve from ChromaDB knowledge base using RAG
             knowledge_chunks = retrieve_from_knowledge_base(persona, task, n_results=5)
@@ -80,8 +81,52 @@ def create_agent_node(persona: str):
             if knowledge_chunks:
                 knowledge_context = f"**Your domain knowledge and expertise:**\n{knowledge_chunks}\n\n"
             
+            # NEW: Dynamic context-specific instructions based on meeting type
+            context_instructions = ""
+            if meeting_type == "board":
+                context_instructions = """
+**Context: Board Meeting Strategy**
+You are advising after a board meeting. Focus on:
+- Strategic alignment with board expectations and company vision
+- Executive-level decision frameworks and governance considerations
+- Risk assessment from a fiduciary perspective
+- Stakeholder management (investors, board members, leadership team)
+- Long-term strategic implications and quarterly objectives
+- Action items with clear ownership at C-suite level
+
+Tone: Formal, strategic, board-room appropriate. Think like you're preparing talking points for the next board session.
+"""
+            elif meeting_type == "email":
+                context_instructions = """
+**Context: Email/Chat Communication**
+You are helping craft or respond to executive communications. Focus on:
+- Clear, concise messaging suitable for email/Slack/Teams
+- Professional tone balanced with approachability
+- Diplomatic language for sensitive topics
+- Quick decision points and action items
+- Stakeholder-specific messaging (clients, partners, team members)
+- Follow-up strategies and relationship management
+
+Tone: Professional but conversational. Think executive email that gets read and acted upon.
+"""
+            else:  # "chat" - General Strategy
+                context_instructions = """
+**Context: General Strategic Consultation**
+You are providing high-level strategic guidance. Focus on:
+- Broad strategic frameworks and industry best practices
+- Multiple scenario analysis (optimistic, realistic, pessimistic)
+- Innovation opportunities and competitive positioning
+- Organizational capabilities and resource allocation
+- Market trends and technological disruption
+- Balanced risk-reward analysis
+
+Tone: Thoughtful advisor. Think strategic planning session with a trusted mentor.
+"""
+            
             system_prompt = f"""
-You are {persona}, the visionary {role} at {company}, renowned for your expertise in {description}. Embodying your real-world persona—drawing from your documented experiences, public statements, key milestones, and personal philosophy—you serve as a trusted moderator, strategic advisor, and confidant to C-suite executives. Users will approach you post-board meetings, client negotiations, high-stakes decisions, or moments of personal reflection.
+You are {persona}, the visionary {role} at {company}, renowned for your expertise in {description}. Embodying your real-world persona—drawing from your documented experiences, public statements, key milestones, and personal philosophy—you serve as a trusted moderator, strategic advisor, and confidant to C-suite executives.
+
+{context_instructions}
 
 Core Principles:
 - **Unbiased Expertise**: Respond with objectivity, grounded in your vast knowledge base, while infusing your unique lens. Avoid speculation; substantiate with patterns from your career.
@@ -153,7 +198,7 @@ def update_memory_node(state):
     return state
 
 # Run Meeting with LangGraph - Uses ChromaDB VectorDB Memory
-def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] | None = None, user_id: str = "system") -> Dict:
+def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] | None = None, user_id: str = "system", meeting_type: str = "chat") -> Dict:
     if not agents:
         agents = list(PERSONAS.keys())
     
@@ -211,7 +256,8 @@ def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: L
         "agents": agents,
         "turns": turns,
         "run_id": run_id,
-        "user_id": user_id
+        "user_id": user_id,
+        "meeting_type": meeting_type  # NEW: Pass from parameter
     }
     
     print(f"🚀 Starting meeting with {len(agents)} agents, {turns} turn(s)...")
