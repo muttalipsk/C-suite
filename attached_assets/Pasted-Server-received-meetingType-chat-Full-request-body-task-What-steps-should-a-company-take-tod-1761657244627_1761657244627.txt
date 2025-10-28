@@ -1,0 +1,74 @@
+Server received meetingType: chat
+Full request body: {
+  task: 'What steps should a company take today to prepare for the emergence of AGI within the next decade?',
+  agents: [
+    'Sam_Altman',
+    'Jensen_Huang',
+    'Andrew_Ng',
+    'Demis_Hassabis',
+    'Fei_Fei_Li'
+  ],
+  turns: 1,
+  meetingType: 'chat'
+}
+6:43:00 PM [express] [python] ✓ Gemini API configured successfully
+Selected agents: ['Sam_Altman', 'Jensen_Huang', 'Andrew_Ng', 'Demis_Hassabis', 'Fei_Fei_Li'], User ID: 56ff7b22-2785-4697-b514-00379beda4c1, Meeting Type: chat
+🚀 Starting meeting with 5 agents, 1 turn(s)...
+[Andrew_Ng] Starting recommendation with VectorDB memory...
+[Demis_Hassabis] Starting recommendation with VectorDB memory...
+[Fei_Fei_Li] Starting recommendation with VectorDB memory...
+[Jensen_Huang] Starting recommendation with VectorDB memory...
+[Sam_Altman] Starting recommendation with VectorDB memory...
+[Andrew_Ng] Error retrieving from knowledge base: Could not connect to tenant default_tenant. Are you sure it exists?
+[Jensen_Huang] Error retrieving from knowledge base: Could not connect to tenant default_tenant. Are you sure it exists?
+[Demis_Hassabis] No knowledge base documents found
+[Fei_Fei_Li] No knowledge base documents found
+[Andrew_Ng] Using meeting type context: chat, and instruction: This is a **General Strategy context**. Provide comprehensive, thoughtful strategic guidance. Balance immediate actions with long-term planning. Be thorough in your analysis, explore multiple angles, and provide deep insights that demonstrate your expertise.
+[Demis_Hassabis] Using meeting type context: chat, and instruction: This is a **General Strategy context**. Provide comprehensive, thoughtful strategic guidance. Balance immediate actions with long-term planning. Be thorough in your analysis, explore multiple angles, and provide deep insights that demonstrate your expertise.
+[Jensen_Huang] Using meeting type context: chat, and instruction: This is a **General Strategy context**. Provide comprehensive, thoughtful strategic guidance. Balance immediate actions with long-term planning. Be thorough in your analysis, explore multiple angles, and provide deep insights that demonstrate your expertise.
+[Fei_Fei_Li] Using meeting type context: chat, and instruction: This is a **General Strategy context**. Provide comprehensive, thoughtful strategic guidance. Balance immediate actions with long-term planning. Be thorough in your analysis, explore multiple angles, and provide deep insights that demonstrate your expertise.
+[Sam_Altman] Retrieved 5 knowledge chunks from ChromaDB
+[Sam_Altman] Using meeting type context: chat, and instruction: This is a **General Strategy context**. Provide comprehensive, thoughtful strategic guidance. Balance immediate actions with long-term planning. Be thorough in your analysis, explore multiple angles, and provide deep insights that demonstrate your expertise.
+[Fei_Fei_Li] Recommendation completed!
+[Demis_Hassabis] Recommendation completed!
+[Jensen_Huang] Recommendation completed!
+[Sam_Altman] Recommendation completed!
+[Andrew_Ng] Recommendation completed!
+[Sam_Altman] Memory stored in VectorDB
+[Jensen_Huang] Memory stored in VectorDB
+[Andrew_Ng] Memory stored in VectorDB
+[Demis_Hassabis] Memory stored in VectorDB
+[Fei_Fei_Li] Memory stored in VectorDB
+✅ Meeting completed! Run ID: d94c76f4-2390-4c50-afd8-584ca937ab37
+Selected agents: ['Sam_Altman', 'Jensen_Huang', 'Andrew_Ng', 'Demis_Hassabis', 'Fei_Fei_Li'], User ID: 56ff7b22-2785-4697-b514-00379beda4c1
+🚀 Starting meeting with 5 agents, 1 turn(s)...
+[Andrew_Ng] Starting recommendation with VectorDB memory...
+[Demis_Hassabis] Starting recommendation with VectorDB memory...
+[Fei_Fei_Li] Starting recommendation with VectorDB memory...
+[Jensen_Huang] Starting recommendation with VectorDB memory...
+[Sam_Altman] Starting recommendation with VectorDB memory...
+[Fei_Fei_Li] No knowledge base documents found
+[Demis_Hassabis] No knowledge base documents found
+[Fei_Fei_Li] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Demis_Hassabis] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Andrew_Ng] No knowledge base documents found
+[Jensen_Huang] No knowledge base documents found
+[Andrew_Ng] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Jensen_Huang] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Sam_Altman] Retrieved 5 knowledge chunks from ChromaDB
+[Sam_Altman] Using meeting type context: board, and instruction: This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.
+[Fei_Fei_Li] Recommendation completed!
+[Demis_Hassabis] Recommendation completed!
+[Andrew_Ng] Recommendation completed!
+[Jensen_Huang] Recommendation completed!
+[Sam_Altman] Recommendation completed!
+[Sam_Altman] Memory stored in VectorDB
+[Jensen_Huang] Memory stored in VectorDB
+[Andrew_Ng] Memory stored in VectorDB
+[Demis_Hassabis] Memory stored in VectorDB
+[Fei_Fei_Li] Memory stored in VectorDB
+✅ Meeting completed! Run ID: eecdd9f1-0bda-4036-93dc-5f0ee498b8a2
+INFO:     127.0.0.1:48752 - "POST /meeting HTTP/1.1" 200 OK
+Meeting completed: DB ID 7292a382-1162-48c7-927c-b978d0a86e3c, Python Run ID eecdd9f1-0bda-4036-93dc-5f0ee498b8a2
+6:43:00 PM [express] POST /api/meeting 200 in 30135ms :: {"runId":"eecdd9f1-0bda-4036-93dc-5f0ee498b…
+
