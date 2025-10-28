@@ -217,6 +217,118 @@ async def agent_stats(agent: str):
 
 # ===== DIGITAL TWIN ENDPOINTS =====
 
+@app.post("/agent/upload-knowledge")
+async def upload_agent_knowledge(
+    agent: str = Form(...),
+    files: List[UploadFile] = File(...)
+):
+    """
+    Upload knowledge documents for AI leaders (Sam Altman, Jensen Huang, etc.).
+    Creates dedicated ChromaDB collection: knowledge_{agent}
+    Processes PDFs/TXT files, chunks them, embeds with Gemini, stores for RAG.
+    """
+    try:
+        if agent not in PERSONAS:
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"Invalid agent. Must be one of: {', '.join(PERSONAS)}"}
+            )
+        
+        # Ensure Gemini is configured
+        ensure_genai_configured()
+        
+        # Import ChromaDB utilities
+        from chromadb import PersistentClient
+        from constants import CHROMA_DIR
+        
+        # Create collection for this agent's knowledge
+        chroma_client = PersistentClient(path=CHROMA_DIR)
+        knowledge_collection = chroma_client.get_or_create_collection(
+            name=f"knowledge_{agent}"
+        )
+        
+        total_chunks = 0
+        processed_files = []
+        
+        # Process each uploaded file
+        for file in files:
+            if not file.filename:
+                continue
+                
+            content_bytes = await file.read()
+            file_text = ""
+            
+            # Extract text based on file type
+            if file.filename.endswith(".pdf"):
+                reader = PdfReader(io.BytesIO(content_bytes))
+                for page in reader.pages:
+                    file_text += page.extract_text() + "\n"
+            elif file.filename.endswith((".txt", ".md")):
+                file_text = content_bytes.decode("utf-8")
+            else:
+                continue  # Skip unsupported formats
+            
+            if not file_text.strip():
+                continue
+            
+            # Chunk the document (simple chunking: every 500 words)
+            words = file_text.split()
+            chunk_size = 500
+            chunks = []
+            
+            for i in range(0, len(words), chunk_size):
+                chunk = " ".join(words[i:i + chunk_size])
+                if chunk.strip():
+                    chunks.append(chunk)
+            
+            # Generate embeddings and store in ChromaDB
+            embedding_model = genai.GenerativeModel("models/embedding-001")
+            
+            for idx, chunk in enumerate(chunks):
+                # Generate embedding
+                embedding_result = genai.embed_content(
+                    model="models/embedding-001",
+                    content=chunk,
+                    task_type="retrieval_document"
+                )
+                
+                # Store in ChromaDB
+                knowledge_collection.add(
+                    documents=[chunk],
+                    embeddings=[embedding_result['embedding']],
+                    metadatas=[{
+                        "file_name": file.filename,
+                        "chunk_index": idx,
+                        "agent": agent
+                    }],
+                    ids=[f"{agent}_{file.filename}_{idx}"]
+                )
+                total_chunks += 1
+            
+            processed_files.append({
+                "filename": file.filename,
+                "chunks": len(chunks)
+            })
+        
+        return {
+            "success": True,
+            "agent": agent,
+            "files_processed": len(processed_files),
+            "total_chunks": total_chunks,
+            "files": processed_files,
+            "collection": f"knowledge_{agent}"
+        }
+        
+    except Exception as e:
+        print(f"Error uploading agent knowledge: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "success": False}
+        )
+
+
 @app.post("/twin/create")
 async def create_twin(
     twin_id: str = Form(...),

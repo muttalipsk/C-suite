@@ -572,6 +572,48 @@ Role Details: ${user.roleDetails}
     }
   });
 
+  // Upload knowledge base for AI leaders
+  app.post("/api/agents/:agentName/knowledge", requireAuth, upload.array('files', 20), async (req, res) => {
+    try {
+      const { agentName } = req.params;
+      const files = req.files as Express.Multer.File[];
+
+      if (!files || files.length === 0) {
+        return res.status(400).json({ error: "No files uploaded" });
+      }
+
+      // Forward files to Python API
+      const formData = new FormData();
+      formData.append('agent', agentName);
+
+      for (const file of files) {
+        const fileStream = fs.createReadStream(file.path);
+        formData.append('files', fileStream, file.originalname);
+      }
+
+      const pythonResponse = await axios.post(
+        'http://localhost:8000/agent/upload-knowledge',
+        formData,
+        {
+          headers: formData.getHeaders(),
+          timeout: 300000 // 5 minutes for large documents
+        }
+      );
+
+      // Clean up uploaded files
+      for (const file of files) {
+        fs.unlinkSync(file.path);
+      }
+
+      res.json(pythonResponse.data);
+    } catch (error: any) {
+      console.error("Agent knowledge upload error:", error);
+      res.status(500).json({ 
+        error: error.response?.data?.error || "Failed to upload agent knowledge" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
