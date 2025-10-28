@@ -106,7 +106,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     });
   }, []);
 
-  const handleRunMeeting = async (data: any) => {
+  const handleRunMeeting = useCallback(async (data: any) => {
+    // Prevent double execution
+    if (isLoading) {
+      console.log("Meeting already in progress, ignoring duplicate request");
+      return;
+    }
+
     setIsLoading(true);
     // Clear previous conversation state
     setSelectedConversation(null);
@@ -160,7 +166,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, selectedAgents]);
 
   const handleSelectConversation = async (runId: string, agentKey: string) => {
     try {

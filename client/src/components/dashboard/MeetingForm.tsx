@@ -36,7 +36,10 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
     },
   });
 
-  const handleSubmit = (data: MeetingFormData) => {
+  const handleSubmit = (data: MeetingFormData, e?: React.BaseSyntheticEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    
     console.log("MeetingForm handleSubmit - data:", data);
     console.log("MeetingForm handleSubmit - selectedAgents from props:", selectedAgents);
     console.log("MeetingForm handleSubmit - meetingType:", data.meetingType);
