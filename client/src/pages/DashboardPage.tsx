@@ -106,12 +106,24 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     });
   }, []);
 
+  // Abort controller to cancel duplicate requests
+  const abortControllerRef = useState<AbortController | null>(null);
+
   const handleRunMeeting = useCallback(async (data: any) => {
     // Prevent double execution
     if (isLoading) {
-      console.log("Meeting already in progress, ignoring duplicate request");
+      console.log("⚠️ Meeting already in progress, ignoring duplicate request");
       return;
     }
+
+    // Cancel any pending request
+    if (abortControllerRef[0]) {
+      abortControllerRef[0].abort();
+    }
+
+    // Create new abort controller
+    const abortController = new AbortController();
+    abortControllerRef[1](abortController);
 
     setIsLoading(true);
     // Clear previous conversation state
@@ -138,6 +150,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
+        signal: abortController.signal,
       });
 
       const result = await response.json();
@@ -161,10 +174,17 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (error: any) {
+      // Ignore abort errors (these are intentional cancellations)
+      if (error.name === 'AbortError') {
+        console.log("Request was cancelled");
+        return;
+      }
+      
       console.error("Meeting error:", error);
       alert(error.message || "Failed to run meeting. Please try again.");
     } finally {
       setIsLoading(false);
+      abortControllerRef[1](null);
     }
   }, [isLoading, selectedAgents]);
 

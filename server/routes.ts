@@ -12,6 +12,7 @@ import FormData from "form-data";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { Request, Response } from "express"; // Import Request and Response types
 
 const PgSession = connectPgSimple(session);
 
@@ -151,12 +152,40 @@ Role Details: ${user.roleDetails}
   });
 
   // MEETING/RUN ROUTES - Forwards ALL agent operations to Python API
-  app.post("/api/meeting", requireAuth, async (req, res) => {
+  // Track recent meeting requests to prevent duplicates
+  const recentMeetingRequests = new Map<string, number>();
+  const DUPLICATE_THRESHOLD_MS = 2000; // 2 seconds
+
+  // Run meeting endpoint
+  app.post("/api/meeting", requireAuth, async (req: Request, res: Response) => {
     try {
       const { task, agents, turns = 1, meetingType = "board" } = req.body;
-      
+
       console.log("Server received meetingType:", meetingType);
       console.log("Full request body:", req.body);
+
+      // Create a unique key for this request
+      const requestKey = `${task}-${agents.join(',')}-${meetingType}`;
+      const now = Date.now();
+
+      // Check if we've seen this exact request recently
+      if (recentMeetingRequests.has(requestKey)) {
+        const lastRequestTime = recentMeetingRequests.get(requestKey)!;
+        if (now - lastRequestTime < DUPLICATE_THRESHOLD_MS) {
+          console.log("⚠️ Duplicate meeting request detected and ignored");
+          return res.status(429).json({ error: "Duplicate request - please wait" });
+        }
+      }
+
+      // Record this request
+      recentMeetingRequests.set(requestKey, now);
+
+      // Clean up old entries (older than 5 seconds)
+      for (const [key, time] of recentMeetingRequests.entries()) {
+        if (now - time > 5000) {
+          recentMeetingRequests.delete(key);
+        }
+      }
 
       if (!task || !agents || agents.length === 0) {
         return res.status(400).json({ error: "Task and agents are required" });
@@ -247,13 +276,13 @@ Role Details: ${user.roleDetails}
 
       // Fetch from Python VectorDB API (agent-specific collection)
       const pythonResponse = await fetch(`http://localhost:8000/get_chat?run_id=${runId}&agent=${agent}`);
-      
+
       if (!pythonResponse.ok) {
         throw new Error(`Python API error: ${pythonResponse.statusText}`);
       }
 
       const data = await pythonResponse.json();
-      
+
       // Convert format to match frontend expectations
       const history = data.history.map((h: any) => ({
         sender: h.user ? "user" : "agent",
@@ -612,8 +641,8 @@ Role Details: ${user.roleDetails}
       res.json(pythonResponse.data);
     } catch (error: any) {
       console.error("Agent knowledge upload error:", error);
-      res.status(500).json({ 
-        error: error.response?.data?.error || "Failed to upload agent knowledge" 
+      res.status(500).json({
+        error: error.response?.data?.error || "Failed to upload agent knowledge"
       });
     }
   });
