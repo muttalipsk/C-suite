@@ -184,7 +184,7 @@ Role Details: ${user.roleDetails}
       recentMeetingRequests.set(requestKey, now);
 
       // Clean up old entries (older than 5 seconds)
-      for (const [key, time] of recentMeetingRequests.entries()) {
+      for (const [key, time] of Array.from(recentMeetingRequests.entries())) {
         if (now - time > 5000) {
           recentMeetingRequests.delete(key);
         }
