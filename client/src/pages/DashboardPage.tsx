@@ -108,8 +108,19 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   // Abort controller to cancel duplicate requests
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastSubmitTimeRef = useRef<number>(0);
 
   const handleRunMeeting = useCallback(async (data: any) => {
+    const now = Date.now();
+    
+    // Debounce: Ignore if submitted within last 2 seconds
+    if (now - lastSubmitTimeRef.current < 2000) {
+      console.log("⚠️ Duplicate submission ignored (debounced within 2s)");
+      return;
+    }
+    
+    lastSubmitTimeRef.current = now;
+
     // Prevent double execution
     if (isLoading) {
       console.log("⚠️ Meeting already in progress, ignoring duplicate request");
