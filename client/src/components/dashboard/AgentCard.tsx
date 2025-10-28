@@ -41,24 +41,27 @@ export function AgentCard({
   // Parse recommendation into structured sections
   const parseRecommendation = (text: string) => {
     const sections = {
-      summary: "",
       keyRecommendations: [] as string[],
       rationale: "",
+      pitfalls: [] as string[],
       nextSteps: "",
     };
 
-    const summaryMatch = text.match(/\*\*Summary\*\*:?\s*(.*?)(?=\*\*|$)/s);
     const keyRecsMatch = text.match(/\*\*Key Recommendations\*\*:?\s*(.*?)(?=\*\*|$)/s);
-    const rationaleMatch = text.match(/\*\*Rationale and Balance\*\*:?\s*(.*?)(?=\*\*|$)/s);
-    const nextStepsMatch = text.match(/\*\*Next Steps or Considerations\*\*:?\s*(.*?)(?=\*\*|$)/s);
+    const rationaleMatch = text.match(/\*\*Rationale (&|and) Insights\*\*:?\s*(.*?)(?=\*\*|$)/s);
+    const pitfallsMatch = text.match(/\*\*Potential Pitfalls (&|and) Mitigations\*\*:?\s*(.*?)(?=\*\*|$)/s);
+    const nextStepsMatch = text.match(/\*\*Next Steps (&|and) Follow-Up\*\*:?\s*(.*?)(?=\*\*|$)/s);
 
-    if (summaryMatch) sections.summary = summaryMatch[1].trim();
     if (keyRecsMatch) {
       const bullets = keyRecsMatch[1].match(/[-•]\s*(.*?)(?=\n[-•]|\n\n|$)/gs);
       sections.keyRecommendations = bullets?.map(b => b.replace(/^[-•]\s*/, '').trim()) || [];
     }
-    if (rationaleMatch) sections.rationale = rationaleMatch[1].trim();
-    if (nextStepsMatch) sections.nextSteps = nextStepsMatch[1].trim();
+    if (rationaleMatch) sections.rationale = rationaleMatch[2].trim();
+    if (pitfallsMatch) {
+      const bullets = pitfallsMatch[2].match(/[-•]\s*(.*?)(?=\n[-•]|\n\n|$)/gs);
+      sections.pitfalls = bullets?.map(b => b.replace(/^[-•]\s*/, '').trim()) || [];
+    }
+    if (nextStepsMatch) sections.nextSteps = nextStepsMatch[2].trim();
 
     return sections;
   };
@@ -139,13 +142,6 @@ export function AgentCard({
           </CollapsibleTrigger>
 
           <CollapsibleContent className="space-y-4 mt-4">
-            {sections.summary && (
-              <div>
-                <h4 className="font-semibold text-sm text-foreground mb-2">Summary</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">{sections.summary}</p>
-              </div>
-            )}
-
             {sections.keyRecommendations.length > 0 && (
               <div>
                 <h4 className="font-semibold text-sm text-foreground mb-2">Key Recommendations</h4>
@@ -162,20 +158,34 @@ export function AgentCard({
 
             {sections.rationale && (
               <div>
-                <h4 className="font-semibold text-sm text-foreground mb-2">Rationale & Balance</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">{sections.rationale}</p>
+                <h4 className="font-semibold text-sm text-foreground mb-2">Rationale & Insights</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{sections.rationale}</p>
+              </div>
+            )}
+
+            {sections.pitfalls.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-sm text-foreground mb-2">Potential Pitfalls & Mitigations</h4>
+                <ul className="space-y-2">
+                  {sections.pitfalls.map((pitfall, idx) => (
+                    <li key={idx} className="text-sm text-muted-foreground flex gap-2">
+                      <span className="text-destructive">•</span>
+                      <span className="flex-1">{pitfall}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
             {sections.nextSteps && (
               <div>
-                <h4 className="font-semibold text-sm text-foreground mb-2">Next Steps</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">{sections.nextSteps}</p>
+                <h4 className="font-semibold text-sm text-foreground mb-2">Next Steps & Follow-Up</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{sections.nextSteps}</p>
               </div>
             )}
 
-            {!sections.summary && !sections.keyRecommendations.length && (
-              <p className="text-sm text-muted-foreground leading-relaxed">{recommendation}</p>
+            {!sections.keyRecommendations.length && !sections.rationale && (
+              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{recommendation}</p>
             )}
           </CollapsibleContent>
         </Collapsible>

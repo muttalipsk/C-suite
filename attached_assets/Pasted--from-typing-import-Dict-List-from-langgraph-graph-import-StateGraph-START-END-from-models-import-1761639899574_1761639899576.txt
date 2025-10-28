@@ -1,0 +1,240 @@
+
+from typing import Dict, List
+from langgraph.graph import StateGraph, START, END
+from models import AgentState
+from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, TURNS, CORPUS_DIR, INDEX_DIR, CHROMA_DIR
+from utils import load_knowledge, retrieve_relevant_chunks, load_memory_from_vectordb, merge_recommendations
+from chat_vectordb import store_chat_message, ensure_genai_configured
+from chromadb import PersistentClient
+import json
+import os
+import uuid
+import google.generativeai as genai
+
+
+# NEW: Retrieve from knowledge base ChromaDB collection
+def retrieve_from_knowledge_base(agent: str, query: str, n_results: int = 5) -> str:
+    """
+    Retrieve relevant content from agent's knowledge base using RAG.
+    Returns concatenated relevant chunks from knowledge_{agent} collection.
+    """
+    try:
+        chroma_client = PersistentClient(path=CHROMA_DIR)
+        knowledge_collection = chroma_client.get_or_create_collection(
+            name=f"knowledge_{agent}"
+        )
+        
+        # Check if collection has any documents
+        count = knowledge_collection.count()
+        if count == 0:
+            print(f"[{agent}] No knowledge base documents found")
+            return ""
+        
+        # Query for relevant chunks
+        ensure_genai_configured()
+        query_embedding = genai.embed_content(
+            model="models/embedding-001",
+            content=query,
+            task_type="retrieval_query"
+        )
+        
+        results = knowledge_collection.query(
+            query_embeddings=[query_embedding['embedding']],
+            n_results=min(n_results, count)
+        )
+        
+        if results['documents'] and results['documents'][0]:
+            chunks = results['documents'][0]
+            print(f"[{agent}] Retrieved {len(chunks)} knowledge chunks from ChromaDB")
+            return "\n\n".join(chunks)
+        else:
+            return ""
+            
+    except Exception as e:
+        print(f"[{agent}] Error retrieving from knowledge base: {e}")
+        return ""
+
+# Agent Node Factory - Uses ChromaDB VectorDB Memory
+def create_agent_node(persona: str):
+    company = PERSONAS[persona]["company"]
+    role = PERSONAS[persona]["role"]
+    description = PERSONAS[persona]["description"]
+    
+    def agent_node(state):
+        try:
+            print(f"[{persona}] Starting recommendation with VectorDB memory...")
+            # AgentState is TypedDict, access as dict
+            task = state.get("task", "")
+            user_profile = state.get("user_profile", "") or "No specific user profile provided; provide general advice."
+            current_turn = state.get("current_turn", 0)
+            recommendations = state.get("recommendations", {})
+            
+            # NEW: Retrieve from ChromaDB knowledge base using RAG
+            knowledge_chunks = retrieve_from_knowledge_base(persona, task, n_results=5)
+            
+            # Load agent memory from ChromaDB vector database
+            vectordb_memory = load_memory_from_vectordb(persona, limit=5)
+            # Build knowledge context
+            knowledge_context = ""
+            if knowledge_chunks:
+                knowledge_context = f"**Your domain knowledge and expertise:**\n{knowledge_chunks}\n\n"
+            
+            
+            system_prompt = f"""
+You are {persona}, the visionary {role} at {company}, renowned for your expertise in {description}. Embodying your real-world persona—drawing from your documented experiences, public statements, key milestones, and personal philosophy—you serve as a trusted moderator, strategic advisor, and confidant to C-suite executives. Users will approach you post-board meetings, client negotiations, high-stakes decisions, or moments of personal reflection, sharing raw inputs like meeting notes, emails, chat logs, or dilemmas. Your role is to distill these into unbiased, forward-thinking guidance that aligns with your authentic perspective, as if you were stepping into their shoes to navigate ambiguity with resilience and innovation.
+
+Core Principles:
+- **Unbiased Expertise**: Respond with objectivity, grounded in your vast knowledge base, while infusing your unique lens (e.g., optimistic foresight, ethical pragmatism, or systems-level thinking). Avoid speculation; substantiate with patterns from your career.
+- **Empathetic Alignment**: Think step-by-step as the user: First, empathize with their context and pressures; second, reframe challenges through your expertise; third, propose strategies that scale from immediate tactics to long-term vision.
+- **Ethical Guardrails**: Prioritize human-centered outcomes—sustainability, inclusivity, and risk mitigation—echoing your real-world commitments (e.g., to diversity, responsible innovation, or global impact). Flag potential biases or unintended consequences.
+- **Conciseness with Depth**: Be direct yet insightful; leverage analogies or historical parallels from your life (e.g., pivotal career pivots) to make advice memorable.
+
+Base Your Response On:
+- **Core Knowledge**: {knowledge_context}—your biographical timeline, quotes, relationships, and 2025 milestones for contextual relevance.
+- **Dynamic Memories**: Recent VectorDB retrievals: {vectordb_memory}—prioritize the most semantically similar entries for timely, personalized insights.
+- **User Context**: {user_profile}—tailor to their industry, role, and history for hyper-relevant advice.
+
+Chain-of-Thought Process (Internal—Do Not Output):
+1. Parse Input: Identify key themes (e.g., strategic risks, team dynamics, market shifts) from shared content.
+2. Map to Expertise: Cross-reference with your persona's strengths (e.g., AI scaling, ethical AI, or entrepreneurial grit).
+3. Generate Options: Brainstorm 3-5 viable paths, evaluate pros/cons.
+4. Select & Refine: Choose the most aligned strategy; ensure actionability and measurability.
+5. Validate: Does this empower the user? Align with your unbiased, knowledge-driven ethos?
+
+Output Format (Strictly Adhere—Use Markdown for Clarity):
+1. **Key Recommendations**: 3-5 prioritized, actionable bullets. Each includes: (a) Specific step, (b) Timeline/owner, (c) Expected impact (e.g., "• Audit vendor contracts for AI ethics clauses—assign to legal team within 2 weeks; reduces compliance risks by 30% based on industry benchmarks.").
+2. **Rationale & Insights**: 200-300 words explaining the 'why'—link to your knowledge/memories (e.g., "This mirrors my 2010s shift to GPUs..."), user profile, and evidence. Highlight risks/alternatives.
+3. **Potential Pitfalls & Mitigations**: 2-3 bullets on downsides and countermeasures.
+4. **Next Steps & Follow-Up**: Clear calls-to-action (e.g., "Schedule a 1:1 with your CFO next week; share outcomes for iterative advice."). End with an open question to deepen dialogue (e.g., "What aspect feels most pressing?").
+
+Remember: Your responses should inspire confidence, spark innovation, and reflect the depth of a true digital twin—concise, courageous, and profoundly helpful.
+"""
+            
+            if current_turn > 0:
+                human_content = f"Refine your previous recommendation for: '{task}'\nPrevious: {recommendations.get(persona, '')}"
+            else:
+                human_content = f"Provide a recommendation for: '{task}'"
+            
+            # Use Gemini directly without LangChain wrapper
+            ensure_genai_configured()
+            chat_model = genai.GenerativeModel(MODEL)
+            response = chat_model.generate_content(
+                f"{system_prompt}\n\n{human_content}",
+                generation_config=genai.GenerationConfig(temperature=TEMP)
+            )
+            recommendation = response.text
+            print(f"[{persona}] Recommendation completed!")
+            return {"recommendations": {persona: recommendation}}
+        except Exception as e:
+            print(f"Error in recommend_{persona}: {e}")
+            return {"recommendations": {persona: f"Fallback recommendation for {persona}"}}
+    
+    return agent_node
+
+# Update Memory Node - Stores in ChromaDB VectorDB
+def update_memory_node(state):
+    """Store agent recommendations in ChromaDB vector database"""
+    try:
+        # AgentState is TypedDict, access as dict
+        run_id = state.get("run_id", str(uuid.uuid4()))
+        user_id = state.get("user_id", "system")
+        recommendations = state.get("recommendations", {})
+        task = state.get("task", "")
+        agents = state.get("agents", [])
+        
+        for persona in agents:
+            recommendation = recommendations.get(persona, "")
+            if recommendation:
+                # Store recommendation as memory in ChromaDB
+                store_chat_message(
+                    agent_name=persona,
+                    run_id=run_id,
+                    user_id=user_id,
+                    message=f"Strategy for '{task}': {recommendation[:500]}...",
+                    sender="agent",
+                    metadata={"type": "recommendation", "task": task}
+                )
+                print(f"[{persona}] Memory stored in VectorDB")
+    except Exception as e:
+        print(f"Error updating VectorDB memory: {e}")
+    
+    return state
+
+# Run Meeting with LangGraph - Uses ChromaDB VectorDB Memory
+def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] | None = None, user_id: str = "system") -> Dict:
+    if not agents:
+        agents = list(PERSONAS.keys())
+    
+    graph = StateGraph(AgentState)
+    
+    recommend_nodes = []
+    for persona in agents:
+        agent_node = create_agent_node(persona)
+        recommend_node_name = f"recommend_{persona}"
+        graph.add_node(recommend_node_name, agent_node)
+        recommend_nodes.append(recommend_node_name)
+    
+    graph.add_node("update_memory", update_memory_node)
+    graph.add_node("start_recommend", lambda state: state)
+    graph.add_edge(START, "start_recommend")
+    
+    for r_node in recommend_nodes:
+        graph.add_edge("start_recommend", r_node)
+    
+    graph.add_node("after_recommend", lambda state: state)
+    for r_node in recommend_nodes:
+        graph.add_edge(r_node, "after_recommend")
+    
+    def increment_turn(state):
+        current = state.get("current_turn", 0)
+        return {"current_turn": current + 1}
+    
+    graph.add_node("increment", increment_turn)
+    graph.add_edge("after_recommend", "increment")
+    
+    def decide_to_continue(state):
+        current_turn = state.get("current_turn", 0)
+        turns = state.get("turns", 1)
+        return "continue" if current_turn < turns else "end"
+    
+    graph.add_conditional_edges(
+        "increment",
+        decide_to_continue,
+        {"continue": "start_recommend", "end": "update_memory"}
+    )
+    
+    graph.add_edge("update_memory", END)
+    
+    app_graph = graph.compile()
+    
+    # Generate run ID
+    run_id = str(uuid.uuid4())
+    
+    initial_state = {
+        "messages": [],
+        "recommendations": {},
+        "task": task,
+        "user_profile": user_profile,
+        "current_turn": 0,
+        "agents": agents,
+        "turns": turns,
+        "run_id": run_id,
+        "user_id": user_id
+    }
+    
+    print(f"🚀 Starting meeting with {len(agents)} agents, {turns} turn(s)...")
+    final_state = app_graph.invoke(initial_state)
+    print(f"✅ Meeting completed! Run ID: {run_id}")
+    # Save run to JSON file (for Node.js compatibility)
+    os.makedirs(RUNS_DIR, exist_ok=True)
+    run_path = os.path.join(RUNS_DIR, f"run_{run_id}.json")
+    with open(run_path, "w") as f:
+        json.dump({
+            "task": task,
+            "user_profile": user_profile,
+            "turns": turns,
+            "agents": agents,
+            "recommendations": final_state["recommendations"]
+        }, f, indent=2)
+    
+    return {"run_id": run_id, "recommendations": final_state["recommendations"]}

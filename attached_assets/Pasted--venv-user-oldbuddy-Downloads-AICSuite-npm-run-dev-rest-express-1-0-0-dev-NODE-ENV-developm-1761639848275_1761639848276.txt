@@ -1,0 +1,47 @@
+(venv) user@oldbuddy:~/Downloads/AICSuite$ npm run dev
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[dotenv@17.2.3] injecting env (8) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+1:52:32 PM [express] Starting Python FastAPI server on port 8000...
+1:52:32 PM [express] serving on port 5000
+[python] INFO:     Started server process [150625]
+INFO:     Waiting for application startup.
+[python] INFO:     Application startup complete.
+[python] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+1:52:42 PM [express] GET /api/auth/me 304 in 11ms :: {"id":"56ff7b22-2785-4697-b514-00379beda4c1","e…
+1:52:42 PM [express] GET /api/auth/me 304 in 7ms :: {"id":"56ff7b22-2785-4697-b514-00379beda4c1","em…
+1:52:42 PM [express] GET /api/agent-memory 304 in 10ms :: {"memories":[]}
+1:53:07 PM [express] [python] ✓ Gemini API configured successfully
+Selected agents: ['Sam_Altman', 'Jensen_Huang', 'Andrew_Ng', 'Demis_Hassabis', 'Fei_Fei_Li'], User ID: 56ff7b22-2785-4697-b514-00379beda4c1
+🚀 Starting meeting with 5 agents, 1 turn(s)...
+[Andrew_Ng] Starting recommendation with VectorDB memory...
+[Demis_Hassabis] Starting recommendation with VectorDB memory...
+[Fei_Fei_Li] Starting recommendation with VectorDB memory...
+[Jensen_Huang] Starting recommendation with VectorDB memory...
+[Sam_Altman] Starting recommendation with VectorDB memory...
+[Andrew_Ng] Error retrieving from knowledge base: Could not connect to tenant default_tenant. Are you sure it exists?
+[Fei_Fei_Li] No knowledge base documents found
+[Demis_Hassabis] No knowledge base documents found
+[Jensen_Huang] No knowledge base documents found
+[Sam_Altman] Retrieved 5 knowledge chunks from ChromaDB
+[Jensen_Huang] Recommendation completed!
+[Andrew_Ng] Recommendation completed!
+[Demis_Hassabis] Recommendation completed!
+[Fei_Fei_Li] Recommendation completed!
+[Sam_Altman] Recommendation completed!
+[Sam_Altman] Memory stored in VectorDB
+[Jensen_Huang] Memory stored in VectorDB
+[Andrew_Ng] Memory stored in VectorDB
+[Demis_Hassabis] Memory stored in VectorDB
+[Fei_Fei_Li] Memory stored in VectorDB
+✅ Meeting completed! Run ID: 500c091e-b0ed-4662-a946-2931e9623813
+INFO:     127.0.0.1:44652 - "POST /meeting HTTP/1.1" 200 OK
+Meeting completed: DB ID 83c35af1-e479-4f2b-a421-2f52f1c0b75e, Python Run ID 500c091e-b0ed-4662-a946-2931e9623813
+1:53:07 PM [express] POST /api/meeting 200 in 12315ms :: {"runId":"500c091e-b0ed-4662-a946-2931e9623…
