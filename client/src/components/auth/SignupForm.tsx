@@ -85,7 +85,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl">Join AI Leaders Boardroom</CardTitle>
+        <CardTitle className="text-2xl">Join Ask the Expert</CardTitle>
         <CardDescription>Step {step} of 3 - {
           step === 1 ? "Personal Information" : 
           step === 2 ? "Professional Details" : 

@@ -281,7 +281,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               <Brain className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">AI Leaders Boardroom</h1>
+              <h1 className="text-xl font-semibold">Ask the Expert</h1>
               <p className="text-sm text-muted-foreground">Strategic Advisory Platform</p>
             </div>
           </div>

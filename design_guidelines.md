@@ -1,4 +1,4 @@
-# Design Guidelines for AI Leaders C-Suite Boardroom
+# Design Guidelines for Ask the Expert
 
 ## Design Approach
 **Reference-Based:** Hugging Face dark theme with professional dashboard aesthetics, combined with modern AI platform patterns (Linear, Notion) for clean, executive-focused interface.

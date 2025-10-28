@@ -1,8 +1,8 @@
-# AI Leaders C-Suite Boardroom
+# Ask the Expert
 
 ## Overview
 
-AI Leaders C-Suite Boardroom is a full-stack web application that provides C-suite executives with personalized strategic recommendations from digital twins of prominent AI industry leaders. The platform simulates advisory conversations with AI personas including Sam Altman (OpenAI), Jensen Huang (NVIDIA), Andrew Ng (DeepLearning.AI), Demis Hassabis (Google DeepMind), and Fei-Fei Li (Stanford AI Lab).
+Ask the Expert is a full-stack web application that provides C-suite executives with personalized strategic recommendations from digital twins of prominent AI industry leaders. The platform simulates advisory conversations with AI personas including Sam Altman (OpenAI), Jensen Huang (NVIDIA), Andrew Ng (DeepLearning.AI), Demis Hassabis (Google DeepMind), and Fei-Fei Li (Stanford AI Lab).
 
 The application enables users to:
 - Upload their professional profile and goals
