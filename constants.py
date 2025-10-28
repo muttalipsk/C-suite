@@ -16,6 +16,7 @@ INDEX_DIR = "./indexes"
 MEMORY_DIR = "./memory"
 RUNS_DIR = "./runs"
 CHATS_DIR = "./chats"
+CHROMA_DIR = "./chroma_db"
 
 # AI Agent Personas
 PERSONAS = {

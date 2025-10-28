@@ -1,0 +1,64 @@
+(venv) user@oldbuddy:~/Downloads/AICSuite$ npm run dev
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[dotenv@17.2.3] injecting env (8) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+1:07:29 PM [express] Starting Python FastAPI server on port 8000...
+1:07:29 PM [express] serving on port 5000
+[python] Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
+[python] uvicorn.main()
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/click/core.py", line 1383, in main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+[python] return callback(*args, **kwargs)
+[python] ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/uvicorn/main.py", line 423, in main
+[python] run(
+[python] File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/uvicorn/main.py", line 593, in run
+    server.run()
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/uvicorn/server.py", line 67, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+[python] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+[python] return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+[python] File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+[python] File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/uvicorn/server.py", line 71, in serve
+    await self._serve(sockets)
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/uvicorn/server.py", line 78, in _serve
+    config.load()
+[python] File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/uvicorn/config.py", line 439, in load
+[python] self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Downloads/AICSuite/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+[python] module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+[python] return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/user/Downloads/AICSuite/main.py", line 14, in <module>
+[python] from agents import run_meeting
+  File "/home/user/Downloads/AICSuite/agents.py", line 5, in <module>
+    from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, TURNS, CORPUS_DIR, INDEX_DIR, CHROMA_DIR
+ImportError: cannot import name 'CHROMA_DIR' from 'constants' (/home/user/Downloads/AICSuite/constants.py)
+[python] Server exited with code 1
