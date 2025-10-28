@@ -91,7 +91,7 @@ async def meeting(input_data: MeetingInput = Body(...)):
     turns = input_data.turns
     agents = input_data.agents or list(PERSONAS.keys())
     user_id = input_data.user_id or "system"
-    meeting_type = input_data.meeting_type or "chat"  # NEW: Get meeting type
+    meeting_type = input_data.meeting_type or "board"
     print(f"Selected agents: {agents}, User ID: {user_id}, Meeting Type: {meeting_type}")
     result = run_meeting(task, user_profile, turns, agents, user_id, meeting_type)
     return result

@@ -153,7 +153,7 @@ Role Details: ${user.roleDetails}
   // MEETING/RUN ROUTES - Forwards ALL agent operations to Python API
   app.post("/api/meeting", requireAuth, async (req, res) => {
     try {
-      const { task, agents, turns = 1 } = req.body;
+      const { task, agents, turns = 1, meetingType = "board" } = req.body;
 
       if (!task || !agents || agents.length === 0) {
         return res.status(400).json({ error: "Task and agents are required" });
@@ -175,7 +175,7 @@ Role Details: ${user.roleDetails}
         turns,
         agents,
         user_id: req.session.userId!.toString(),  // Pass user ID for VectorDB tracking
-        meeting_type: req.body.meeting_type || "chat",  // Forward meeting type
+        meeting_type: meetingType,  // Pass meeting type for context-aware responses
       });
 
       const { run_id: pythonRunId, recommendations } = pythonResponse.data;

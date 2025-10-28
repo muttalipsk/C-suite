@@ -17,7 +17,7 @@ class MeetingInput(BaseModel):
     turns: int = 1
     agents: Optional[List[str]] = None
     user_id: str = "system"
-    meeting_type: str = "chat"  # NEW: "board", "email", or "chat"
+    meeting_type: str = "board"  # board, email, chat (general)
 
 # Define a merge function for dictionaries
 def merge_dicts(left: Dict[str, str], right: Dict[str, str]) -> Dict[str, str]:
@@ -32,4 +32,4 @@ class AgentState(TypedDict):
     current_turn: int
     agents: List[str]
     turns: int
-    meeting_type: str  # NEW: "board", "email", or "chat"
+    meeting_type: str
