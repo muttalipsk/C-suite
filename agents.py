@@ -1,4 +1,3 @@
-
 from typing import Dict, List
 from langgraph.graph import StateGraph, START, END
 from models import AgentState
@@ -23,13 +22,13 @@ def retrieve_from_knowledge_base(agent: str, query: str, n_results: int = 5) -> 
         knowledge_collection = chroma_client.get_or_create_collection(
             name=f"knowledge_{agent}"
         )
-        
+
         # Check if collection has any documents
         count = knowledge_collection.count()
         if count == 0:
             print(f"[{agent}] No knowledge base documents found")
             return ""
-        
+
         # Query for relevant chunks
         ensure_genai_configured()
         query_embedding = genai.embed_content(
@@ -37,19 +36,19 @@ def retrieve_from_knowledge_base(agent: str, query: str, n_results: int = 5) -> 
             content=query,
             task_type="retrieval_query"
         )
-        
+
         results = knowledge_collection.query(
             query_embeddings=[query_embedding['embedding']],
             n_results=min(n_results, count)
         )
-        
+
         if results['documents'] and results['documents'][0]:
             chunks = results['documents'][0]
             print(f"[{agent}] Retrieved {len(chunks)} knowledge chunks from ChromaDB")
             return "\n\n".join(chunks)
         else:
             return ""
-            
+
     except Exception as e:
         print(f"[{agent}] Error retrieving from knowledge base: {e}")
         return ""
@@ -59,7 +58,7 @@ def create_agent_node(persona: str):
     company = PERSONAS[persona]["company"]
     role = PERSONAS[persona]["role"]
     description = PERSONAS[persona]["description"]
-    
+
     def agent_node(state):
         try:
             print(f"[{persona}] Starting recommendation with VectorDB memory...")
@@ -69,18 +68,18 @@ def create_agent_node(persona: str):
             current_turn = state.get("current_turn", 0)
             recommendations = state.get("recommendations", {})
             meeting_type = state.get("meeting_type", "chat")  # NEW: Get meeting type
-            
+
             # NEW: Retrieve from ChromaDB knowledge base using RAG
             knowledge_chunks = retrieve_from_knowledge_base(persona, task, n_results=5)
-            
+
             # Load agent memory from ChromaDB vector database
             vectordb_memory = load_memory_from_vectordb(persona, limit=5)
-            
+
             # Build knowledge context
             knowledge_context = ""
             if knowledge_chunks:
                 knowledge_context = f"**Your domain knowledge and expertise:**\n{knowledge_chunks}\n\n"
-            
+
             # NEW: Dynamic context-specific instructions based on meeting type
             context_instructions = ""
             if meeting_type == "board":
@@ -122,7 +121,7 @@ You are providing high-level strategic guidance. Focus on:
 
 Tone: Thoughtful advisor. Think strategic planning session with a trusted mentor.
 """
-            
+
             system_prompt = f"""
 You are {persona}, the visionary {role} at {company}, renowned for your expertise in {description}. Embodying your real-world persona—drawing from your documented experiences, public statements, key milestones, and personal philosophy—you serve as a trusted moderator, strategic advisor, and confidant to C-suite executives.
 
@@ -146,12 +145,12 @@ Output Format (Strictly Adhere—Use Markdown for Clarity):
 
 Remember: Your responses should inspire confidence, spark innovation, and reflect the depth of a true digital twin—concise, courageous, and profoundly helpful.
 """
-            
+
             if current_turn > 0:
                 human_content = f"Refine your previous recommendation for: '{task}'\nPrevious: {recommendations.get(persona, '')}"
             else:
                 human_content = f"Provide a recommendation for: '{task}'"
-            
+
             # Use Gemini directly without LangChain wrapper
             ensure_genai_configured()
             chat_model = genai.GenerativeModel(MODEL)
@@ -165,7 +164,7 @@ Remember: Your responses should inspire confidence, spark innovation, and reflec
         except Exception as e:
             print(f"Error in recommend_{persona}: {e}")
             return {"recommendations": {persona: f"Fallback recommendation for {persona}"}}
-    
+
     return agent_node
 
 # Update Memory Node - Stores in ChromaDB VectorDB
@@ -178,7 +177,7 @@ def update_memory_node(state):
         recommendations = state.get("recommendations", {})
         task = state.get("task", "")
         agents = state.get("agents", [])
-        
+
         for persona in agents:
             recommendation = recommendations.get(persona, "")
             if recommendation:
@@ -194,59 +193,59 @@ def update_memory_node(state):
                 print(f"[{persona}] Memory stored in VectorDB")
     except Exception as e:
         print(f"Error updating VectorDB memory: {e}")
-    
+
     return state
 
 # Run Meeting with LangGraph - Uses ChromaDB VectorDB Memory
 def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] | None = None, user_id: str = "system", meeting_type: str = "chat") -> Dict:
     if not agents:
         agents = list(PERSONAS.keys())
-    
+
     graph = StateGraph(AgentState)
-    
+
     recommend_nodes = []
     for persona in agents:
         agent_node = create_agent_node(persona)
         recommend_node_name = f"recommend_{persona}"
         graph.add_node(recommend_node_name, agent_node)
         recommend_nodes.append(recommend_node_name)
-    
+
     graph.add_node("update_memory", update_memory_node)
     graph.add_node("start_recommend", lambda state: state)
     graph.add_edge(START, "start_recommend")
-    
+
     for r_node in recommend_nodes:
         graph.add_edge("start_recommend", r_node)
-    
+
     graph.add_node("after_recommend", lambda state: state)
     for r_node in recommend_nodes:
         graph.add_edge(r_node, "after_recommend")
-    
+
     def increment_turn(state):
         current = state.get("current_turn", 0)
         return {"current_turn": current + 1}
-    
+
     graph.add_node("increment", increment_turn)
     graph.add_edge("after_recommend", "increment")
-    
+
     def decide_to_continue(state):
         current_turn = state.get("current_turn", 0)
         turns = state.get("turns", 1)
         return "continue" if current_turn < turns else "end"
-    
+
     graph.add_conditional_edges(
         "increment",
         decide_to_continue,
         {"continue": "start_recommend", "end": "update_memory"}
     )
-    
+
     graph.add_edge("update_memory", END)
-    
+
     app_graph = graph.compile()
-    
+
     # Generate run ID
     run_id = str(uuid.uuid4())
-    
+
     initial_state = {
         "messages": [],
         "recommendations": {},
@@ -257,9 +256,9 @@ def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: L
         "turns": turns,
         "run_id": run_id,
         "user_id": user_id,
-        "meeting_type": meeting_type  # NEW: Pass from parameter
+        "meeting_type": meeting_type  # NEW: Pass meeting type to agents
     }
-    
+
     print(f"🚀 Starting meeting with {len(agents)} agents, {turns} turn(s)...")
     final_state = app_graph.invoke(initial_state)
     print(f"✅ Meeting completed! Run ID: {run_id}")
@@ -274,5 +273,5 @@ def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: L
             "agents": agents,
             "recommendations": final_state["recommendations"]
         }, f, indent=2)
-    
+
     return {"run_id": run_id, "recommendations": final_state["recommendations"]}
