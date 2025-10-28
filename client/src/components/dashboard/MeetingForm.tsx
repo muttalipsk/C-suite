@@ -70,7 +70,7 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                       className="flex gap-4"
                     >
                       <div className="flex items-center space-x-2">
