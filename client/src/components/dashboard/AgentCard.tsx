@@ -40,6 +40,8 @@ export function AgentCard({
 
   // Parse recommendation into structured sections
   const parseRecommendation = (text: string) => {
+    console.log(`[${agentKey}] Parsing recommendation:`, text.substring(0, 200));
+    
     const sections = {
       keyRecommendations: [] as string[],
       rationale: "",
@@ -47,21 +49,30 @@ export function AgentCard({
       nextSteps: "",
     };
 
-    const keyRecsMatch = text.match(/\*\*Key Recommendations\*\*:?\s*(.*?)(?=\*\*|$)/s);
-    const rationaleMatch = text.match(/\*\*Rationale (&|and) Insights\*\*:?\s*(.*?)(?=\*\*|$)/s);
-    const pitfallsMatch = text.match(/\*\*Potential Pitfalls (&|and) Mitigations\*\*:?\s*(.*?)(?=\*\*|$)/s);
-    const nextStepsMatch = text.match(/\*\*Next Steps (&|and) Follow-Up\*\*:?\s*(.*?)(?=\*\*|$)/s);
+    // More flexible patterns - handle variations in formatting
+    const keyRecsMatch = text.match(/\*\*Key Recommendations\*\*:?\s*(.*?)(?=\*\*[A-Z]|$)/s);
+    const rationaleMatch = text.match(/\*\*Rationale\s*[&and]*\s*Insights\*\*:?\s*(.*?)(?=\*\*[A-Z]|$)/s);
+    const pitfallsMatch = text.match(/\*\*Potential Pitfalls\s*[&and]*\s*Mitigations\*\*:?\s*(.*?)(?=\*\*[A-Z]|$)/s);
+    const nextStepsMatch = text.match(/\*\*Next Steps\s*[&and]*\s*Follow-Up\*\*:?\s*(.*?)(?=\*\*[A-Z]|$)/s);
+
+    console.log(`[${agentKey}] Pattern matches:`, {
+      keyRecs: !!keyRecsMatch,
+      rationale: !!rationaleMatch,
+      pitfalls: !!pitfallsMatch,
+      nextSteps: !!nextStepsMatch
+    });
 
     if (keyRecsMatch) {
-      const bullets = keyRecsMatch[1].match(/[-•]\s*(.*?)(?=\n[-•]|\n\n|$)/gs);
+      const bullets = keyRecsMatch[1].match(/[-•]\s*(.+?)(?=\n[-•]|\n\n|$)/gs);
       sections.keyRecommendations = bullets?.map(b => b.replace(/^[-•]\s*/, '').trim()) || [];
+      console.log(`[${agentKey}] Found ${sections.keyRecommendations.length} key recommendations`);
     }
-    if (rationaleMatch) sections.rationale = rationaleMatch[2].trim();
+    if (rationaleMatch) sections.rationale = rationaleMatch[1].trim();
     if (pitfallsMatch) {
-      const bullets = pitfallsMatch[2].match(/[-•]\s*(.*?)(?=\n[-•]|\n\n|$)/gs);
+      const bullets = pitfallsMatch[1].match(/[-•]\s*(.+?)(?=\n[-•]|\n\n|$)/gs);
       sections.pitfalls = bullets?.map(b => b.replace(/^[-•]\s*/, '').trim()) || [];
     }
-    if (nextStepsMatch) sections.nextSteps = nextStepsMatch[2].trim();
+    if (nextStepsMatch) sections.nextSteps = nextStepsMatch[1].trim();
 
     return sections;
   };
