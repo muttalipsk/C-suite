@@ -95,22 +95,23 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
         <p className="text-sm text-muted-foreground mt-1">Chat history by agent</p>
       </div>
 
-      <ScrollArea className="flex-1">
-        {isLoading ? (
-          <div className="p-8 text-center">
-            <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50 animate-pulse" />
-            <p className="text-sm text-muted-foreground">Loading...</p>
-          </div>
-        ) : savedRecommendations.length === 0 ? (
-          <div className="p-8 text-center">
-            <Save className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-            <p className="text-sm text-muted-foreground">
-              No saved recommendations yet. Save recommendations to view them here.
-            </p>
-          </div>
-        ) : (
-          <div className="p-4 space-y-2">
-            {Object.entries(groupedConversations).map(([agentKey, conversations]) => {
+      <ScrollArea className="flex-1 overflow-y-auto">
+        <div className="min-h-0">
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50 animate-pulse" />
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            </div>
+          ) : savedRecommendations.length === 0 ? (
+            <div className="p-8 text-center">
+              <Save className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-sm text-muted-foreground">
+                No saved recommendations yet. Save recommendations to view them here.
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 space-y-2">
+              {Object.entries(groupedConversations).map(([agentKey, conversations]) => {
               const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
               if (!agent) return null;
 
@@ -196,8 +197,9 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
                 </Collapsible>
               );
             })}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </ScrollArea>
     </div>
   );
