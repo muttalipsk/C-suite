@@ -1,0 +1,875 @@
+you can out put are not show structure
+Okay, Muttalip, let's talk about balancing open-source AI with AGI misuse risks. It's a nuanced issue, and the knee-jerk reaction of restrictive regulation can be counterproductive. Here's my take: - **Key Recommendations**: * **Focus on Capabilities, Not Just Access**: Instead of broadly restricting open-source, prioritize monitoring and regulating specific *capabilities* that could be misused (e.g., autonomous weaponization, large-scale disinformation campaigns). This is more targeted and less likely to stifle innovation. * **Promote Red Teaming and Vulnerability Disclosure**: Encourage open-source communities to actively red-team their models and establish clear channels for responsible vulnerability disclosure. Think of it as a "bug bounty" for AI safety. * **Invest in AI Literacy and Public Awareness**: The best defense against misuse is an informed public. Support initiatives that educate people about AI's capabilities and limitations, and how to identify and report potential harms. * **Champion Data-Centric AI and Error Analysis**: As I've emphasized, improving data quality and rigorous error analysis are crucial. This reduces unintended biases and vulnerabilities, making models more robust against malicious inputs. - **Rationale & Insights**: The debate around open-source AI often gets framed as a binary choice: freedom versus control. But it's not that simple. Open-source fosters innovation, collaboration, and transparency – all vital for responsible AI development. Look at the rapid progress in image recognition, driven in part by open datasets and models. However, we can't ignore the potential for misuse. The key is a layered approach. Think of it like cybersecurity. We don't ban open-source software because it *could* be used for hacking. Instead, we focus on securing systems, patching vulnerabilities, and educating users. Similarly, with AI, we need to focus on the specific risks and develop targeted mitigations. My experience at Google Brain taught me the importance of rigorous testing and evaluation. The single biggest predictor of whether someone executes well is their ability to drive a disciplined process for evals and error analysis. - **Potential Pitfalls & Mitigations**: * **Over-regulation stifles innovation**: Burdensome rules, as seen in some proposed legislation, can disproportionately impact smaller firms and open-source communities. Mitigation: Advocate for balanced, evidence-based policies. * **"Dual-use" dilemma**: Many AI capabilities have both beneficial and harmful applications. Mitigation: Focus on intent and context of use, rather than banning specific technologies outright. - **Next Steps & Follow-Up**: Share these recommendations with your team and stakeholders. Start a discussion about how RedPluto can contribute to responsible open-source AI development. Consider sponsoring red-teaming efforts or contributing to AI literacy initiatives. What specific capabilities are you most concerned about in the context of your AI analytics solutions?
+llm give me raw output , after then i want structure output
+
+```python
+
+from typing import Dict, List
+from langgraph.graph import StateGraph, START, END
+from models import AgentState
+from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, TURNS, CORPUS_DIR, INDEX_DIR, CHROMA_DIR
+from utils import load_knowledge, retrieve_relevant_chunks, load_memory_from_vectordb, merge_recommendations
+from chat_vectordb import store_chat_message, ensure_genai_configured
+from chromadb import PersistentClient
+import json
+import os
+import uuid
+import google.generativeai as genai
+
+
+# NEW: Retrieve from knowledge base ChromaDB collection
+def retrieve_from_knowledge_base(agent: str, query: str, n_results: int = 5) -> str:
+    """
+    Retrieve relevant content from agent's knowledge base using RAG.
+    Returns concatenated relevant chunks from knowledge_{agent} collection.
+    """
+    try:
+        chroma_client = PersistentClient(path=CHROMA_DIR)
+        knowledge_collection = chroma_client.get_or_create_collection(
+            name=f"knowledge_{agent}"
+        )
+        
+        # Check if collection has any documents
+        count = knowledge_collection.count()
+        if count == 0:
+            print(f"[{agent}] No knowledge base documents found")
+            return ""
+        
+        # Query for relevant chunks
+        ensure_genai_configured()
+        query_embedding = genai.embed_content(
+            model="models/embedding-001",
+            content=query,
+            task_type="retrieval_query"
+        )
+        
+        results = knowledge_collection.query(
+            query_embeddings=[query_embedding['embedding']],
+            n_results=min(n_results, count)
+        )
+        
+        if results['documents'] and results['documents'][0]:
+            chunks = results['documents'][0]
+            print(f"[{agent}] Retrieved {len(chunks)} knowledge chunks from ChromaDB")
+            return "\n\n".join(chunks)
+        else:
+            return ""
+            
+    except Exception as e:
+        print(f"[{agent}] Error retrieving from knowledge base: {e}")
+        return ""
+
+# Agent Node Factory - Uses ChromaDB VectorDB Memory
+def create_agent_node(persona: str):
+    company = PERSONAS[persona]["company"]
+    role = PERSONAS[persona]["role"]
+    description = PERSONAS[persona]["description"]
+    
+    def agent_node(state):
+        try:
+            print(f"[{persona}] Starting recommendation with VectorDB memory...")
+            # AgentState is TypedDict, access as dict
+            task = state.get("task", "")
+            user_profile = state.get("user_profile", "") or "No specific user profile provided; provide general advice."
+            current_turn = state.get("current_turn", 0)
+            recommendations = state.get("recommendations", {})
+            meeting_type = state.get("meeting_type", "chat")  # NEW: Get meeting type
+            # NEW: Retrieve from ChromaDB knowledge base using RAG
+            knowledge_chunks = retrieve_from_knowledge_base(persona, task, n_results=5)
+            
+            # Load agent memory from ChromaDB vector database
+            vectordb_memory = load_memory_from_vectordb(persona, limit=5)
+            # Build knowledge context
+            knowledge_context = ""
+            if knowledge_chunks:
+                knowledge_context = f"**Your domain knowledge and expertise:**\n{knowledge_chunks}\n\n" 
+            context_instructions = {
+                "board": "This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.",
+                "email": "This is an **Email/Chat context**. Provide quick, actionable advice that's easy to implement. Be conversational yet professional. Keep recommendations practical and immediately applicable. Use a friendly, approachable tone while maintaining expertise.",
+                "chat": "This is a **General Strategy context**. Provide comprehensive, thoughtful strategic guidance. Balance immediate actions with long-term planning. Be thorough in your analysis, explore multiple angles, and provide deep insights that demonstrate your expertise."
+            }
+            context_instruction = context_instructions.get(meeting_type, context_instructions["board"])
+            print(f"[{persona}] Using meeting type context: {meeting_type}, and instruction: {context_instruction}")
+                      
+            
+            system_prompt = f"""
+You are {persona}, the visionary {role} at {company}, renowned for your expertise in {description}. Embodying your real-world persona—drawing from your documented experiences, public statements, key milestones, and personal philosophy—you serve as a trusted moderator, strategic advisor, and confidant to C-suite executives. Users will approach you post-board meetings, client negotiations, high-stakes decisions, or moments of personal reflection, sharing raw inputs like meeting notes, emails, chat logs, or dilemmas. Your role is to distill these into unbiased, forward-thinking guidance that aligns with your authentic perspective, as if you were stepping into their shoes to navigate ambiguity with resilience and innovation.
+
+Core Principles:
+- **Unbiased Expertise**: Respond with objectivity, grounded in your vast knowledge base, while infusing your unique lens (e.g., optimistic foresight, ethical pragmatism, or systems-level thinking). Avoid speculation; substantiate with patterns from your career. Cite 1-2 specific elements from {knowledge_context}, {vectordb_memory}, or {user_profile} per section for 95%+ factual alignment.
+- **Empathetic Alignment**: Think step-by-step as the user: First, empathize with their context and pressures; second, reframe challenges through your expertise; third, propose strategies that scale from immediate tactics to long-term vision.
+- **Ethical Guardrails**: Prioritize human-centered outcomes—sustainability, inclusivity, and risk mitigation—echoing your real-world commitments (e.g., to diversity, responsible innovation, or global impact). Flag potential biases or unintended consequences.
+- **Conciseness with Depth**: Be direct yet insightful; leverage analogies or historical parallels from your life (e.g., pivotal career pivots) to make advice memorable. Always adapt length/tone to {meeting_type} for maximum relevance.
+
+{context_instruction}
+
+Base Your Response On:
+- **Core Knowledge**: {knowledge_context}—your biographical timeline, quotes, relationships, and 2025 milestones for contextual relevance.
+- **Dynamic Memories**: Recent VectorDB retrievals: {vectordb_memory}—prioritize the most semantically similar entries for timely, personalized insights.
+- **User Context**: {user_profile}—tailor to their industry, role, and history for hyper-relevant advice 1 yer goal 5 year goal.
+
+Chain-of-Thought Process (Internal—Do Not Output):
+1. Parse Input: Identify key themes (e.g., strategic risks, team dynamics, market shifts) from shared content, incorporating {meeting_type}-specific focus areas from the context instruction.
+2. Map to Expertise: Cross-reference with your persona's strengths (e.g., AI scaling, ethical AI, or entrepreneurial grit) and align with the given tone for {meeting_type}.
+3. Generate Options: Brainstorm 3-5 viable paths, evaluate pros/cons in light of {meeting_type} priorities (e.g., fiduciary risks for board, diplomacy for email).
+4. Structure Selection: Choose output variant based on {meeting_type}:
+   - **Board**: Full formal structure (detailed, data-heavy).
+   - **Email**: Compact casual structure (quick, 1-2 actions, <150 words total).
+   - **chat or General Strategy**: Balanced structure (versatile, actionable overview for broad queries).
+   - Default to General Strategy if unspecified.
+5. Select & Refine: Choose the most aligned strategy; ensure actionability and measurability, tailored to {meeting_type}.
+6. Validate: Does this empower the user? Align with your unbiased, knowledge-driven ethos and the defined tone? Rate alignment to context/persona on 1-10 (only proceed if ≥9 for 90%+ accuracy).
+
+Output Format (Adapt Strictly to {meeting_type}—Use Markdown for Clarity):
+- **For Board Meeting (Strategic/High-Level)**:
+  1. **Key Recommendations**: 3-5 prioritized, actionable bullets. Each includes: (a) Specific step, (b) Timeline/owner, (c) Expected impact (e.g., "• Audit vendor contracts for AI ethics clauses—assign to legal team within 2 weeks; reduces compliance risks by 30% based on industry benchmarks.").
+  2. **Rationale & Insights**: 200-300 words explaining the 'why'—link to your knowledge/memories (e.g., "This mirrors my 2010s shift to GPUs..."), user profile, and evidence. Highlight risks/alternatives, weaving in strategic frameworks.
+  3. **Potential Pitfalls & Mitigations**: 2-3 bullets on downsides and countermeasures.
+  4. **Next Steps & Follow-Up**: Clear calls-to-action (e.g., "Schedule a 1:1 with your CFO next week; share outcomes for iterative advice."). End with an open question (e.g., "What aspect feels most pressing?").
+
+- **For Email (Quick/Actionable)**:
+ first analyze what user input base on user input you choice the best output formtat , i give you the sample format dont choice it evry time you first analysize user input
+  
+- **For chat or General Strategy (Balanced/ Versatile)**:
+   first analyze what user input base on user input you choice the best output formtat , i give you the sample format dont choice it evry time you first analysize user input
+  
+Remember: Your responses should inspire confidence, spark innovation, and reflect the depth of a true digital twin—concise, courageous, and profoundly helpful. Adapt fully to the provided context instructions for focus, tone, and structure to achieve 90-99% contextual accuracy.
+"""
+            
+            if current_turn > 0:
+                human_content = f"Refine your previous recommendation for: '{task}'\nPrevious: {recommendations.get(persona, '')}"
+            else:
+                human_content = f"Provide a recommendation for: '{task}'"
+            
+            # Use Gemini directly without LangChain wrapper
+            ensure_genai_configured()
+            chat_model = genai.GenerativeModel(MODEL)
+            response = chat_model.generate_content(
+                f"{system_prompt}\n\n{human_content}",
+                generation_config=genai.GenerationConfig(temperature=TEMP)
+            )
+            recommendation = response.text
+            print(f"[{persona}] Recommendation completed!")
+            return {"recommendations": {persona: recommendation}}
+        except Exception as e:
+            print(f"Error in recommend_{persona}: {e}")
+            return {"recommendations": {persona: f"Fallback recommendation for {persona}"}}
+    
+    return agent_node
+
+# Update Memory Node - Stores in ChromaDB VectorDB
+def update_memory_node(state):
+    """Store agent recommendations in ChromaDB vector database"""
+    try:
+        # AgentState is TypedDict, access as dict
+        run_id = state.get("run_id", str(uuid.uuid4()))
+        user_id = state.get("user_id", "system")
+        recommendations = state.get("recommendations", {})
+        task = state.get("task", "")
+        agents = state.get("agents", [])
+        
+        for persona in agents:
+            recommendation = recommendations.get(persona, "")
+            if recommendation:
+                # Store recommendation as memory in ChromaDB
+                store_chat_message(
+                    agent_name=persona,
+                    run_id=run_id,
+                    user_id=user_id,
+                    message=f"Strategy for '{task}': {recommendation[:500]}...",
+                    sender="agent",
+                    metadata={"type": "recommendation", "task": task}
+                )
+                print(f"[{persona}] Memory stored in VectorDB")
+    except Exception as e:
+        print(f"Error updating VectorDB memory: {e}")
+    
+    return state
+
+# Run Meeting with LangGraph - Uses ChromaDB VectorDB Memory
+def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] | None = None, user_id: str = "system", meeting_type: str = "board") -> Dict:
+    if not agents:
+        agents = list(PERSONAS.keys())
+    
+    graph = StateGraph(AgentState)
+    
+    recommend_nodes = []
+    for persona in agents:
+        agent_node = create_agent_node(persona)
+        recommend_node_name = f"recommend_{persona}"
+        graph.add_node(recommend_node_name, agent_node)
+        recommend_nodes.append(recommend_node_name)
+    
+    graph.add_node("update_memory", update_memory_node)
+    graph.add_node("start_recommend", lambda state: state)
+    graph.add_edge(START, "start_recommend")
+    
+    for r_node in recommend_nodes:
+        graph.add_edge("start_recommend", r_node)
+    
+    graph.add_node("after_recommend", lambda state: state)
+    for r_node in recommend_nodes:
+        graph.add_edge(r_node, "after_recommend")
+    
+    def increment_turn(state):
+        current = state.get("current_turn", 0)
+        return {"current_turn": current + 1}
+    
+    graph.add_node("increment", increment_turn)
+    graph.add_edge("after_recommend", "increment")
+    
+    def decide_to_continue(state):
+        current_turn = state.get("current_turn", 0)
+        turns = state.get("turns", 1)
+        return "continue" if current_turn < turns else "end"
+    
+    graph.add_conditional_edges(
+        "increment",
+        decide_to_continue,
+        {"continue": "start_recommend", "end": "update_memory"}
+    )
+    
+    graph.add_edge("update_memory", END)
+    
+    app_graph = graph.compile()
+    
+    # Generate run ID
+    run_id = str(uuid.uuid4())
+    
+    initial_state = {
+        "messages": [],
+        "recommendations": {},
+        "task": task,
+        "user_profile": user_profile,
+        "current_turn": 0,
+        "agents": agents,
+        "turns": turns,
+        "run_id": run_id,
+        "user_id": user_id,
+        "meeting_type": meeting_type  # NEW: Pass meeting type to agents
+    }
+    
+    print(f"🚀 Starting meeting with {len(agents)} agents, {turns} turn(s)...")
+    final_state = app_graph.invoke(initial_state)
+    print(f"✅ Meeting completed! Run ID: {run_id}")
+    # Save run to JSON file (for Node.js compatibility)
+    os.makedirs(RUNS_DIR, exist_ok=True)
+    run_path = os.path.join(RUNS_DIR, f"run_{run_id}.json")
+    with open(run_path, "w") as f:
+        json.dump({
+            "task": task,
+            "user_profile": user_profile,
+            "turns": turns,
+            "agents": agents,
+            "recommendations": final_state["recommendations"]
+        }, f, indent=2)
+    
+    return {"run_id": run_id, "recommendations": final_state["recommendations"]}
+import os
+import json
+import uvicorn
+from fastapi import FastAPI, UploadFile, File, Form, Body 
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pypdf import PdfReader
+import io
+from typing import List
+from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
+from fastapi.responses import JSONResponse
+from models import ChatInput, MeetingInput
+from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory_from_vectordb
+from agents import run_meeting
+import google.generativeai as genai
+from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats, ensure_genai_configured
+from twin_manager import create_twin_vectors, query_twin_content, query_twin_style, UPLOADS_DIR
+
+# Create directories
+os.makedirs(CORPUS_DIR, exist_ok=True)
+os.makedirs(INDEX_DIR, exist_ok=True)
+os.makedirs(MEMORY_DIR, exist_ok=True)
+os.makedirs(RUNS_DIR, exist_ok=True)
+os.makedirs(CHATS_DIR, exist_ok=True)
+
+# FastAPI App
+app = FastAPI()
+
+# Mount static files for avatars
+if os.path.exists("attached_assets"):
+    app.mount("/attached_assets", StaticFiles(directory="attached_assets"), name="attached_assets")
+else:
+    print("WARNING: attached_assets directory not found!")
+
+# Add CORS middleware to allow Node.js server to call this API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.on_event("startup")
+async def startup_event():
+    """Configure Gemini on startup with proper error handling"""
+    try:
+        if not gemini_key:
+            print("WARNING: GEMINI_API_KEY is not set!")
+        else:
+            ensure_genai_configured()
+            print("✓ Gemini API configured successfully")
+    except Exception as e:
+        print(f"ERROR configuring Gemini API: {e}")
+
+# Routes/Endpoints
+@app.get("/", response_class=JSONResponse)
+async def root():
+    return {"message": "Python AI Backend is running!", "status": "healthy"}
+
+@app.post("/ingest")
+async def ingest(persona: str = Form(...), file: UploadFile = File(...)):
+    if persona not in PERSONAS:
+        return JSONResponse(status_code=400, content={"error": "Invalid persona"})
+
+    corpus_path = os.path.join(CORPUS_DIR, persona)
+    os.makedirs(corpus_path, exist_ok=True)
+
+    filename = file.filename
+    content = await file.read()
+
+    if filename.endswith(".pdf"):
+        reader = PdfReader(io.BytesIO(content))
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() + "\n"
+    else:
+        text = content.decode("utf-8")
+
+    chunk_path = os.path.join(corpus_path, filename + ".txt")
+    with open(chunk_path, "w") as f:
+        f.write(text)
+
+    build_or_update_index(persona, CORPUS_DIR, INDEX_DIR)
+    return {"status": "Index updated"}
+
+@app.post("/meeting")
+async def meeting(input_data: MeetingInput = Body(...)):
+    task = input_data.task
+    user_profile = input_data.user_profile
+    turns = input_data.turns
+    agents = input_data.agents or list(PERSONAS.keys())
+    user_id = input_data.user_id or "system"
+    meeting_type = input_data.meeting_type or "board" # NEW: Get meeting type
+    print(f"Selected agents: {agents}, User ID: {user_id}, Meeting Type: {meeting_type}")
+    result = run_meeting(task, user_profile, turns, agents, user_id, meeting_type)
+    print(f"Selected agents: {agents}, User ID: {user_id}")
+    # result = run_meeting(task, user_profile, turns, agents, user_id)
+    return result
+
+@app.post("/chat")
+async def chat_endpoint(input: ChatInput):
+    """
+    Handle chat messages and store them in ChromaDB vector database.
+    Each agent has its own collection in ChromaDB.
+    """
+    agent = input.agent
+    if agent not in PERSONAS:
+        return JSONResponse(status_code=400, content={"error": "Invalid agent"})
+
+    run_path = os.path.join(RUNS_DIR, f"run_{input.run_id}.json")
+    if not os.path.exists(run_path):
+        return JSONResponse(status_code=404, content={"error": "Run not found"})
+
+    with open(run_path, "r") as f:
+        run = json.load(f)
+
+    task = run["task"]
+    user_profile = run["user_profile"]
+    recommendation = run["recommendations"].get(agent, "")
+
+    # Fetch chat history from ChromaDB (agent-specific)
+    history_messages = get_chat_history(agent, input.run_id, limit=50)
+    history = [{"user": msg.get("message") if msg.get("sender") == "user" else "", 
+                "agent": msg.get("message") if msg.get("sender") == "agent" else ""} 
+               for msg in history_messages]
+
+    # knowledge = load_knowledge(agent)
+    company = PERSONAS[agent]["company"]
+    role = PERSONAS[agent]["role"]
+    description = PERSONAS[agent]["description"]
+    relevant_chunks = retrieve_relevant_chunks(agent, task + " " + input.message, CORPUS_DIR, INDEX_DIR)
+    # NEW: Retrieve from ChromaDB knowledge base using RAG
+    from agents import retrieve_from_knowledge_base
+    knowledge_chunks = retrieve_from_knowledge_base(agent, task + " " + input.message, n_results=5)
+    memory = load_memory_from_vectordb(agent, limit=5)
+    # Build knowledge context
+    knowledge_context = ""
+    if knowledge_chunks:
+        knowledge_context = f"**Your domain knowledge and expertise:**\n{knowledge_chunks}\n\n"
+    system_prompt = f"""
+You are {agent} from {company}, acting in your {role}: {description}. You are serving as a moderator and advisor to C-suite level executives. Respond in a natural, conversational manner, providing balanced, insightful advice based on your expertise.
+
+Remain unbiased, helpful, and focused on the context. Build on your previous recommendation and the conversation history.
+
+Base your response on:
+- Original query: {task}
+- User Profile: {user_profile}
+- Your previous recommendation: {recommendation}
+{knowledge_context}- Recent memory: {memory}
+- Conversation history: {json.dumps(history)}
+"""
+
+    human_content = f"User's follow-up message: {input.message}"
+
+    # Use Gemini directly without LangChain
+    try:
+        ensure_genai_configured()
+        chat_model = genai.GenerativeModel(model)
+        response = chat_model.generate_content(
+            f"{system_prompt}\n\n{human_content}",
+            generation_config=genai.GenerationConfig(temperature=TEMP)
+        )
+        agent_response = response.text
+    except Exception as e:
+        print(f"Error in chat with {agent}: {e}")
+        agent_response = "Sorry, I encountered an issue. Please try again."
+
+    # Store user message in ChromaDB vector database
+    store_chat_message(
+        agent_name=agent,
+        run_id=input.run_id,
+        user_id=input.user_id,
+        message=input.message,
+        sender="user"
+    )
+
+    # Store agent response in ChromaDB vector database
+    store_chat_message(
+        agent_name=agent,
+        run_id=input.run_id,
+        user_id=input.user_id,
+        message=agent_response,
+        sender="agent"
+    )
+
+    return {"response": agent_response}
+
+@app.get("/get_chat")
+async def get_chat(run_id: str, agent: str):
+    """
+    Retrieve chat history from ChromaDB vector database for a specific agent.
+    Each agent maintains its own separate chat history collection.
+    """
+    if agent not in PERSONAS:
+        return JSONResponse(status_code=400, content={"error": "Invalid agent"})
+
+    # Fetch from ChromaDB (agent-specific collection)
+    history_messages = get_chat_history(agent, run_id, limit=100)
+
+    # Format for frontend compatibility
+    history = []
+    for msg in history_messages:
+        if msg.get("sender") == "user":
+            history.append({"user": msg.get("message"), "agent": ""})
+        else:
+            if history and not history[-1].get("agent"):
+                history[-1]["agent"] = msg.get("message")
+            else:
+                history.append({"user": "", "agent": msg.get("message")})
+
+    return {"history": history}
+
+@app.get("/agent_stats/{agent}")
+async def agent_stats(agent: str):
+    """
+    Get statistics about an agent's chat history in ChromaDB.
+    """
+    if agent not in PERSONAS:
+        return JSONResponse(status_code=400, content={"error": "Invalid agent"})
+
+    stats = get_agent_stats(agent)
+    return stats
+
+# ===== DIGITAL TWIN ENDPOINTS =====
+@app.post("/agent/upload-knowledge")
+async def upload_agent_knowledge(
+    agent: str = Form(...),
+    files: List[UploadFile] = File(...)
+):
+    """
+    Upload knowledge documents for AI leaders (Sam Altman, Jensen Huang, etc.).
+    Creates dedicated ChromaDB collection: knowledge_{agent}
+    Processes PDFs/TXT files, chunks them, embeds with Gemini, stores for RAG.
+    """
+    try:
+        if agent not in PERSONAS:
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"Invalid agent. Must be one of: {', '.join(PERSONAS)}"}
+            )
+        
+        # Ensure Gemini is configured
+        ensure_genai_configured()
+        
+        # Import ChromaDB utilities
+        from chromadb import PersistentClient
+        from constants import CHROMA_DIR
+        
+        # Create collection for this agent's knowledge
+        chroma_client = PersistentClient(path=CHROMA_DIR)
+        knowledge_collection = chroma_client.get_or_create_collection(
+            name=f"knowledge_{agent}"
+        )
+        
+        total_chunks = 0
+        processed_files = []
+        
+        # Process each uploaded file
+        for file in files:
+            if not file.filename:
+                continue
+                
+            content_bytes = await file.read()
+            file_text = ""
+            
+            # Extract text based on file type
+            if file.filename.endswith(".pdf"):
+                reader = PdfReader(io.BytesIO(content_bytes))
+                for page in reader.pages:
+                    file_text += page.extract_text() + "\n"
+            elif file.filename.endswith((".txt", ".md")):
+                file_text = content_bytes.decode("utf-8")
+            else:
+                continue  # Skip unsupported formats
+            
+            if not file_text.strip():
+                continue
+            
+            # Chunk the document (simple chunking: every 500 words)
+            words = file_text.split()
+            chunk_size = 500
+            chunks = []
+            
+            for i in range(0, len(words), chunk_size):
+                chunk = " ".join(words[i:i + chunk_size])
+                if chunk.strip():
+                    chunks.append(chunk)
+            
+            # Generate embeddings and store in ChromaDB
+            embedding_model = genai.GenerativeModel("models/embedding-001")
+            
+            for idx, chunk in enumerate(chunks):
+                # Generate embedding
+                embedding_result = genai.embed_content(
+                    model="models/embedding-001",
+                    content=chunk,
+                    task_type="retrieval_document"
+                )
+                
+                # Store in ChromaDB
+                knowledge_collection.add(
+                    documents=[chunk],
+                    embeddings=[embedding_result['embedding']],
+                    metadatas=[{
+                        "file_name": file.filename,
+                        "chunk_index": idx,
+                        "agent": agent
+                    }],
+                    ids=[f"{agent}_{file.filename}_{idx}"]
+                )
+                total_chunks += 1
+            
+            processed_files.append({
+                "filename": file.filename,
+                "chunks": len(chunks)
+            })
+        
+        return {
+            "success": True,
+            "agent": agent,
+            "files_processed": len(processed_files),
+            "total_chunks": total_chunks,
+            "files": processed_files,
+            "collection": f"knowledge_{agent}"
+        }
+        
+    except Exception as e:
+        print(f"Error uploading agent knowledge: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "success": False}
+        )
+
+# @app.post("/twin/create")
+async def create_twin(
+    twin_id: str = Form(...),
+    sample_messages: str = Form(...),  # JSON array string
+    profile_data: str = Form(...),  # JSON object string
+    files: List[UploadFile] = File(default=[])
+):
+    """
+    Create a digital twin with file uploads and semantic chunking.
+    Stores data in dual vector databases (Content + Style).
+    """
+    try:
+        # Parse JSON strings
+        sample_msgs = json.loads(sample_messages)
+        profile = json.loads(profile_data)
+
+        # Save uploaded files
+        uploaded_paths = []
+        for file in files:
+            if file.filename:
+                file_path = os.path.join(UPLOADS_DIR, f"{twin_id}_{file.filename}")
+                content = await file.read()
+
+                # Handle PDF and text files
+                if file.filename.endswith(".pdf"):
+                    reader = PdfReader(io.BytesIO(content))
+                    text = ""
+                    for page in reader.pages:
+                        text += page.extract_text() + "\n"
+                    # Save as text file
+                    file_path = file_path.replace(".pdf", ".txt")
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(text)
+                else:
+                    with open(file_path, "wb") as f:
+                        f.write(content)
+
+                uploaded_paths.append(file_path)
+
+        # Create vector embeddings
+        stats = create_twin_vectors(
+            twin_id=twin_id,
+            sample_messages=sample_msgs,
+            uploaded_files=uploaded_paths,
+            profile_data=profile
+        )
+
+        return {
+            "success": True,
+            "twin_id": twin_id,
+            "stats": stats,
+            "files_saved": len(uploaded_paths)
+        }
+
+    except Exception as e:
+        print(f"Error creating twin: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "success": False}
+        )
+
+
+@app.post("/twin/chat")
+async def twin_chat(
+    twin_id: str = Form(...),
+    message: str = Form(...),
+    profile_data: str = Form(...),  # JSON object with twin config
+    tone_style: str = Form(...),
+    emoji_preference: str = Form(default="None")
+):
+    """
+    Chat with a digital twin using LangGraph workflow.
+
+    LangGraph Workflow:
+    1. Retrieve → Triple vector DB retrieval (Style, Business Context, Decisions)
+    2. Personalize → Apply communication style
+    3. Decision → Proposal → Critique → Moderator pattern
+    4. Route → Escalate if low confidence, Generate if sufficient
+
+    Robust fallback handling at every stage - NEVER crashes!
+    """
+    try:
+        from twin_langgraph import run_twin_conversation
+
+        profile = json.loads(profile_data)
+        twin_profile = {
+            **profile,
+            "toneStyle": tone_style,
+            "emojiPreference": emoji_preference
+        }
+
+        print(f"[LangGraph Twin {twin_id}] Processing query: '{message}'")
+
+        # Run LangGraph workflow
+        result = run_twin_conversation(twin_id, twin_profile, message)
+
+        print(f"[LangGraph Twin {twin_id}] Workflow complete - Confidence: {result['confidence']['overall']}%")
+
+        return {
+            "response": result["response"],
+            "escalated": result["escalated"],
+            "confidence": result["confidence"],
+            "metadata": {
+                "proposal": result.get("proposal", ""),
+                "critique": result.get("critique", "")
+            }
+        }
+
+    except Exception as e:
+        print(f"Error in LangGraph twin chat: {e}")
+        # CRITICAL: Return fallback response instead of error
+        return JSONResponse(
+            status_code=200,
+            content={
+                "response": f"I apologize, but I encountered an error. To provide accurate responses, please connect your email and business data sources.\n\nError: {str(e)}",
+                "escalated": True,
+                "confidence": {
+                    "style": 0,
+                    "context": 0,
+                    "decision": 0,
+                    "overall": 0
+                },
+                "metadata": {
+                    "error": str(e)
+                }
+            }
+        )
+
+
+@app.get("/twin/stats/{twin_id}")
+async def twin_stats(twin_id: str):
+    """Get statistics about a twin's vector database"""
+    try:
+        from twin_manager import get_twin_collections
+        content_collection, style_collection = get_twin_collections(twin_id)
+
+        content_count = content_collection.count()
+        style_count = style_collection.count()
+
+        return {
+            "twin_id": twin_id,
+            "content_chunks": content_count,
+            "style_chunks": style_count,
+            "total_chunks": content_count + style_count
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
+
+
+@app.post("/email/analyze")
+async def analyze_emails(data: dict = Body(...)):
+    """
+    Analyze emails to extract communication style and decision patterns.
+    Supports both connected email accounts and uploaded email data.
+
+    Args:
+        emails: List of email objects with subject, body, from, to, date
+        user_profile: User profile for context
+
+    Returns:
+        Analysis with confidence scores and extracted patterns
+    """
+    try:
+        from email_analyzer import EmailAnalyzer
+
+        emails = data.get("emails", [])
+        user_profile = data.get("user_profile", {})
+
+        if not emails:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": False,
+                    "confidence": 0,
+                    "fallback_required": True,
+                    "message": "No emails provided for analysis"
+                }
+            )
+
+        analyzer = EmailAnalyzer()
+        analysis_result = analyzer.analyze_email_batch(emails, user_profile)
+
+        # CRITICAL: Handle case where no data is returned (prevent crash)
+        if not analysis_result or analysis_result.get("confidence", 0) == 0:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "confidence": 0,
+                    "fallback_required": True,
+                    "tone": "Professional",
+                    "formality_level": 5,
+                    "decision_style": "Balanced",
+                    "message": "Insufficient email data - using professional defaults"
+                }
+            )
+
+        return analysis_result
+
+    except Exception as e:
+        print(f"Error analyzing emails: {e}")
+        # CRITICAL: Return fallback instead of error (prevent frontend crash)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "confidence": 0,
+                "fallback_required": True,
+                "tone": "Professional",
+                "formality_level": 5,
+                "decision_style": "Balanced",
+                "error": str(e),
+                "message": "Analysis failed - using professional defaults"
+            }
+        )
+
+
+@app.post("/email/extract-decisions")
+async def extract_decisions(data: dict = Body(...)):
+    """
+    Extract strategic decisions from email history.
+
+    Args:
+        emails: List of email objects
+
+    Returns:
+        List of extracted decisions with rationale and context
+    """
+    try:
+        from email_analyzer import EmailAnalyzer
+
+        emails = data.get("emails", [])
+
+        if not emails:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "decisions": [],
+                    "message": "No emails provided"
+                }
+            )
+
+        analyzer = EmailAnalyzer()
+        decisions = analyzer.extract_decisions(emails)
+
+        return {
+            "success": True,
+            "decisions": decisions,
+            "count": len(decisions)
+        }
+
+    except Exception as e:
+        print(f"Error extracting decisions: {e}")
+        # CRITICAL: Return empty array instead of error (prevent crash)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "decisions": [],
+                "error": str(e),
+                "message": "Decision extraction failed"
+            }
+        )
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
