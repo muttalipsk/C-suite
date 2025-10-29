@@ -179,13 +179,13 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
                               }}
                               data-testid={`saved-${saved.id}`}
                             >
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                              <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2 break-words">
                                   {saved.content.substring(0, 80)}...
                                 </p>
                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {new Date(saved.createdAt).toLocaleDateString()}
+                                  <Clock className="w-3 h-3 shrink-0" />
+                                  <span className="truncate">{new Date(saved.createdAt).toLocaleDateString()}</span>
                                 </span>
                               </div>
                             </Button>
