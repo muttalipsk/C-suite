@@ -127,20 +127,27 @@ export function AgentCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <Card className="hover-elevate transition-all w-full" data-agent-card={agentKey}>
-      <CardHeader className="space-y-4">
+      <Card className="hover-elevate transition-all w-full border-2 shadow-lg hover:shadow-xl" data-agent-card={agentKey}>
+      <CardHeader className="space-y-4 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pb-6">
         <div className="flex items-start gap-4">
-          <Avatar className="w-16 h-16 border-2 border-primary/20">
-            <AvatarImage 
-              src={avatar} 
-              alt={agentName}
-              className="object-cover"
-            />
-            <AvatarFallback>{agentName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent-foreground/30 rounded-full blur-md"></div>
+            <Avatar className="w-16 h-16 border-3 border-white shadow-md relative">
+              <AvatarImage 
+                src={avatar} 
+                alt={agentName}
+                className="object-cover"
+              />
+              <AvatarFallback className="bg-gradient-to-br from-primary to-accent-foreground text-white font-semibold">
+                {agentName.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+          </div>
           <div className="flex-1">
-            <CardTitle className="text-lg">{agentName}</CardTitle>
-            <Badge variant="secondary" className="mt-1">{company}</Badge>
+            <CardTitle className="text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">{agentName}</CardTitle>
+            <Badge variant="secondary" className="mt-2 bg-gradient-to-r from-primary/80 to-accent-foreground/80 text-white border-0 shadow-sm">
+              {company}
+            </Badge>
           </div>
         </div>
       </CardHeader>
@@ -207,10 +214,10 @@ export function AgentCard({
           </CollapsibleContent>
         </Collapsible>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
             variant="outline"
-            className="flex-1"
+            className="flex-1 border-2 hover:border-primary/50 transition-all shadow-sm hover:shadow-md"
             onClick={handleSave}
             disabled={isSaving || isSaved}
             data-testid={`button-save-${agentKey}`}
@@ -221,7 +228,7 @@ export function AgentCard({
 
           <Button
             variant={showChat ? "secondary" : "default"}
-            className="flex-1"
+            className="flex-1 bg-gradient-to-r from-primary to-accent-foreground hover:from-primary/90 hover:to-accent-foreground/90 shadow-md hover:shadow-lg transition-all"
             onClick={() => setShowChat(!showChat)}
             data-testid={`button-chat-${agentKey}`}
           >
