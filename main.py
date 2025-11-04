@@ -9,7 +9,7 @@ import io
 from typing import List
 from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
 from fastapi.responses import JSONResponse
-from models import ChatInput, MeetingInput
+from models import ChatInput, MeetingInput, QuestionRefinementInput
 from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory_from_vectordb
 from agents import run_meeting
 import google.generativeai as genai
@@ -95,6 +95,83 @@ async def meeting(input_data: MeetingInput = Body(...)):
     print(f"Selected agents: {agents}, User ID: {user_id}, Meeting Type: {meeting_type}")
     result = run_meeting(task, user_profile, turns, agents, user_id, meeting_type)
     return result
+
+@app.post("/refine-question")
+async def refine_question(input_data: QuestionRefinementInput = Body(...)):
+    """
+    Analyze user's question and suggest 2 improved versions if needed.
+    Uses agent's knowledge base from ChromaDB to provide context-aware suggestions.
+    """
+    question = input_data.question
+    agent = input_data.agent
+    
+    if agent not in PERSONAS:
+        return JSONResponse(status_code=400, content={"error": "Invalid agent"})
+    
+    try:
+        # Retrieve relevant knowledge from agent's ChromaDB collection
+        from agents import retrieve_from_knowledge_base
+        knowledge_chunks = retrieve_from_knowledge_base(agent, question, n_results=3)
+        
+        # Build context
+        company = PERSONAS[agent]["company"]
+        role = PERSONAS[agent]["role"]
+        description = PERSONAS[agent]["description"]
+        
+        knowledge_context = ""
+        if knowledge_chunks:
+            knowledge_context = f"\n\nRelevant knowledge from {agent}'s expertise:\n{knowledge_chunks[:800]}"
+        
+        # Prompt for analyzing and refining the question
+        analysis_prompt = f"""You are {agent}, {role} at {company}, expert in {description}.
+
+A user is about to ask you a question. Your task is to analyze if their question could be improved to get a better, more accurate response from you.
+
+User's original question: "{question}"
+{knowledge_context}
+
+Analyze this question and determine:
+1. Is the question clear and specific enough?
+2. Could it be rephrased to leverage your expertise better?
+3. Would additional context or specificity help you provide a more valuable answer?
+
+If the question is already excellent (clear, specific, well-framed), respond with:
+{{"needs_refinement": false, "suggestions": []}}
+
+If the question could be improved, suggest 2 better versions that:
+- Are more specific and actionable
+- Align with your expertise in {description}
+- Would help you provide more valuable strategic insights
+- Keep the user's original intent
+
+Respond ONLY with valid JSON in this exact format:
+{{"needs_refinement": true, "suggestions": ["refined question 1", "refined question 2"]}}
+
+OR
+
+{{"needs_refinement": false, "suggestions": []}}"""
+
+        # Use Gemini to analyze
+        ensure_genai_configured()
+        model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        response = model.generate_content(
+            analysis_prompt,
+            generation_config=genai.GenerationConfig(
+                temperature=0.3,
+                response_mime_type="application/json"
+            )
+        )
+        
+        # Parse JSON response
+        result = json.loads(response.text)
+        
+        print(f"📝 Question refinement for {agent}: {result}")
+        return result
+        
+    except Exception as e:
+        print(f"Error in question refinement: {e}")
+        # Return no refinement on error
+        return {"needs_refinement": False, "suggestions": []}
 
 @app.post("/chat")
 async def chat_endpoint(input: ChatInput):

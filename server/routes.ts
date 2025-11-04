@@ -240,6 +240,40 @@ Role Details: ${user.roleDetails}
     }
   });
 
+  // QUESTION REFINEMENT ROUTE - Analyzes questions and suggests improvements
+  app.post("/api/refine-question", requireAuth, async (req, res) => {
+    try {
+      const { question, agent, runId } = req.body;
+
+      if (!question || !agent) {
+        return res.status(400).json({ error: "question and agent are required" });
+      }
+
+      // Forward to Python API for question refinement
+      const pythonResponse = await fetch("http://localhost:8000/refine-question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          agent,
+          run_id: runId,
+        }),
+      });
+
+      const result = await pythonResponse.json();
+
+      if (!pythonResponse.ok) {
+        throw new Error(result.error || "Question refinement failed");
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Question refinement error:", error);
+      // Return no refinement on error
+      res.json({ needs_refinement: false, suggestions: [] });
+    }
+  });
+
   // CHAT ROUTES - Now uses Python VectorDB API
   app.post("/api/chat", requireAuth, async (req, res) => {
     try {

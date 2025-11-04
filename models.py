@@ -19,6 +19,11 @@ class MeetingInput(BaseModel):
     user_id: str = "system"
     meeting_type: str = "board"  # board, email, chat (general)
 
+class QuestionRefinementInput(BaseModel):
+    question: str
+    agent: str
+    run_id: Optional[str] = None
+
 # Define a merge function for dictionaries
 def merge_dicts(left: Dict[str, str], right: Dict[str, str]) -> Dict[str, str]:
     """Merge two dictionaries, with right taking precedence"""
