@@ -42,7 +42,7 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
   const taskValue = form.watch("task");
 
   useEffect(() => {
-    if (!taskValue || taskValue.length < 10) {
+    if (!taskValue || taskValue.length < 5) {
       setRefinementSuggestions([]);
       return;
     }
