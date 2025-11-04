@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AI_AGENTS } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Users } from "lucide-react";
+import { Sparkles, Users, Lightbulb, ArrowRight, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface MeetingFormData {
@@ -26,6 +26,8 @@ interface MeetingFormProps {
 }
 
 export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: MeetingFormProps) {
+  const [refinementSuggestions, setRefinementSuggestions] = useState<string[]>([]);
+  const [isRefining, setIsRefining] = useState(false);
 
   const form = useForm<MeetingFormData>({
     defaultValues: {
@@ -35,6 +37,54 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
       selectedAgents: [],
     },
   });
+
+  // Watch task field for refinement
+  const taskValue = form.watch("task");
+
+  useEffect(() => {
+    if (!taskValue || taskValue.length < 10) {
+      setRefinementSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsRefining(true);
+      try {
+        // Use first selected agent for context, or default to Sam_Altman
+        const agent = selectedAgents[0] || "Sam_Altman";
+        
+        const response = await fetch("/api/refine-question", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: taskValue,
+            agent: agent,
+            runId: "meeting-form", // Placeholder run ID for meeting context
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.needs_refinement && result.suggestions?.length > 0) {
+          setRefinementSuggestions(result.suggestions);
+        } else {
+          setRefinementSuggestions([]);
+        }
+      } catch (error) {
+        console.error("Refinement error:", error);
+        setRefinementSuggestions([]);
+      } finally {
+        setIsRefining(false);
+      }
+    }, 1500); // Wait 1.5 seconds after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [taskValue, selectedAgents]);
+
+  const handleUseSuggestion = (suggestion: string) => {
+    form.setValue("task", suggestion);
+    setRefinementSuggestions([]);
+  };
 
   const handleSubmit = (data: MeetingFormData) => {
     console.log("🟢 MeetingForm.handleSubmit called");
@@ -115,6 +165,45 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
                       data-testid="input-task"
                     />
                   </FormControl>
+                  
+                  {/* Refinement Suggestions */}
+                  {isRefining && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Analyzing your question...</span>
+                    </div>
+                  )}
+                  
+                  {refinementSuggestions.length > 0 && !isRefining && (
+                    <div className="mt-3 p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3" data-testid="refinement-suggestions">
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                        <Lightbulb className="w-4 h-4" />
+                        <span>AI-Suggested Improvements</span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {refinementSuggestions.map((suggestion, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleUseSuggestion(suggestion)}
+                            className="w-full text-left p-3 bg-background border border-border rounded-md hover-elevate active-elevate-2 transition-all"
+                            data-testid={`button-suggestion-${idx}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <ArrowRight className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                              <span className="text-sm text-foreground">{suggestion}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      
+                      <p className="text-xs text-muted-foreground">
+                        Click a suggestion to use it, or continue with your original question
+                      </p>
+                    </div>
+                  )}
+                  
                   <FormMessage />
                 </FormItem>
               )}

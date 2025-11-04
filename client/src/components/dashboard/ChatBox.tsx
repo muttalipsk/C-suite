@@ -5,7 +5,6 @@ import { Send, Save } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AI_AGENTS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { QuestionRefinementDialog } from "./QuestionRefinementDialog";
 
 interface Message {
   sender: "user" | "agent";
@@ -25,9 +24,6 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showRefinementDialog, setShowRefinementDialog] = useState(false);
-  const [refinementSuggestions, setRefinementSuggestions] = useState<string[]>([]);
-  const [originalQuestion, setOriginalQuestion] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -163,51 +159,9 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
 
   const handleSend = async () => {
     if (!input.trim()) return;
-
     const currentInput = input;
     setInput("");
-
-    try {
-      // First, check if question needs refinement
-      const refinementResponse = await fetch("/api/refine-question", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: currentInput,
-          agent: agentKey,
-          runId,
-        }),
-      });
-
-      const refinementResult = await refinementResponse.json();
-
-      if (refinementResult.needs_refinement && refinementResult.suggestions?.length > 0) {
-        // Show refinement dialog
-        setOriginalQuestion(currentInput);
-        setRefinementSuggestions(refinementResult.suggestions);
-        setShowRefinementDialog(true);
-      } else {
-        // No refinement needed, send directly
-        await sendMessage(currentInput);
-      }
-    } catch (error: any) {
-      console.error("Refinement error:", error);
-      // If refinement fails, just send the original message
-      await sendMessage(currentInput);
-    }
-  };
-
-  const handleSelectQuestion = async (selectedQuestion: string) => {
-    await sendMessage(selectedQuestion);
-  };
-
-  const handleDialogClose = (open: boolean) => {
-    if (!open && originalQuestion && showRefinementDialog) {
-      // Dialog is being closed - send the original question if no selection was made
-      sendMessage(originalQuestion);
-      setOriginalQuestion("");
-    }
-    setShowRefinementDialog(open);
+    await sendMessage(currentInput);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -220,19 +174,7 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
   const agentAvatar = AI_AGENTS[agentKey as keyof typeof AI_AGENTS]?.avatar || "";
 
   return (
-    <>
-      <QuestionRefinementDialog
-        open={showRefinementDialog}
-        onClose={handleDialogClose}
-        originalQuestion={originalQuestion}
-        suggestions={refinementSuggestions}
-        onSelectQuestion={(question) => {
-          setOriginalQuestion(""); // Clear after selection
-          handleSelectQuestion(question);
-        }}
-      />
-      
-      <div className="space-y-4">
+    <div className="space-y-4">
         {messages.length > 0 && (
         <div className="flex justify-end">
           <Button
@@ -328,6 +270,5 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
         </Button>
       </div>
     </div>
-    </>
   );
 }
