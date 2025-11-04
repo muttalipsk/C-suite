@@ -319,15 +319,17 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="border-b bg-background px-6 py-4 flex items-center justify-between">
+        {/* Header with Gradient */}
+        <header className="border-b-2 bg-gradient-to-r from-primary/5 via-accent/5 to-transparent px-6 py-5 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Brain className="w-5 h-5 text-primary" />
+            <div className="p-2.5 bg-gradient-to-br from-primary/90 to-accent-foreground/90 rounded-xl shadow-md">
+              <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Ask the Expert</h1>
-              <p className="text-sm text-muted-foreground">Strategic Advisory Platform</p>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent-foreground bg-clip-text text-transparent">
+                Ask the Expert
+              </h1>
+              <p className="text-sm text-muted-foreground font-medium">Strategic Advisory Platform</p>
             </div>
           </div>
           <UserProfileButton
