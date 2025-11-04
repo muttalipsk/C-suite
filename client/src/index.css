@@ -2,67 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE - Now the default theme */
+/* LIGHT MODE - Modern, cool & vibrant theme */
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
+  --button-outline: rgba(37, 99, 235, .15);
+  --badge-outline: rgba(37, 99, 235, .08);
 
   /* Automatic computation of border around primary / danger buttons */
   --opaque-button-border-intensity: -8; /* In terms of percentages */
 
   /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --elevate-1: rgba(37, 99, 235, .04);
+  --elevate-2: rgba(37, 99, 235, .10);
 
-  --background: 0 0% 100%;
+  --background: 210 20% 98%;
 
   --foreground: 222 47% 11%;
 
   --border: 215 16% 88%;
 
-  --card: 0 0% 98%;
+  --card: 210 40% 98%;
 
   --card-foreground: 222 47% 11%;
 
-  --card-border: 215 16% 92%;
+  --card-border: 215 20% 90%;
 
-  --sidebar: 220 14% 96%;
+  --sidebar: 210 30% 97%;
 
   --sidebar-foreground: 222 47% 11%;
 
-  --sidebar-border: 215 16% 90%;
+  --sidebar-border: 215 20% 88%;
 
   --sidebar-primary: 217 91% 60%;
 
   --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 220 14% 91%;
+  --sidebar-accent: 217 95% 95%;
 
-  --sidebar-accent-foreground: 222 47% 11%;
+  --sidebar-accent-foreground: 217 91% 35%;
 
   --sidebar-ring: 217 91% 60%;
 
-  --popover: 0 0% 95%;
+  --popover: 210 40% 98%;
 
   --popover-foreground: 222 47% 11%;
 
-  --popover-border: 215 16% 87%;
+  --popover-border: 215 20% 85%;
 
   --primary: 217 91% 60%;
 
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 14% 89%;
+  --secondary: 217 95% 94%;
 
-  --secondary-foreground: 222 47% 11%;
+  --secondary-foreground: 217 91% 35%;
 
-  --muted: 220 13% 91%;
+  --muted: 215 20% 93%;
 
   --muted-foreground: 215 16% 46%;
 
-  --accent: 220 15% 90%;
+  --accent: 262 90% 96%;
 
-  --accent-foreground: 222 47% 11%;
+  --accent-foreground: 262 83% 40%;
 
   --destructive: 0 84% 60%;
 
@@ -72,7 +72,7 @@
   --ring: 217 91% 60%;
   --chart-1: 217 91% 60%;
   --chart-2: 262 83% 58%;
-  --chart-3: 142 76% 36%;
+  --chart-3: 142 71% 45%;
   --chart-4: 35 91% 60%;
   --chart-5: 340 82% 52%;
 

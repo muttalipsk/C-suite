@@ -1,20 +1,20 @@
 # Design Guidelines for Ask the Expert
 
 ## Design Approach
-**Reference-Based:** Hugging Face dark theme with professional dashboard aesthetics, combined with modern AI platform patterns (Linear, Notion) for clean, executive-focused interface.
+**Modern Light Theme:** Inspired by Linear, Stripe, and modern SaaS platforms with vibrant accents, clean surfaces, and professional aesthetics optimized for executive-focused AI advisory interface.
 
 ## Core Design System
 
 ### Color Palette
-**Dark Mode Primary (Hugging Face-inspired):**
-- Background: 222 47% 7% (very dark blue-gray, similar to #0e1117)
-- Surface: 222 47% 11% (slightly lighter for cards/panels)
-- Text Primary: 0 0% 100% (white)
-- Text Secondary: 215 20% 65% (muted blue-gray)
-- Accent Primary: 217 91% 60% (vibrant blue for CTAs)
-- Accent Secondary: 262 83% 58% (purple for highlights)
-- Success: 142 76% 36% (green)
-- Border: 215 28% 17% (subtle divider)
+**Light Mode Primary (Modern & Vibrant):**
+- Background: 210 20% 98% (soft blue-tinted white)
+- Surface: 210 40% 96% (subtle blue-gray cards)
+- Text Primary: 222 47% 11% (deep blue-black)
+- Text Secondary: 215 16% 46% (muted slate)
+- Accent Primary: 217 91% 60% (vibrant electric blue)
+- Accent Secondary: 262 83% 58% (bright purple)
+- Success: 142 71% 45% (fresh green)
+- Border: 215 16% 88% (soft neutral divider)
 
 ### Typography
 - **Primary Font:** Inter or System UI stack for clean, professional readability
@@ -39,15 +39,15 @@
 **Signup Form:**
 - Multi-step progressive disclosure (3 steps: Personal Info → Professional Details → Goals)
 - Photo upload with circular preview (120px diameter)
-- Input fields with floating labels and dark backgrounds (222 47% 11%)
+- Input fields with floating labels and light surface backgrounds
 - Full-width text areas for descriptive fields
 - Progress indicator at top showing step completion
 
 **Login Form:**
-- Centered card (max-width: 400px) on dark background
+- Centered card (max-width: 400px) on light background
 - Email/username and password fields with eye toggle for password
 - "Remember me" checkbox with accent color
-- Prominent login button with gradient (blue to purple)
+- Prominent login button with vibrant gradient (blue to purple)
 
 ### Dashboard Layout
 **Three-Panel Structure:**
@@ -56,7 +56,7 @@
    - Agent list with avatar images (48px circular)
    - Agent name and company below avatar
    - Memory preview (truncated, 2 lines max)
-   - Hover state: slight background lift (222 47% 14%)
+   - Hover state: subtle accent highlight with vibrant blue tint
 
 2. **Main Content Area (flexible):**
    - Top bar with run configuration
@@ -83,8 +83,8 @@
 
 ### Chat Interface
 **Message Bubbles:**
-- User messages: Right-aligned, accent blue background (217 91% 60%)
-- Agent messages: Left-aligned, surface background (222 47% 11%)
+- User messages: Right-aligned, vibrant blue background (217 91% 60%)
+- Agent messages: Left-aligned, soft surface background (210 40% 96%)
 - Agent avatar (32px) next to agent messages
 - Timestamps below messages (small, muted text)
 - Input area: Fixed bottom with send button, auto-resize textarea
@@ -108,9 +108,9 @@
 ### Tables & Data Display
 - Striped rows for readability (alternating surface/background)
 - Fixed header on scroll
-- Hover state: row highlight (222 47% 14%)
+- Hover state: row highlight with subtle blue accent
 - Column headers: Bold, uppercase, letter-spacing: 0.05em
-- Borders: Subtle (215 28% 17%)
+- Borders: Soft neutral (215 16% 88%)
 
 ### Interactive States
 - **Hover:** Background lift (+2-3% lightness)
@@ -149,8 +149,8 @@
 - WCAG AA contrast ratios maintained (4.5:1 for text)
 - Keyboard navigation support (Tab order logical)
 - Screen reader labels for icons and avatars
-- Focus indicators visible (2px accent outline)
-- Dark mode as default with no light mode toggle needed
+- Focus indicators visible (2px vibrant accent outline)
+- Light mode optimized with optional dark mode toggle for extended use
 
 ## Image Assets
 
@@ -169,8 +169,8 @@
 - Agent-specific icons for persona indicators (brain, chip, book, etc.)
 
 ## Key Design Principles
-1. **Executive Focus:** Professional, polished, trust-building aesthetics
+1. **Executive Focus:** Professional, polished, trust-building aesthetics with modern vibrancy
 2. **Information Density:** Pack data without clutter using tables, cards, and hierarchy
-3. **Dark-First:** Optimized for extended use with reduced eye strain
+3. **Light & Fresh:** Clean, vibrant design optimized for clarity and engagement
 4. **Multi-Agent Clarity:** Distinct visual separation between agent recommendations
 5. **Conversational Flow:** Natural chat progression with clear turn-taking
