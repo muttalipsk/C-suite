@@ -10,6 +10,7 @@ The application enables users to:
 - Receive tailored recommendations based on their specific context
 - Engage in follow-up conversations with individual advisors
 - Access knowledge bases from each leader's writings and expertise
+- **NEW: Question refinement** - AI analyzes questions using vector DB knowledge and suggests improved versions for better answers
 - **NEW: Create personalized digital twins** that mirror their communication style and expertise
 - **NEW: Chat with digital twins** from colleagues within their company domain
 
@@ -30,7 +31,7 @@ Preferred communication style: Simple, everyday language.
 - Shadcn/ui component library with "new-york" style variant
 - Radix UI primitives for accessible, unstyled components
 - Tailwind CSS for utility-first styling with custom design tokens
-- Dark mode as primary theme (Hugging Face-inspired color palette)
+- Modern light theme with vibrant blue accents (inspired by Linear and Stripe)
 
 **State Management:**
 - React Query (TanStack Query) for server state management
@@ -73,6 +74,16 @@ Preferred communication style: Simple, everyday language.
 - Agent-specific collections (e.g., chat_history_sam_altman, chat_history_jensen_huang)
 - Semantic search capabilities for finding similar past conversations
 - Metadata: run_id, user_id, sender, timestamp stored with each message
+
+**Recent Changes (November 4, 2025):**
+- **Question Refinement Feature**: AI-powered question optimization before generating answers
+  - Backend endpoint `/refine-question` that analyzes user questions using agent's vector DB knowledge
+  - Gemini AI evaluates question quality and suggests 2 improved versions when applicable
+  - Frontend QuestionRefinementDialog shows original + 2 AI-suggested refinements
+  - User can choose refined version or proceed with original question
+  - Robust UX: questions never lost even if dialog is dismissed (auto-sends original)
+  - Graceful error handling: falls back to original question on any failure
+  - Integration: ChatBox component seamlessly calls refinement before sending messages
 
 **Recent Changes (October 26, 2025):**
 - **Digital Twin Feature**: Complete implementation of personalized digital twins
