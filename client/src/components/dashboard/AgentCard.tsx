@@ -7,6 +7,7 @@ import { MessageSquare, ChevronDown, ChevronUp, Save } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChatBox } from "./ChatBox";
 import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
 
 interface AgentCardProps {
   agentKey: string;
@@ -121,7 +122,12 @@ export function AgentCard({
   };
 
   return (
-    <Card className="hover-elevate transition-all w-full" data-agent-card={agentKey}>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      <Card className="hover-elevate transition-all w-full" data-agent-card={agentKey}>
       <CardHeader className="space-y-4">
         <div className="flex items-start gap-4">
           <Avatar className="w-16 h-16 border-2 border-primary/20">
@@ -231,5 +237,6 @@ export function AgentCard({
         )}
       </CardContent>
     </Card>
+    </motion.div>
   );
 }

@@ -11,6 +11,7 @@ import { AI_AGENTS } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Users, Lightbulb, ArrowRight, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MeetingFormData {
   task: string;
@@ -103,18 +104,34 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
 
   return (
     <Card>
-      {selectedAgents.length > 0 && (
-        <div className="px-6 pt-6 pb-4 flex flex-wrap gap-2">
-          {selectedAgents.map(agentKey => {
-            const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
-            return agent ? (
-              <Badge key={agentKey} variant="secondary" className="text-xs">
-                {agent.name}
-              </Badge>
-            ) : null;
-          })}
-        </div>
-      )}
+      <AnimatePresence>
+        {selectedAgents.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="px-6 pt-6 pb-4 flex flex-wrap gap-2"
+          >
+            {selectedAgents.map((agentKey, idx) => {
+              const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
+              return agent ? (
+                <motion.div
+                  key={agentKey}
+                  initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                  transition={{ delay: idx * 0.05, duration: 0.2 }}
+                >
+                  <Badge variant="secondary" className="text-xs">
+                    {agent.name}
+                  </Badge>
+                </motion.div>
+              ) : null;
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -166,58 +183,103 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
                     />
                   </FormControl>
                   
-                  {/* Refinement Suggestions */}
-                  {isRefining && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Analyzing your question...</span>
-                    </div>
-                  )}
-                  
-                  {refinementSuggestions.length > 0 && !isRefining && (
-                    <div className="mt-3 p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3" data-testid="refinement-suggestions">
-                      <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                        <Lightbulb className="w-4 h-4" />
-                        <span>AI-Suggested Improvements</span>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {refinementSuggestions.map((suggestion, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => handleUseSuggestion(suggestion)}
-                            className="w-full text-left p-3 bg-background border border-border rounded-md hover-elevate active-elevate-2 transition-all"
-                            data-testid={`button-suggestion-${idx}`}
-                          >
-                            <div className="flex items-start gap-2">
-                              <ArrowRight className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                              <span className="text-sm text-foreground">{suggestion}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                      
-                      <p className="text-xs text-muted-foreground">
-                        Click a suggestion to use it, or continue with your original question
-                      </p>
-                    </div>
-                  )}
+                  {/* Refinement Suggestions with Animations */}
+                  <AnimatePresence mode="wait">
+                    {isRefining && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-center gap-2 text-sm text-muted-foreground mt-2"
+                      >
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="animate-pulse">Analyzing your question...</span>
+                      </motion.div>
+                    )}
+                    
+                    {refinementSuggestions.length > 0 && !isRefining && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="mt-3 p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3 shadow-sm" 
+                        data-testid="refinement-suggestions"
+                      >
+                        <motion.div 
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.1, duration: 0.2 }}
+                          className="flex items-center gap-2 text-sm font-medium text-primary"
+                        >
+                          <Lightbulb className="w-4 h-4 animate-pulse" />
+                          <span>AI-Suggested Improvements</span>
+                        </motion.div>
+                        
+                        <div className="space-y-2">
+                          {refinementSuggestions.map((suggestion, idx) => (
+                            <motion.button
+                              key={idx}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.15 + idx * 0.1, duration: 0.3, ease: "easeOut" }}
+                              whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
+                              whileTap={{ scale: 0.98 }}
+                              type="button"
+                              onClick={() => handleUseSuggestion(suggestion)}
+                              className="w-full text-left p-3 bg-background border border-border rounded-md hover-elevate active-elevate-2 transition-all"
+                              data-testid={`button-suggestion-${idx}`}
+                            >
+                              <div className="flex items-start gap-2">
+                                <ArrowRight className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                                <span className="text-sm text-foreground">{suggestion}</span>
+                              </div>
+                            </motion.button>
+                          ))}
+                        </div>
+                        
+                        <motion.p 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.4, duration: 0.2 }}
+                          className="text-xs text-muted-foreground"
+                        >
+                          Click a suggestion to use it, or continue with your original question
+                        </motion.p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading || selectedAgents.length === 0}
-              data-testid="button-run-meeting"
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
-              <Sparkles className="w-4 h-4 mr-2" />
-              {isLoading ? "Generating Recommendations..." : "Submit"}
-            </Button>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || selectedAgents.length === 0}
+                data-testid="button-run-meeting"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating Recommendations...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Submit
+                  </>
+                )}
+              </Button>
+            </motion.div>
           </form>
         </Form>
       </CardContent>

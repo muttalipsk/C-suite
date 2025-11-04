@@ -138,12 +138,17 @@
 - Bottom navigation for main actions
 
 ## Animations & Microinteractions
-**Minimal, Purposeful Motion:**
-- Card entry: Fade-up (200ms, ease-out)
+**Smooth, Polished Motion (using Framer Motion):**
+- Card entry: Fade-up with scale (400ms, ease-out)
+- Agent badges: Staggered fade-in with scale (50ms delay between items)
+- Refinement suggestions: Slide-up with scale and fade (300ms)
+- Individual suggestion buttons: Staggered slide-in from left (100ms delay)
+- Submit button: Spring-based scale on hover/tap
+- Loading states: Pulse animation with fade transitions
 - Sidebar toggle: Slide (300ms, ease-in-out)
 - Chat messages: Slide-up with fade (150ms)
-- Button clicks: Subtle scale (100ms)
 - No autoplay or distracting animations
+- All animations respect user motion preferences
 
 ## Accessibility
 - WCAG AA contrast ratios maintained (4.5:1 for text)
