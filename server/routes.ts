@@ -243,19 +243,19 @@ Role Details: ${user.roleDetails}
   // QUESTION REFINEMENT ROUTE - Analyzes questions and suggests improvements
   app.post("/api/refine-question", requireAuth, async (req, res) => {
     try {
-      const { question, agent, runId } = req.body;
+      const { question, agents, runId } = req.body;
 
-      if (!question || !agent) {
-        return res.status(400).json({ error: "question and agent are required" });
+      if (!question || !agents || !Array.isArray(agents) || agents.length === 0) {
+        return res.status(400).json({ error: "question and agents array are required" });
       }
 
-      // Forward to Python API for question refinement
+      // Forward to Python API for question refinement with ALL agents
       const pythonResponse = await fetch("http://localhost:8000/refine-question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question,
-          agent,
+          agents,
           run_id: runId,
         }),
       });

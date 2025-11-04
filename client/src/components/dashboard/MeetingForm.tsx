@@ -43,7 +43,7 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
   const taskValue = form.watch("task");
 
   useEffect(() => {
-    if (!taskValue || taskValue.length < 5) {
+    if (!taskValue || taskValue.length < 5 || selectedAgents.length === 0) {
       setRefinementSuggestions([]);
       return;
     }
@@ -51,16 +51,14 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
     const timer = setTimeout(async () => {
       setIsRefining(true);
       try {
-        // Use first selected agent for context, or default to Sam_Altman
-        const agent = selectedAgents[0] || "Sam_Altman";
-        
+        // Send ALL selected agents for collective analysis
         const response = await fetch("/api/refine-question", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             question: taskValue,
-            agent: agent,
-            runId: "meeting-form", // Placeholder run ID for meeting context
+            agents: selectedAgents, // ALL selected agents
+            runId: "meeting-form",
           }),
         });
 

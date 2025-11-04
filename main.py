@@ -100,49 +100,64 @@ async def meeting(input_data: MeetingInput = Body(...)):
 async def refine_question(input_data: QuestionRefinementInput = Body(...)):
     """
     Analyze user's question and suggest 2 improved versions if needed.
-    Uses agent's knowledge base from ChromaDB to provide context-aware suggestions.
+    Uses ALL selected agents' knowledge bases from ChromaDB to provide context-aware suggestions.
     """
     question = input_data.question
-    agent = input_data.agent
+    agents = input_data.agents
     
-    if agent not in PERSONAS:
-        return JSONResponse(status_code=400, content={"error": "Invalid agent"})
+    # Validate all agents
+    for agent in agents:
+        if agent not in PERSONAS:
+            return JSONResponse(status_code=400, content={"error": f"Invalid agent: {agent}"})
     
     try:
-        # Retrieve relevant knowledge from agent's ChromaDB collection
+        # Retrieve relevant knowledge from ALL agents' ChromaDB collections
         from agents import retrieve_from_knowledge_base
-        knowledge_chunks = retrieve_from_knowledge_base(agent, question, n_results=3)
         
-        # Build context
-        company = PERSONAS[agent]["company"]
-        role = PERSONAS[agent]["role"]
-        description = PERSONAS[agent]["description"]
+        all_knowledge = []
+        agents_context = []
+        
+        for agent in agents:
+            knowledge_chunks = retrieve_from_knowledge_base(agent, question, n_results=2)
+            
+            company = PERSONAS[agent]["company"]
+            role = PERSONAS[agent]["role"]
+            description = PERSONAS[agent]["description"]
+            
+            if knowledge_chunks:
+                agent_info = f"**{agent}** ({role} at {company}):\n{knowledge_chunks[:500]}"
+                all_knowledge.append(agent_info)
+            
+            agents_context.append(f"- {agent}: {role} at {company}, expert in {description}")
         
         knowledge_context = ""
-        if knowledge_chunks:
-            knowledge_context = f"\n\nRelevant knowledge from {agent}'s expertise:\n{knowledge_chunks[:800]}"
+        if all_knowledge:
+            knowledge_context = f"\n\nRelevant knowledge from your selected experts:\n" + "\n\n".join(all_knowledge[:1000])
         
-        # Prompt for analyzing and refining the question
-        analysis_prompt = f"""You are {agent}, {role} at {company}, expert in {description}.
+        agents_list = "\n".join(agents_context)
+        
+        # Prompt for analyzing and refining the question based on ALL agents
+        analysis_prompt = f"""You are an AI assistant helping a user prepare questions for a strategic boardroom meeting with these experts:
 
-A user is about to ask you a question. Your task is to analyze if their question could be improved to get a better, more accurate response from you.
+{agents_list}
 
-User's original question: "{question}"
+The user is about to ask this question to ALL of these experts: "{question}"
 {knowledge_context}
 
 Analyze this question and determine:
-1. Is the question clear and specific enough?
-2. Could it be rephrased to leverage your expertise better?
-3. Would additional context or specificity help you provide a more valuable answer?
+1. Is the question clear and specific enough to leverage the collective expertise of these {len(agents)} experts?
+2. Could it be rephrased to better tap into their unique knowledge domains?
+3. Would additional context help them provide complementary, high-value insights?
 
-If the question is already excellent (clear, specific, well-framed), respond with:
+If the question is already excellent (clear, specific, well-framed for this expert panel), respond with:
 {{"needs_refinement": false, "suggestions": []}}
 
 If the question could be improved, suggest 2 better versions that:
 - Are more specific and actionable
-- Align with your expertise in {description}
-- Would help you provide more valuable strategic insights
+- Align with the collective expertise of {', '.join(agents)}
+- Would help each expert provide valuable strategic insights from their unique perspective
 - Keep the user's original intent
+- Encourage complementary responses from the different experts
 
 Respond ONLY with valid JSON in this exact format:
 {{"needs_refinement": true, "suggestions": ["refined question 1", "refined question 2"]}}
@@ -165,7 +180,7 @@ OR
         # Parse JSON response
         result = json.loads(response.text)
         
-        print(f"📝 Question refinement for {agent}: {result}")
+        print(f"📝 Question refinement for {len(agents)} agents ({', '.join(agents)}): {result}")
         return result
         
     except Exception as e:

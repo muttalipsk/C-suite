@@ -21,7 +21,7 @@ class MeetingInput(BaseModel):
 
 class QuestionRefinementInput(BaseModel):
     question: str
-    agent: str
+    agents: List[str]  # Now accepts multiple agents
     run_id: Optional[str] = None
 
 # Define a merge function for dictionaries
