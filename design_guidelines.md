@@ -1,138 +1,150 @@
-# Design Guidelines for Ask the Expert
+# Ask the Expert - Design Guidelines
 
-## Design Approach
-**Modern Light Theme:** Inspired by Linear, Stripe, and modern SaaS platforms with vibrant accents, clean surfaces, and professional aesthetics optimized for executive-focused AI advisory interface.
+## Design Vision
+**Attractive, Modern Light Theme** - A sophisticated, vibrant interface that combines soft pastels with bold gradients and glass morphism effects. The design should feel premium, inviting, and visually engaging while maintaining excellent readability and professionalism.
 
-## Core Design System
+## Visual Style
+- **Modern SaaS aesthetic** with gradient overlays and depth
+- **Glass morphism** effects for elevated surfaces
+- **Vibrant color accents** that pop against light backgrounds
+- **Soft shadows** and subtle blur effects for depth
+- **Playful yet professional** - appropriate for C-suite executives
 
-### Color Palette
-**Light Mode Primary (Modern & Vibrant):**
-- Background: 210 20% 98% (soft blue-tinted white)
-- Surface: 210 40% 96% (subtle blue-gray cards)
-- Text Primary: 222 47% 11% (deep blue-black)
-- Text Secondary: 215 16% 46% (muted slate)
-- Accent Primary: 217 91% 60% (vibrant electric blue)
-- Accent Secondary: 262 83% 58% (bright purple)
-- Success: 142 71% 45% (fresh green)
-- Border: 215 16% 88% (soft neutral divider)
+## Color Palette
 
-### Typography
-- **Primary Font:** Inter or System UI stack for clean, professional readability
-- **Headings:** Font weights 600-700, sizes: H1 (2.5rem), H2 (2rem), H3 (1.5rem)
-- **Body:** Font weight 400, size 1rem, line-height 1.6
-- **Small Text:** 0.875rem for timestamps, metadata
+### Background Colors
+- **Base Background**: Clean white with subtle warm tint (#FAFBFC)
+- **Gradient Background**: Soft blue-to-purple gradient (from sky blue to lavender)
+- **Card Background**: Pure white with glass effect (backdrop blur + subtle transparency)
+- **Sidebar Background**: Light gradient (soft blue tint fading to white)
 
-### Layout System
-**Spacing Units:** Consistent Tailwind units of 4, 8, 12, 16, 24, 32
-- Component padding: 16-24px
-- Section spacing: 32-48px
-- Card gaps: 16-24px
+### Accent Colors
+- **Primary**: Vibrant electric blue (#4F46E5) - for CTAs and key actions
+- **Secondary**: Rich purple (#9333EA) - for highlights and badges
+- **Success**: Fresh mint green (#10B981) - for positive states
+- **Warning**: Warm amber (#F59E0B) - for attention items
+- **Gradient Accent**: Blue-to-purple gradient for visual interest
 
-**Grid Structure:**
-- Desktop: 3-column grid for agent recommendation cards
-- Tablet: 2-column grid
-- Mobile: Single column stack
+### Text Colors
+- **Primary Text**: Deep slate (#0F172A) - excellent contrast on light backgrounds
+- **Secondary Text**: Cool gray (#64748B) - for supporting information
+- **Muted Text**: Soft gray (#94A3B8) - for tertiary information
+- **On Color**: Pure white (#FFFFFF) - for text on colored backgrounds
 
-## Component Library
+### Border & Divider Colors
+- **Subtle Border**: Ultra-light gray (#E2E8F0) - barely visible separation
+- **Medium Border**: Light gray (#CBD5E1) - visible but soft
+- **Accent Border**: Gradient borders for special elements
 
-### Authentication Components
-**Signup Form:**
-- Multi-step progressive disclosure (3 steps: Personal Info → Professional Details → Goals)
-- Photo upload with circular preview (120px diameter)
-- Input fields with floating labels and light surface backgrounds
-- Full-width text areas for descriptive fields
-- Progress indicator at top showing step completion
+## Visual Effects
 
-**Login Form:**
-- Centered card (max-width: 400px) on light background
-- Email/username and password fields with eye toggle for password
-- "Remember me" checkbox with accent color
-- Prominent login button with vibrant gradient (blue to purple)
+### Gradients
+- **Hero Gradient**: `linear-gradient(135deg, #EEF2FF 0%, #F3E8FF 50%, #FEF3C7 100%)`
+- **Card Gradient**: `linear-gradient(to bottom right, rgba(255,255,255,0.9), rgba(249,250,251,0.8))`
+- **Button Gradient**: `linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)`
+- **Accent Gradient**: `linear-gradient(90deg, #60A5FA 0%, #A78BFA 50%, #F472B6 100%)`
 
-### Dashboard Layout
-**Three-Panel Structure:**
+### Glass Morphism
+- **Backdrop blur**: 12px-16px for frosted glass effect
+- **Semi-transparent backgrounds**: White at 70-90% opacity
+- **Soft borders**: 1px white at 40% opacity
+- **Inner glow**: Subtle white shadow for depth
 
-1. **Left Sidebar (280px, fixed):**
-   - Agent list with avatar images (48px circular)
-   - Agent name and company below avatar
-   - Memory preview (truncated, 2 lines max)
-   - Hover state: subtle accent highlight with vibrant blue tint
+### Shadows
+- **Soft Shadow**: `0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)`
+- **Medium Shadow**: `0 4px 6px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.03)`
+- **Elevated Shadow**: `0 10px 25px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.04)`
+- **Colored Shadow**: Button shadows with hint of button color at low opacity
 
-2. **Main Content Area (flexible):**
-   - Top bar with run configuration
-   - Meeting form section
-   - Results area with agent cards
+## Typography
 
-3. **Right Sidebar (300px, fixed, collapsible on tablet/mobile):**
-   - User profile summary with uploaded photo (80px circular)
-   - Quick stats (runs completed, active chats)
-   - Recent activity feed
+### Font Family
+- **Primary**: System font stack (optimized for readability)
+  - `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
 
-### Meeting Interface
-**Task Input Section:**
-- Large textarea (min-height: 150px) with placeholder guiding C-suite use cases
-- Auto-filled user profile display (read-only, expandable accordion)
-- Agent selection: Checkboxes with "Select All" toggle
-- Selected agents shown in pill badges above results
+### Font Sizes
+- **Heading 1**: 32px (2rem) - Bold, for page titles
+- **Heading 2**: 24px (1.5rem) - Semibold, for section headers
+- **Heading 3**: 18px (1.125rem) - Semibold, for card titles
+- **Body**: 16px (1rem) - Regular, for main content
+- **Small**: 14px (0.875rem) - Regular, for supporting text
+- **Tiny**: 12px (0.75rem) - Medium, for labels and badges
 
-**Results Display:**
-- Agent recommendation cards (3-column desktop grid)
-- Each card: Agent avatar header, company badge, structured recommendation sections
-- Expandable/collapsible sections (Summary, Key Recommendations, Rationale, Next Steps)
-- Chat toggle button at card bottom (opens inline chat)
+### Font Weights
+- **Regular**: 400 - Body text
+- **Medium**: 500 - Labels, emphasized text
+- **Semibold**: 600 - Headings, important text
+- **Bold**: 700 - Strong emphasis (use sparingly)
 
-### Chat Interface
-**Message Bubbles:**
-- User messages: Right-aligned, vibrant blue background (217 91% 60%)
-- Agent messages: Left-aligned, soft surface background (210 40% 96%)
-- Agent avatar (32px) next to agent messages
-- Timestamps below messages (small, muted text)
-- Input area: Fixed bottom with send button, auto-resize textarea
+## Component Design
 
-### Knowledge Ingestion
-**Upload Interface:**
-- Left panel: Persona selector with agent cards (avatar + name)
-- Right panel: Drag-drop zone or file browser
-- Progress indicator during upload/indexing
-- Success confirmation with indexed chunks count
+### Buttons
+- **Primary**: Vibrant gradient background, white text, colored shadow
+- **Secondary**: Glass effect with gradient border, colored text
+- **Ghost**: Transparent with hover gradient overlay
+- **Icon**: Circular with subtle glass effect
+- **Hover**: Gentle lift effect + brightness increase
+- **Active**: Slight scale down + brightness decrease
 
-## Visual Elements
+### Cards
+- **Background**: White with glass morphism effect
+- **Border**: Soft gradient border (multi-color, low opacity)
+- **Shadow**: Elevated shadow that increases on hover
+- **Padding**: Generous (24px) for breathing room
+- **Border Radius**: 16px for modern, friendly feel
 
-### Agent Avatars
-**Image Requirements:**
-- Professional headshots of AI leaders (Sam Altman, Jensen Huang, Andrew Ng, Demis Hassabis, Fei-Fei Li)
-- Circular crop with 2px border in accent color
-- Sizes: 48px (sidebar), 80px (cards), 32px (chat)
-- Fallback: Initials on gradient background if image unavailable
+### Input Fields
+- **Background**: White with very subtle gradient
+- **Border**: Soft gray, transitions to gradient on focus
+- **Focus State**: Gradient border + subtle glow
+- **Height**: 44px minimum for good touch targets
+- **Padding**: 12px horizontal, 10px vertical
 
-### Tables & Data Display
-- Striped rows for readability (alternating surface/background)
-- Fixed header on scroll
-- Hover state: row highlight with subtle blue accent
-- Column headers: Bold, uppercase, letter-spacing: 0.05em
-- Borders: Soft neutral (215 16% 88%)
+### Badges
+- **Agent Badges**: Gradient backgrounds with white text
+  - Sam Altman: Blue gradient
+  - Jensen Huang: Green gradient
+  - Andrew Ng: Purple gradient
+  - Demis Hassabis: Orange gradient
+  - Fei-Fei Li: Pink gradient
+- **Status Badges**: Colored backgrounds with contrasting text
+- **Border Radius**: Full (pill shape)
 
-### Interactive States
-- **Hover:** Background lift (+2-3% lightness)
-- **Active:** Scale down (0.98) with slight shadow
-- **Focus:** 2px accent outline with offset
-- **Disabled:** 40% opacity with cursor not-allowed
+### Sidebar
+- **Background**: Soft gradient (blue-tinted white fading down)
+- **Selected Item**: Glass card with gradient accent border
+- **Hover**: Subtle gradient overlay
+- **Avatars**: Gradient ring borders matching agent colors
 
-## Responsive Behavior
+## Layout & Spacing
 
-### Desktop (1280px+)
-- Three-panel layout fully visible
-- 3-column recommendation grid
-- Sidebars fixed (280px + 300px)
+### Spacing Scale
+- **Tiny**: 4px - Tight spacing
+- **Small**: 8px - Compact elements
+- **Medium**: 16px - Default spacing
+- **Large**: 24px - Section spacing
+- **XLarge**: 32px - Major section breaks
+- **XXLarge**: 48px - Page-level spacing
 
-### Tablet (768px - 1279px)
-- Right sidebar collapses to icon-only or hidden
-- 2-column recommendation grid
-- Left sidebar remains visible
+### Grid System
+- **Desktop**: 3-column grid for agent cards
+- **Tablet**: 2-column grid
+- **Mobile**: Single column
 
-### Mobile (< 768px)
-- Hamburger menu for left sidebar (slide-in drawer)
-- Right sidebar hidden, accessible via menu
+### Containers
+- **Max Width**: 1400px for main content
+- **Padding**: 24px on desktop, 16px on mobile
+- **Sidebar Width**: 280px (collapsible to 64px icons)
+
+## Responsive Design
+
+### Breakpoints
+- **Mobile**: 0-640px - Single column, bottom nav
+- **Tablet**: 641-1024px - 2 columns, simplified nav
+- **Desktop**: 1025px+ - Full 3-column layout
+
+### Mobile Optimizations
+- Larger touch targets (min 44px)
 - Single-column cards
 - Stacked form inputs
 - Bottom navigation for main actions
@@ -147,35 +159,43 @@
 - Loading states: Pulse animation with fade transitions
 - Sidebar toggle: Slide (300ms, ease-in-out)
 - Chat messages: Slide-up with fade (150ms)
+- Gradient animations: Subtle background position shifts
 - No autoplay or distracting animations
 - All animations respect user motion preferences
 
 ## Accessibility
 - WCAG AA contrast ratios maintained (4.5:1 for text)
 - Keyboard navigation support (Tab order logical)
-- Screen reader labels for icons and avatars
-- Focus indicators visible (2px vibrant accent outline)
-- Light mode optimized with optional dark mode toggle for extended use
+- Focus indicators visible (gradient ring)
+- Screen reader labels on all interactive elements
+- Reduced motion support for animations
 
-## Image Assets
+## Special Elements
 
-### Hero/Landing (if added later)
-- Abstract AI visualization (neural network, geometric patterns)
-- Composite of AI leader headshots with glassmorphism overlay
-- Size: 1920x800px, optimized WebP format
+### Hero Section
+- **Background**: Multi-stop gradient (blue → purple → yellow tint)
+- **Overlay**: Glass card with backdrop blur
+- **Text**: Dark text with excellent contrast against light gradient
 
-### Agent Avatars (Required)
-- Professional headshots: Sam Altman, Jensen Huang, Andrew Ng, Demis Hassabis, Fei-Fei Li
-- Format: Square originals, circular crop in CSS
-- Size: 256x256px minimum resolution
+### Agent Cards (Recommendations)
+- **Avatar Ring**: Gradient border matching agent color theme
+- **Background**: White glass with subtle gradient overlay
+- **Hover**: Lift effect + enhanced shadow + gradient shift
 
-### Icons
-- Use Heroicons (outline style) for UI actions via CDN
-- Agent-specific icons for persona indicators (brain, chip, book, etc.)
+### Meeting Form
+- **Background**: Glass card over gradient background
+- **Selected Agents**: Colorful gradient badges with stagger animation
+- **Submit Button**: Full-width gradient button with icon + shadow
 
-## Key Design Principles
-1. **Executive Focus:** Professional, polished, trust-building aesthetics with modern vibrancy
-2. **Information Density:** Pack data without clutter using tables, cards, and hierarchy
-3. **Light & Fresh:** Clean, vibrant design optimized for clarity and engagement
-4. **Multi-Agent Clarity:** Distinct visual separation between agent recommendations
-5. **Conversational Flow:** Natural chat progression with clear turn-taking
+### Recent Conversations
+- **List Items**: Glass effect with gradient accent on left
+- **Hover**: Gradient background overlay
+- **Active**: Full gradient background with white text
+
+## Design Principles
+1. **Visually Engaging**: Use gradients and colors to create visual interest
+2. **Premium Feel**: Glass effects and shadows add sophistication
+3. **Clarity First**: Never sacrifice readability for aesthetics
+4. **Consistent Depth**: Use shadows and blur consistently
+5. **Playful Professionalism**: Modern and fun while maintaining credibility
+6. **Performance**: Optimize gradients and effects for smooth 60fps

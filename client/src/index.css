@@ -2,79 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE - Modern, cool & vibrant theme */
+/* LIGHT MODE - Vibrant, Attractive & Modern theme */
 :root {
-  --button-outline: rgba(37, 99, 235, .15);
-  --badge-outline: rgba(37, 99, 235, .08);
+  --button-outline: rgba(79, 70, 229, .20);
+  --badge-outline: rgba(147, 51, 234, .15);
 
   /* Automatic computation of border around primary / danger buttons */
-  --opaque-button-border-intensity: -8; /* In terms of percentages */
+  --opaque-button-border-intensity: -10; /* In terms of percentages */
 
   /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(37, 99, 235, .04);
-  --elevate-2: rgba(37, 99, 235, .10);
+  --elevate-1: rgba(79, 70, 229, .06);
+  --elevate-2: rgba(79, 70, 229, .12);
 
-  --background: 210 20% 98%;
+  /* Soft gradient background - blue to lavender tint */
+  --background: 220 30% 97%;
 
-  --foreground: 222 47% 11%;
+  /* Rich, readable text */
+  --foreground: 222 50% 10%;
 
-  --border: 215 16% 88%;
+  /* Soft borders with subtle color */
+  --border: 220 20% 85%;
 
-  --card: 210 40% 98%;
+  /* White cards with subtle warmth */
+  --card: 0 0% 100%;
 
-  --card-foreground: 222 47% 11%;
+  --card-foreground: 222 50% 10%;
 
-  --card-border: 215 20% 90%;
+  /* Soft colorful border for cards */
+  --card-border: 220 25% 88%;
 
-  --sidebar: 210 30% 97%;
+  /* Soft gradient sidebar */
+  --sidebar: 215 40% 96%;
 
-  --sidebar-foreground: 222 47% 11%;
+  --sidebar-foreground: 222 50% 10%;
 
-  --sidebar-border: 215 20% 88%;
+  --sidebar-border: 220 20% 85%;
 
-  --sidebar-primary: 217 91% 60%;
+  /* Vibrant electric blue */
+  --sidebar-primary: 243 75% 59%;
 
   --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 217 95% 95%;
+  /* Light blue accent with color */
+  --sidebar-accent: 243 100% 96%;
 
-  --sidebar-accent-foreground: 217 91% 35%;
+  --sidebar-accent-foreground: 243 75% 35%;
 
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-ring: 243 75% 59%;
 
-  --popover: 210 40% 98%;
+  --popover: 0 0% 100%;
 
-  --popover-foreground: 222 47% 11%;
+  --popover-foreground: 222 50% 10%;
 
-  --popover-border: 215 20% 85%;
+  --popover-border: 220 25% 88%;
 
-  --primary: 217 91% 60%;
+  /* Electric blue primary */
+  --primary: 243 75% 59%;
 
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 217 95% 94%;
+  /* Light secondary with color */
+  --secondary: 243 100% 95%;
 
-  --secondary-foreground: 217 91% 35%;
+  --secondary-foreground: 243 75% 35%;
 
-  --muted: 215 20% 93%;
+  /* Soft muted with warmth */
+  --muted: 220 25% 92%;
 
-  --muted-foreground: 215 16% 46%;
+  --muted-foreground: 220 15% 45%;
 
-  --accent: 262 90% 96%;
+  /* Rich purple accent */
+  --accent: 270 90% 97%;
 
-  --accent-foreground: 262 83% 40%;
+  --accent-foreground: 270 85% 50%;
 
-  --destructive: 0 84% 60%;
+  /* Vibrant destructive */
+  --destructive: 0 85% 58%;
 
   --destructive-foreground: 0 0% 100%;
 
-  --input: 215 16% 46%;
-  --ring: 217 91% 60%;
-  --chart-1: 217 91% 60%;
-  --chart-2: 262 83% 58%;
-  --chart-3: 142 71% 45%;
-  --chart-4: 35 91% 60%;
-  --chart-5: 340 82% 52%;
+  /* Input with color hint */
+  --input: 220 20% 45%;
+  --ring: 243 75% 59%;
+  
+  /* Vibrant chart colors */
+  --chart-1: 243 75% 59%;
+  --chart-2: 270 85% 60%;
+  --chart-3: 160 75% 50%;
+  --chart-4: 30 95% 55%;
+  --chart-5: 340 85% 55%;
 
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-serif: Georgia, serif;
