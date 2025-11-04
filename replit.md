@@ -10,7 +10,7 @@ The application enables users to:
 - Receive tailored recommendations based on their specific context
 - Engage in follow-up conversations with individual advisors
 - Access knowledge bases from each leader's writings and expertise
-- **NEW: Question refinement** - AI analyzes questions using vector DB knowledge and suggests improved versions for better answers
+- **NEW: Inline question refinement** - AI analyzes meeting tasks in real-time and suggests improved versions before running meetings
 - **NEW: Create personalized digital twins** that mirror their communication style and expertise
 - **NEW: Chat with digital twins** from colleagues within their company domain
 
@@ -76,14 +76,15 @@ Preferred communication style: Simple, everyday language.
 - Metadata: run_id, user_id, sender, timestamp stored with each message
 
 **Recent Changes (November 4, 2025):**
-- **Question Refinement Feature**: AI-powered question optimization before generating answers
-  - Backend endpoint `/refine-question` that analyzes user questions using agent's vector DB knowledge
-  - Gemini AI evaluates question quality and suggests 2 improved versions when applicable
-  - Frontend QuestionRefinementDialog shows original + 2 AI-suggested refinements
-  - User can choose refined version or proceed with original question
-  - Robust UX: questions never lost even if dialog is dismissed (auto-sends original)
-  - Graceful error handling: falls back to original question on any failure
-  - Integration: ChatBox component seamlessly calls refinement before sending messages
+- **Inline Question Refinement Feature**: AI-powered task optimization in meeting form
+  - Real-time analysis as user types in meeting form (1.5s debounce)
+  - Backend endpoint `/refine-question` analyzes tasks using agent's vector DB knowledge
+  - Gemini AI evaluates task quality and suggests 2 improved versions when applicable
+  - Inline UI displays suggestions below task input (soft blue background, no popup)
+  - Click to replace task with improved version before running meeting
+  - Clean UX with loading indicator ("Analyzing your question...")
+  - Minimum 10 character task length required for analysis
+  - Integration: MeetingForm component with seamless suggestion adoption
 
 **Recent Changes (October 26, 2025):**
 - **Digital Twin Feature**: Complete implementation of personalized digital twins
