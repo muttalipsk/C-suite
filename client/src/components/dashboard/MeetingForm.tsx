@@ -123,7 +123,10 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
                   exit={{ opacity: 0, scale: 0.8, y: -10 }}
                   transition={{ delay: idx * 0.05, duration: 0.2 }}
                 >
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge 
+                    variant="secondary" 
+                    className="text-xs bg-gradient-to-r from-primary/90 to-accent-foreground/90 text-white border-0 shadow-sm"
+                  >
                     {agent.name}
                   </Badge>
                 </motion.div>
@@ -204,36 +207,36 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="mt-3 p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3 shadow-sm" 
+                        className="mt-3 p-5 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent border-2 border-primary/20 rounded-xl space-y-3 shadow-md backdrop-blur-sm" 
                         data-testid="refinement-suggestions"
                       >
                         <motion.div 
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.1, duration: 0.2 }}
-                          className="flex items-center gap-2 text-sm font-medium text-primary"
+                          className="flex items-center gap-2 text-sm font-semibold bg-gradient-to-r from-primary to-accent-foreground bg-clip-text text-transparent"
                         >
-                          <Lightbulb className="w-4 h-4 animate-pulse" />
+                          <Lightbulb className="w-5 h-5 animate-pulse text-primary" />
                           <span>AI-Suggested Improvements</span>
                         </motion.div>
                         
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
                           {refinementSuggestions.map((suggestion, idx) => (
                             <motion.button
                               key={idx}
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 0.15 + idx * 0.1, duration: 0.3, ease: "easeOut" }}
-                              whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
+                              whileHover={{ scale: 1.01, x: 4, transition: { duration: 0.2 } }}
                               whileTap={{ scale: 0.98 }}
                               type="button"
                               onClick={() => handleUseSuggestion(suggestion)}
-                              className="w-full text-left p-3 bg-background border border-border rounded-md hover-elevate active-elevate-2 transition-all"
+                              className="w-full text-left p-4 bg-gradient-to-r from-background to-primary/5 border-2 border-primary/30 rounded-lg hover:border-primary/50 hover:shadow-md transition-all group"
                               data-testid={`button-suggestion-${idx}`}
                             >
-                              <div className="flex items-start gap-2">
-                                <ArrowRight className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                                <span className="text-sm text-foreground">{suggestion}</span>
+                              <div className="flex items-start gap-3">
+                                <ArrowRight className="w-5 h-5 mt-0.5 text-primary shrink-0 group-hover:translate-x-1 transition-transform" />
+                                <span className="text-sm text-foreground font-medium leading-relaxed">{suggestion}</span>
                               </div>
                             </motion.button>
                           ))}
