@@ -103,7 +103,6 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
         <CardContent>
           <PreMeetingConversation
             sessionId={preMeetingSession.sessionId}
-            initialAccuracy={preMeetingSession.accuracy}
             initialCounterQuestion={preMeetingSession.counterQuestion}
             isReady={preMeetingSession.isReady}
             onComplete={handlePreMeetingComplete}

@@ -3,7 +3,6 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import { Loader2, Send, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,7 +15,6 @@ interface Message {
 
 interface PreMeetingConversationProps {
   sessionId: string;
-  initialAccuracy: number;
   initialCounterQuestion: string | null;
   isReady: boolean;
   onComplete: (runId: string, recommendations: any) => void;
@@ -25,7 +23,6 @@ interface PreMeetingConversationProps {
 
 export function PreMeetingConversation({
   sessionId,
-  initialAccuracy,
   initialCounterQuestion,
   isReady: initialIsReady,
   onComplete,
@@ -41,7 +38,6 @@ export function PreMeetingConversation({
       : []),
   ]);
   const [userInput, setUserInput] = useState("");
-  const [accuracy, setAccuracy] = useState(initialAccuracy);
   const [isReady, setIsReady] = useState(initialIsReady);
 
   const iterateMutation = useMutation({
@@ -52,13 +48,11 @@ export function PreMeetingConversation({
       });
       const data = await response.json();
       return data as {
-        accuracy: number;
         counterQuestion: string | null;
         isReady: boolean;
       };
     },
     onSuccess: (data) => {
-      setAccuracy(data.accuracy);
       setIsReady(data.isReady);
 
       if (data.counterQuestion && data.counterQuestion.length > 0) {
@@ -108,28 +102,8 @@ export function PreMeetingConversation({
     completeMutation.mutate();
   };
 
-  const accuracyPercentage = Math.round(accuracy * 100);
-
   return (
     <div className="flex flex-col h-full gap-4">
-      {/* Header with accuracy indicator */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Question Accuracy</span>
-            <span className="text-sm font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {accuracyPercentage}%
-            </span>
-          </div>
-          <Progress value={accuracyPercentage} className="h-2" />
-          {accuracyPercentage >= 80 && (
-            <p className="text-xs text-green-600 mt-1 font-medium">
-              ✓ Ready for meeting
-            </p>
-          )}
-        </div>
-      </div>
-
       {/* Chat messages */}
       <Card className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px] max-h-[400px]">
         <AnimatePresence initial={false}>
