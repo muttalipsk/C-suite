@@ -257,3 +257,70 @@ Make it detailed and actionable for creating an AI digital twin.
     except Exception as e:
         print(f"Error generating persona summary: {e}")
         return f"Error generating summary: {str(e)}"
+
+
+# ============= FastAPI Endpoints =============
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+router = APIRouter(prefix="/persona-interview", tags=["persona-interview"])
+
+
+class NextQuestionRequest(BaseModel):
+    current_index: int
+
+
+class AnalyzeEmailsRequest(BaseModel):
+    emails: List[str]
+
+
+class GenerateSummaryRequest(BaseModel):
+    answers: Dict
+    email_style: Optional[Dict] = None
+
+
+@router.get("/questions")
+async def get_all_questions():
+    """Get all 20 persona interview questions"""
+    return {
+        "total_questions": len(PERSONA_QUESTIONS),
+        "questions": PERSONA_QUESTIONS
+    }
+
+
+@router.post("/next-question")
+async def next_question(request: NextQuestionRequest):
+    """Get the next question in the interview sequence"""
+    question = get_next_question(request.current_index)
+    if question is None:
+        return {
+            "completed": True,
+            "message": "Interview complete! All 20 questions answered."
+        }
+    return {
+        "completed": False,
+        "question": question
+    }
+
+
+@router.post("/analyze-emails")
+async def analyze_emails(request: AnalyzeEmailsRequest):
+    """Analyze writing style from email samples"""
+    if not request.emails or len(request.emails) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail="At least 3 email samples required for accurate analysis"
+        )
+    
+    result = analyze_email_writing_style(request.emails)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    
+    return {"style_analysis": result}
+
+
+@router.post("/generate-summary")
+async def generate_summary(request: GenerateSummaryRequest):
+    """Generate persona summary from interview answers and email style"""
+    summary = generate_persona_summary(request.answers, request.email_style)
+    return {"summary": summary}

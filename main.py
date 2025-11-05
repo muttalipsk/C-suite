@@ -16,7 +16,7 @@ import google.generativeai as genai
 from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats, ensure_genai_configured
 from twin_manager import create_twin_vectors, query_twin_content, query_twin_style, UPLOADS_DIR
 from pre_meeting import evaluate_readiness_with_ai, generate_counter_question
-from persona_interview import get_next_question, analyze_email_writing_style, generate_persona_summary, PERSONA_QUESTIONS
+from persona_interview import router as persona_interview_router
 
 # Create directories
 os.makedirs(CORPUS_DIR, exist_ok=True)
@@ -42,6 +42,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(persona_interview_router)
 
 @app.on_event("startup")
 async def startup_event():
