@@ -19,6 +19,9 @@ interface MeetingFormData {
   meetingType: "board" | "email" | "chat";
   selectedAgents: string[];
   turns: number;
+  // Optional fields for pre-meeting completion
+  runId?: string;
+  recommendations?: any;
 }
 
 interface MeetingFormProps {

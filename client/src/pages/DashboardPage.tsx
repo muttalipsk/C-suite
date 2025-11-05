@@ -134,16 +134,15 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       return;
     }
 
-    setIsLoading(true);
-    // Clear previous conversation state
-    setSelectedConversation(null);
-    setResults(null);
-    setRecommendations({});
-    setCurrentRunId("");
-
     // If recommendations are already provided (from pre-meeting completion), skip API call
     if (data.runId && data.recommendations) {
       console.log("✅ Using pre-meeting recommendations, skipping API call");
+      setIsLoading(true);
+      setSelectedConversation(null);
+      setResults(null);
+      setRecommendations({});
+      setCurrentRunId("");
+
       setRecommendations(data.recommendations);
       setCurrentRunId(data.runId);
       setResults({
@@ -161,6 +160,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       setIsLoading(false);
       return;
     }
+
+    setIsLoading(true);
+    // Clear previous conversation state
+    setSelectedConversation(null);
+    setResults(null);
+    setRecommendations({});
+    setCurrentRunId("");
 
     // Cancel any pending request
     if (abortControllerRef.current) {
