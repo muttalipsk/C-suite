@@ -225,39 +225,37 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleInitialSubmit)} className="space-y-6">
-            {/* Meeting Type - only show when not in conversation */}
-            {!preMeetingSession && (
-              <FormField
-                control={form.control}
-                name="meetingType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Context Type</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        className="flex gap-4"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="board" id="board" data-testid="radio-board" />
-                          <Label htmlFor="board" className="cursor-pointer">Board Meeting</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="email" id="email" data-testid="radio-email" />
-                          <Label htmlFor="email" className="cursor-pointer">Email / Chat</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="chat" id="chat" data-testid="radio-chat" />
-                          <Label htmlFor="chat" className="cursor-pointer">General Strategy</Label>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            {/* Meeting Type - always visible */}
+            <FormField
+              control={form.control}
+              name="meetingType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Context Type</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="board" id="board" data-testid="radio-board" />
+                        <Label htmlFor="board" className="cursor-pointer">Board Meeting</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="email" id="email" data-testid="radio-email" />
+                        <Label htmlFor="email" className="cursor-pointer">Email / Chat</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="chat" id="chat" data-testid="radio-chat" />
+                        <Label htmlFor="chat" className="cursor-pointer">General Strategy</Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Chat Messages - shown when conversation is active */}
             {preMeetingSession && messages.length > 0 && (
