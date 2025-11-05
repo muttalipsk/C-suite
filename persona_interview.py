@@ -21,6 +21,128 @@ def ensure_genai_configured():
         pass  # Already configured
 
 
+def extract_profile_keywords(user_profile: Dict) -> set:
+    """Extract keywords from user profile to filter redundant questions"""
+    keywords = set()
+    
+    # Extract name components
+    if user_profile.get("name"):
+        keywords.add(user_profile["name"].lower())
+        keywords.update(user_profile["name"].lower().split())
+    
+    # Extract company
+    if user_profile.get("company"):
+        keywords.add(user_profile["company"].lower())
+    
+    # Extract title
+    if user_profile.get("title"):
+        keywords.add(user_profile["title"].lower())
+    
+    # Extract industry
+    if user_profile.get("industry"):
+        keywords.add(user_profile["industry"].lower())
+    
+    return keywords
+
+
+def is_question_redundant(question: str, profile_keywords: set) -> bool:
+    """Check if question asks about information already in profile"""
+    question_lower = question.lower()
+    
+    # Check for basic identity questions
+    redundant_phrases = [
+        "what is your name",
+        "your full name",
+        "what company do you work",
+        "your current title",
+        "your professional title",
+        "what is your title",
+        "what industry",
+        "which company"
+    ]
+    
+    for phrase in redundant_phrases:
+        if phrase in question_lower:
+            return True
+    
+    return False
+
+
+def validate_and_fix_questions(questions: List[Dict], user_profile: Dict) -> List[Dict]:
+    """
+    Validate AI-generated questions and fix structure issues.
+    Ensures exactly 4 questions per category and filters redundant questions.
+    """
+    profile_keywords = extract_profile_keywords(user_profile)
+    
+    # Required categories with exact count
+    required_categories = {
+        "identity": 4,
+        "decision_making": 4,
+        "goals": 4,
+        "communication": 4,
+        "expertise": 4
+    }
+    
+    # Group questions by category
+    categorized = {cat: [] for cat in required_categories.keys()}
+    
+    for q in questions:
+        category = q.get("category", "").lower()
+        question_text = q.get("question", "")
+        
+        # Skip redundant questions
+        if is_question_redundant(question_text, profile_keywords):
+            print(f"⚠ Skipping redundant question: {question_text[:50]}...")
+            continue
+        
+        # Map variations to standard category names
+        if category in ["identity", "identity_expertise"]:
+            category = "identity"
+        elif category in ["decision_making", "decision-making", "strategy"]:
+            category = "decision_making"
+        elif category in ["goals", "vision", "goals_vision"]:
+            category = "goals"
+        elif category in ["communication", "communication_style"]:
+            category = "communication"
+        elif category in ["expertise", "challenges", "expertise_challenges"]:
+            category = "expertise"
+        
+        if category in categorized:
+            categorized[category].append(q)
+    
+    # Build final question list with exactly 4 per category
+    final_questions = []
+    fallback = generate_fallback_questions()
+    fallback_by_category = {cat: [] for cat in required_categories.keys()}
+    
+    for q in fallback:
+        cat = q["category"]
+        fallback_by_category[cat].append(q)
+    
+    question_id = 1
+    for category, required_count in required_categories.items():
+        category_questions = categorized[category]
+        
+        # Take up to required_count questions from AI output
+        for i in range(required_count):
+            if i < len(category_questions):
+                q = category_questions[i]
+                q["id"] = f"q{question_id}"
+                final_questions.append(q)
+            else:
+                # Fill gaps with fallback questions
+                fallback_q = fallback_by_category[category][i]
+                fallback_q["id"] = f"q{question_id}"
+                final_questions.append(fallback_q)
+                print(f"⚠ Using fallback question for {category}: {fallback_q['question'][:50]}...")
+            
+            question_id += 1
+    
+    print(f"✓ Validated {len(final_questions)} questions (5 categories × 4 questions)")
+    return final_questions
+
+
 def generate_personalized_questions(user_profile: Dict) -> List[Dict]:
     """
     Generate 20 personalized interview questions based on the user's existing profile.
@@ -46,27 +168,27 @@ IMPORTANT RULES:
 
 REQUIRED STRUCTURE (20 questions across 5 categories):
 
-Category 1: Identity & Expertise (4 questions)
+Category 1: identity (EXACTLY 4 questions)
 - Focus on unique aspects of their professional identity we don't yet know
 - Ask about specific expertise areas, learning journey, career defining moments
 
-Category 2: Decision-Making & Strategy (4 questions)  
+Category 2: decision_making (EXACTLY 4 questions)  
 - How they approach specific types of decisions relevant to their role
 - Recent examples of strategic choices they've made
 - Their risk tolerance and decision-making frameworks
 
-Category 3: Goals & Vision (4 questions)
+Category 3: goals (EXACTLY 4 questions)
 - Specific goals beyond generic profile info
 - Personal definition of success in their context
 - Vision for their team, projects, or initiatives
 
-Category 4: Communication Style (4 questions)
+Category 4: communication (EXACTLY 4 questions)
 - How they communicate in different situations (1-on-1, team meetings, presentations)
 - Preferred communication channels and why
 - How they adapt their style for different audiences
 - Specific phrases, tone, or communication patterns they use
 
-Category 5: Expertise & Challenges (4 questions)
+Category 5: expertise (EXACTLY 4 questions)
 - Deep dive into their specialized knowledge areas
 - Current challenges they're navigating
 - How they stay current in their field
@@ -76,6 +198,9 @@ Return ONLY a JSON array of 20 questions in this exact format:
 [
   {{"id": "q1", "category": "identity", "question": "Your specific question here"}},
   {{"id": "q2", "category": "identity", "question": "Your specific question here"}},
+  {{"id": "q3", "category": "identity", "question": "Your specific question here"}},
+  {{"id": "q4", "category": "identity", "question": "Your specific question here"}},
+  {{"id": "q5", "category": "decision_making", "question": "Your specific question here"}},
   ...
   {{"id": "q20", "category": "expertise", "question": "Your specific question here"}}
 ]
@@ -102,13 +227,18 @@ Make each question conversational, specific, and valuable for creating an authen
             questions_text = questions_text.strip()
         
         questions = json.loads(questions_text)
-        print(f"✓ Generated {len(questions)} personalized questions")
-        return questions
+        print(f"✓ Generated {len(questions)} personalized questions from AI")
+        
+        # Validate and fix structure
+        validated_questions = validate_and_fix_questions(questions, user_profile)
+        return validated_questions
         
     except Exception as e:
         print(f"Error generating personalized questions: {e}")
-        # Fallback to basic questions if AI generation fails
-        return generate_fallback_questions()
+        # Fallback to curated questions if AI generation fails
+        fallback = generate_fallback_questions()
+        print(f"✓ Using {len(fallback)} fallback questions")
+        return fallback
 
 
 def generate_fallback_questions() -> List[Dict]:

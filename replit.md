@@ -84,8 +84,15 @@ Preferred communication style: Simple, everyday language.
     - Questions tailored to user's role, industry, and context
     - 5 categories: Identity & Expertise, Decision-Making, Goals & Vision, Communication Style, Expertise & Challenges
     - Temperature 0.7 for conversational, natural questions
+    - **Validation System**: Programmatically enforces structure and filters redundancy
+      - Ensures exactly 4 questions per category (20 total)
+      - Filters questions about name, title, company, industry if already in profile
+      - Maps AI category variations to standard names
+      - Fills gaps with curated fallback questions if AI output is incomplete
     - Fallback to curated questions if AI generation fails
   - **Smart Question Generation**: Doesn't ask about information already in profile
+    - Programmatic keyword extraction from user profile
+    - Filters redundant phrases ("what is your name", "your current title")
     - If user already has name/title/company in profile, asks deeper questions
     - Builds on existing knowledge to capture unique thinking patterns
     - Personalizes to specific role (CEO vs CTO vs Founder)
