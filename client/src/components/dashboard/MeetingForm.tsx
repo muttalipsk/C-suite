@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -12,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Users, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
+import { PreMeetingConversation } from "./PreMeetingConversation";
 
 interface MeetingFormData {
   task: string;
@@ -26,7 +29,15 @@ interface MeetingFormProps {
   selectedAgents: string[];
 }
 
+interface PreMeetingSession {
+  sessionId: string;
+  accuracy: number;
+  counterQuestion: string | null;
+  isReady: boolean;
+}
+
 export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: MeetingFormProps) {
+  const [preMeetingSession, setPreMeetingSession] = useState<PreMeetingSession | null>(null);
   const form = useForm<MeetingFormData>({
     defaultValues: {
       task: "",
@@ -36,20 +47,75 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
     },
   });
 
+  const initPreMeetingMutation = useMutation({
+    mutationFn: async (data: { question: string; agents: string[]; meetingType: string }) => {
+      const response = await apiRequest("/api/pre-meeting/init", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      return result as PreMeetingSession;
+    },
+    onSuccess: (data) => {
+      setPreMeetingSession(data);
+    },
+  });
+
   const handleSubmit = (data: MeetingFormData) => {
-    console.log("🟢 MeetingForm.handleSubmit called");
+    console.log("🟢 MeetingForm.handleSubmit called - Starting pre-meeting conversation");
     console.log("  - meetingType:", data.meetingType);
     console.log("  - selectedAgents:", selectedAgents);
     console.log("  - task:", data.task?.substring(0, 50) + "...");
     
-    const submittedData = { ...data, selectedAgents };
-    console.log("🟢 Calling onSubmit with:", {
-      meetingType: submittedData.meetingType,
-      agentCount: submittedData.selectedAgents.length
+    // Start pre-meeting conversation
+    initPreMeetingMutation.mutate({
+      question: data.task,
+      agents: selectedAgents,
+      meetingType: data.meetingType,
     });
-    
-    onSubmit(submittedData);
   };
+
+  const handlePreMeetingComplete = (runId: string, recommendations: any) => {
+    console.log("🟢 Pre-meeting completed, meeting started");
+    // Trigger the parent's onSubmit with the recommendations
+    // This will update the UI to show the results
+    onSubmit({
+      task: form.getValues("task"),
+      meetingType: form.getValues("meetingType"),
+      selectedAgents,
+      turns: 1,
+    });
+  };
+
+  const handleCancelPreMeeting = () => {
+    setPreMeetingSession(null);
+  };
+
+  // If in pre-meeting mode, show the conversation component
+  if (preMeetingSession) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Pre-Meeting Conversation
+          </CardTitle>
+          <CardDescription>
+            Let me ask a few questions to better understand your needs and provide more accurate recommendations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PreMeetingConversation
+            sessionId={preMeetingSession.sessionId}
+            initialAccuracy={preMeetingSession.accuracy}
+            initialCounterQuestion={preMeetingSession.counterQuestion}
+            isReady={preMeetingSession.isReady}
+            onComplete={handlePreMeetingComplete}
+            onCancel={handleCancelPreMeeting}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -147,13 +213,13 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading || selectedAgents.length === 0}
+                disabled={initPreMeetingMutation.isPending || isLoading || selectedAgents.length === 0}
                 data-testid="button-run-meeting"
               >
-                {isLoading ? (
+                {initPreMeetingMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating Recommendations...
+                    Starting Conversation...
                   </>
                 ) : (
                   <>
