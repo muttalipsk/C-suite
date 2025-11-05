@@ -80,18 +80,21 @@ Preferred communication style: Simple, everyday language.
   - Replaces inline question refinement with conversational information gathering
   - **AI-Driven Readiness**: Gemini AI decides when enough information is gathered (no percentage thresholds)
     - Uses evaluate_readiness_with_ai function with READY/CONTINUE decision logic
-    - Considers context, goals, constraints, timeline, stakeholders comprehensively
+    - **Optimized for Speed**: Designed to ask only 1-2 questions maximum before proceeding
+    - Hard safety limit: Forces readiness after 2 user responses to prevent endless questioning
+    - AI biased toward "READY" once basic context exists - doesn't require perfect information
     - Natural conversation flow without visible accuracy metrics
   - **Counter-Question Generation**: Uses Gemini to ask natural, conversational follow-up questions
     - Temperature 0.8 for varied, ChatGPT-like responses
+    - Focuses only on MOST CRITICAL missing information (1 sentence max)
     - No mention of "accuracy" or percentages in user-facing messages
-    - Tracks information coverage internally (context, goals, constraints, timeline, stakeholders)
+    - Emphasizes that advisors can work with minimal context
   - **Architecture**:
     - PostgreSQL: PreMeetingSession table tracks conversation state (status: active/completed/cancelled)
-    - Node.js: /api/pre-meeting/init, /iterate, /complete endpoints (no accuracy in responses)
-    - Python: /pre-meeting/evaluate endpoint with AI readiness evaluation
+    - Node.js: /api/pre-meeting/init, /iterate, /complete endpoints with hard 2-turn limit
+    - Python: /pre-meeting/evaluate endpoint with lenient AI readiness evaluation
     - Frontend: PreMeetingConversation component with pure chat UI (no progress bar)
-  - **User Flow**: Submit question → Natural conversation → AI decides readiness → Auto-proceed to meeting
+  - **User Flow**: Submit question → 1-2 brief clarifications → Auto-proceed to meeting
   - **Enriched Context**: Complete conversation history sent to meeting endpoint for better recommendations
 
 - **Vibrant Attractive Design**: Modern light theme with gradients and visual depth
