@@ -9,8 +9,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings, Sparkles } from "lucide-react";
 import type { User as UserType } from "@shared/schema";
+import { useLocation } from "wouter";
 
 interface UserProfileButtonProps {
   user?: UserType;
@@ -19,6 +20,8 @@ interface UserProfileButtonProps {
 }
 
 export function UserProfileButton({ user, onLogout, onViewProfile }: UserProfileButtonProps) {
+  const [, navigate] = useLocation();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -46,6 +49,10 @@ export function UserProfileButton({ user, onLogout, onViewProfile }: UserProfile
         <DropdownMenuItem onClick={onViewProfile} data-testid="menu-view-profile">
           <Settings className="w-4 h-4 mr-2" />
           View Profile
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate("/create-twin")} data-testid="menu-create-persona">
+          <Sparkles className="w-4 h-4 mr-2" />
+          Create Persona
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onLogout} data-testid="menu-logout">
           <LogOut className="w-4 h-4 mr-2" />

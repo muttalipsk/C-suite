@@ -156,6 +156,20 @@ export const preMeetingSessions = pgTable("pre_meeting_sessions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Persona Interview Sessions - 20-question interview for custom persona creation
+export const personaInterviewSessions = pgTable("persona_interview_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  personaName: text("persona_name").notNull(), // Name of persona being created
+  conversation: jsonb("conversation").notNull().default('[]'), // Array of {role: "user"|"assistant", content: string}
+  answers: jsonb("answers").notNull().default('{}'), // Object mapping question IDs to answers
+  currentQuestionIndex: integer("current_question_index").notNull().default(0),
+  emailTexts: text("email_texts").array(), // Array of pasted email texts for style analysis
+  status: text("status").notNull().default("active"), // "active", "completed", "cancelled"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -236,6 +250,17 @@ export const insertPreMeetingSessionSchema = createInsertSchema(preMeetingSessio
   status: true, // Managed by backend
 });
 
+export const insertPersonaInterviewSessionSchema = createInsertSchema(personaInterviewSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  userId: true, // Will be set from session
+  status: true, // Managed by backend
+  currentQuestionIndex: true, // Managed by backend
+  answers: true, // Managed by backend
+  conversation: true, // Managed by backend
+});
+
 // TypeScript types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -266,6 +291,9 @@ export type InsertDecisionLog = z.infer<typeof insertDecisionLogSchema>;
 
 export type PreMeetingSession = typeof preMeetingSessions.$inferSelect;
 export type InsertPreMeetingSession = z.infer<typeof insertPreMeetingSessionSchema>;
+
+export type PersonaInterviewSession = typeof personaInterviewSessions.$inferSelect;
+export type InsertPersonaInterviewSession = z.infer<typeof insertPersonaInterviewSessionSchema>;
 
 // AI Agent personas constants
 export const AI_AGENTS = {

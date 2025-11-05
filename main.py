@@ -16,6 +16,7 @@ import google.generativeai as genai
 from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats, ensure_genai_configured
 from twin_manager import create_twin_vectors, query_twin_content, query_twin_style, UPLOADS_DIR
 from pre_meeting import evaluate_readiness_with_ai, generate_counter_question
+from persona_interview import get_next_question, analyze_email_writing_style, generate_persona_summary, PERSONA_QUESTIONS
 
 # Create directories
 os.makedirs(CORPUS_DIR, exist_ok=True)
@@ -165,6 +166,64 @@ async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)
         return JSONResponse(
             status_code=500, 
             content={"error": f"Evaluation failed: {str(e)}"}
+        )
+
+@app.get("/persona-interview/questions")
+async def get_persona_questions():
+    """Get all 20 persona interview questions"""
+    return {
+        "questions": PERSONA_QUESTIONS,
+        "total_count": len(PERSONA_QUESTIONS)
+    }
+
+@app.post("/persona-interview/next-question")
+async def get_persona_next_question(current_index: int = Body(..., embed=True)):
+    """Get the next question in the persona interview sequence"""
+    try:
+        next_q = get_next_question(current_index)
+        if next_q is None:
+            return {
+                "completed": True,
+                "message": "All questions answered!"
+            }
+        return next_q
+    except Exception as e:
+        print(f"Error getting next question: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get next question: {str(e)}"}
+        )
+
+@app.post("/persona-interview/analyze-emails")
+async def analyze_persona_emails(email_texts: List[str] = Body(...)):
+    """Analyze email samples to extract writing style"""
+    try:
+        style_analysis = analyze_email_writing_style(email_texts)
+        return style_analysis
+    except Exception as e:
+        print(f"Error analyzing emails: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to analyze emails: {str(e)}"}
+        )
+
+@app.post("/persona-interview/generate-summary")
+async def generate_interview_summary(
+    answers: dict = Body(...),
+    email_style: dict = Body(default=None)
+):
+    """Generate persona summary from interview answers and email analysis"""
+    try:
+        summary = generate_persona_summary(answers, email_style)
+        return {
+            "summary": summary,
+            "success": True
+        }
+    except Exception as e:
+        print(f"Error generating summary: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to generate summary: {str(e)}"}
         )
 
 @app.post("/meeting")
