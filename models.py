@@ -24,6 +24,13 @@ class QuestionRefinementInput(BaseModel):
     agents: List[str]  # Now accepts multiple agents
     run_id: Optional[str] = None
 
+class PreMeetingEvaluationInput(BaseModel):
+    session_id: str
+    question: str
+    agents: List[str]
+    user_profile: str
+    conversation_history: List[Dict[str, str]]
+
 # Define a merge function for dictionaries
 def merge_dicts(left: Dict[str, str], right: Dict[str, str]) -> Dict[str, str]:
     """Merge two dictionaries, with right taking precedence"""

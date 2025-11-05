@@ -9,12 +9,13 @@ import io
 from typing import List
 from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
 from fastapi.responses import JSONResponse
-from models import ChatInput, MeetingInput, QuestionRefinementInput
+from models import ChatInput, MeetingInput, QuestionRefinementInput, PreMeetingEvaluationInput
 from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory_from_vectordb
 from agents import run_meeting
 import google.generativeai as genai
 from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats, ensure_genai_configured
 from twin_manager import create_twin_vectors, query_twin_content, query_twin_style, UPLOADS_DIR
+from pre_meeting import evaluate_accuracy, generate_counter_question
 
 # Create directories
 os.makedirs(CORPUS_DIR, exist_ok=True)
@@ -83,6 +84,51 @@ async def ingest(persona: str = Form(...), file: UploadFile = File(...)):
 
     build_or_update_index(persona, CORPUS_DIR, INDEX_DIR)
     return {"status": "Index updated"}
+
+@app.post("/pre-meeting/evaluate")
+async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)):
+    """
+    Evaluate question accuracy and generate counter-questions for pre-meeting session.
+    Uses vector DB to assess if question has sufficient context (80% threshold).
+    """
+    session_id = input_data.session_id
+    question = input_data.question
+    agents = input_data.agents
+    user_profile = input_data.user_profile
+    conversation_history = input_data.conversation_history
+    
+    # Validate agents
+    for agent in agents:
+        if agent not in PERSONAS:
+            return JSONResponse(status_code=400, content={"error": f"Invalid agent: {agent}"})
+    
+    try:
+        # Calculate accuracy using vector DB
+        accuracy, is_ready = evaluate_accuracy(question, agents, conversation_history)
+        
+        # Generate counter-question if not ready
+        counter_question = None
+        if not is_ready:
+            counter_question = generate_counter_question(
+                question,
+                agents,
+                conversation_history,
+                user_profile,
+                accuracy
+            )
+        
+        return {
+            "accuracy": accuracy,
+            "counter_question": counter_question,
+            "is_ready": is_ready
+        }
+        
+    except Exception as e:
+        print(f"Pre-meeting evaluation error: {e}")
+        return JSONResponse(
+            status_code=500, 
+            content={"error": f"Evaluation failed: {str(e)}"}
+        )
 
 @app.post("/meeting")
 async def meeting(input_data: MeetingInput = Body(...)):
