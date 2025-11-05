@@ -47,9 +47,10 @@ def extract_profile_keywords(user_profile: Dict) -> set:
 
 def is_question_redundant(question: str, profile_keywords: set) -> bool:
     """Check if question asks about information already in profile"""
+    import re
     question_lower = question.lower()
     
-    # Check for basic identity questions
+    # Check for basic identity questions with specific patterns
     redundant_phrases = [
         "what is your name",
         "your full name",
@@ -58,12 +59,39 @@ def is_question_redundant(question: str, profile_keywords: set) -> bool:
         "your professional title",
         "what is your title",
         "what industry",
-        "which company"
+        "which company",
+        "please state your",
+        "tell me your name",
+        "your company name"
     ]
     
     for phrase in redundant_phrases:
         if phrase in question_lower:
             return True
+    
+    # Check for specific confirmation patterns with profile keywords
+    # Only match true restatement requests, not contextual mentions
+    for keyword in profile_keywords:
+        # Skip very short keywords that might be common words
+        if len(keyword) <= 2:
+            continue
+        
+        # Escape keyword for regex
+        keyword_escaped = re.escape(keyword)
+        
+        # Tightened redundant patterns - only match when asking to state/confirm known info
+        # DO NOT match contextual usage like "What strategies at [company]" or "Which [company] initiatives"
+        redundant_patterns = [
+            rf"what is your {keyword_escaped}",
+            rf"what's your {keyword_escaped}",
+            rf"confirm your {keyword_escaped}",
+            rf"state your {keyword_escaped}",
+            rf"tell me your {keyword_escaped}"
+        ]
+        
+        for pattern in redundant_patterns:
+            if re.search(pattern, question_lower):
+                return True
     
     return False
 
@@ -96,17 +124,25 @@ def validate_and_fix_questions(questions: List[Dict], user_profile: Dict) -> Lis
             print(f"⚠ Skipping redundant question: {question_text[:50]}...")
             continue
         
+        # Normalize category name (remove punctuation, &, spaces, etc.)
+        import re
+        category_normalized = re.sub(r'[^a-z_]', '', category.replace('&', '').replace(' ', '_').replace('-', '_'))
+        
         # Map variations to standard category names
-        if category in ["identity", "identity_expertise"]:
+        if any(word in category_normalized for word in ["identity", "role", "expertise"]):
             category = "identity"
-        elif category in ["decision_making", "decision-making", "strategy"]:
+        elif any(word in category_normalized for word in ["decision", "making", "strategy"]):
             category = "decision_making"
-        elif category in ["goals", "vision", "goals_vision"]:
+        elif any(word in category_normalized for word in ["goal", "vision"]):
             category = "goals"
-        elif category in ["communication", "communication_style"]:
+        elif any(word in category_normalized for word in ["communication", "style"]):
             category = "communication"
-        elif category in ["expertise", "challenges", "expertise_challenges"]:
+        elif any(word in category_normalized for word in ["expertise", "challenge", "specialist"]):
             category = "expertise"
+        else:
+            # Safety fallback: log unrecognized category but try to guess from question content
+            print(f"⚠ Unrecognized category '{q.get('category', '')}', defaulting to 'identity'")
+            category = "identity"
         
         if category in categorized:
             categorized[category].append(q)
