@@ -13,6 +13,8 @@ The application enables users to:
 - **NEW: Inline question refinement** - AI analyzes meeting tasks in real-time and suggests improved versions before running meetings
 - **NEW: Create personalized digital twins** that mirror their communication style and expertise
 - **NEW: Chat with digital twins** from colleagues within their company domain
+- **NEW: 20-Question Persona Interview** - Conversational AI-guided interview system for comprehensive persona creation
+- **NEW: Email Writing Style Analysis** - Upload/paste 10-20 emails for AI-powered communication style extraction
 
 ## User Preferences
 
@@ -76,6 +78,22 @@ Preferred communication style: Simple, everyday language.
 - Metadata: run_id, user_id, sender, timestamp stored with each message
 
 **Recent Changes (November 5, 2025):**
+- **Custom Persona Creation System** (COMPLETED): Comprehensive interview-based persona creation
+  - **20-Question Persona Interview**: Structured interview covering 5 key categories
+    - Identity & Role (questions 1-4): Name, title, expertise, communication style
+    - Decision-Making & Strategy (questions 5-8): Approach, risk tolerance, values, examples
+    - Goals & Vision (questions 9-12): Q4 goals, 1-year vision, 5-year vision, KPIs
+    - Communication Style (questions 13-16): Preferences, emojis, tone, common phrases
+    - Expertise & Challenges (questions 17-20): Specializations, challenges, trends, advisory topics
+  - **Email Writing Style Analysis**: AI-powered analysis of 10-20 email samples
+    - Extracts tone, formality level, common phrases, emoji usage
+    - Identifies signature patterns and key communication characteristics
+  - **Domain-Based Access Control**: Personas only visible to same @domain users
+  - **Python Endpoints**: /persona-interview/questions, /next-question, /analyze-emails, /generate-summary
+  - **Database Schema**: persona_interview_sessions table for session state management
+  - **UI Navigation**: "Create Persona" option added between "View Profile" and "Logout"
+  - **Integration**: Uses existing twin storage (ChromaDB dual collections for content + style)
+
 - **Counter-Questioning System** (COMPLETED): ChatGPT-style pre-meeting conversation system
   - Replaces inline question refinement with conversational information gathering
   - **AI-Driven Readiness**: Gemini AI decides when enough information is gathered (no percentage thresholds)
