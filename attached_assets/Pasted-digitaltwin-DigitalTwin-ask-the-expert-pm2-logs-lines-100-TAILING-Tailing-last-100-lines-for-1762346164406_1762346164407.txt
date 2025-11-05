@@ -1,0 +1,39 @@
+digitaltwin@DigitalTwin:~/ask-the-expert$ pm2 logs --lines 100
+
+[TAILING] Tailing last 100 lines for [all] processes (change the value with --lines option)
+/home/digitaltwin/.pm2/pm2.log last 100 lines:
+PM2        | 2025-11-05T11:46:49: PM2 log: ===============================================================================
+PM2        | 2025-11-05T11:46:49: PM2 log: --- New PM2 Daemon started ----------------------------------------------------
+PM2        | 2025-11-05T11:46:49: PM2 log: Time                 : Wed Nov 05 2025 11:46:49 GMT+0000 (Coordinated Universal Time)
+PM2        | 2025-11-05T11:46:49: PM2 log: PM2 version          : 6.0.13
+PM2        | 2025-11-05T11:46:49: PM2 log: Node.js version      : 20.19.5
+PM2        | 2025-11-05T11:46:49: PM2 log: Current arch         : x64
+PM2        | 2025-11-05T11:46:49: PM2 log: PM2 home             : /home/digitaltwin/.pm2
+PM2        | 2025-11-05T11:46:49: PM2 log: PM2 PID file         : /home/digitaltwin/.pm2/pm2.pid
+PM2        | 2025-11-05T11:46:49: PM2 log: RPC socket file      : /home/digitaltwin/.pm2/rpc.sock
+PM2        | 2025-11-05T11:46:49: PM2 log: BUS socket file      : /home/digitaltwin/.pm2/pub.sock
+PM2        | 2025-11-05T11:46:49: PM2 log: Application log path : /home/digitaltwin/.pm2/logs
+PM2        | 2025-11-05T11:46:49: PM2 log: Worker Interval      : 30000
+PM2        | 2025-11-05T11:46:49: PM2 log: Process dump file    : /home/digitaltwin/.pm2/dump.pm2
+PM2        | 2025-11-05T11:46:49: PM2 log: Concurrent actions   : 2
+PM2        | 2025-11-05T11:46:49: PM2 log: SIGTERM timeout      : 1600
+PM2        | 2025-11-05T11:46:49: PM2 log: Runtime Binary       : /usr/bin/node
+PM2        | 2025-11-05T11:46:49: PM2 log: ===============================================================================
+
+^C
+digitaltwin@DigitalTwin:~/ask-the-expert$ pm2 start ecosystem.config.js
+[PM2][ERROR] File ecosystem.config.js malformated
+ReferenceError: module is not defined in ES module scope
+This file is being treated as an ES module because it has a '.js' file extension and '/home/digitaltwin/ask-the-expert/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+    at file:///home/digitaltwin/ask-the-expert/ecosystem.config.js:1:1
+    at ModuleJobSync.runSync (node:internal/modules/esm/module_job:437:37)
+    at ModuleLoader.importSyncForRequire (node:internal/modules/esm/loader:389:47)
+    at loadESMFromCJS (node:internal/modules/cjs/loader:1363:24)
+    at Module._compile (node:internal/modules/cjs/loader:1503:5)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+digitaltwin@DigitalTwin:~/ask-the-expert$ 
+
