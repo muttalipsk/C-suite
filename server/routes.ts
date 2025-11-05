@@ -151,6 +151,217 @@ Role Details: ${user.roleDetails}
     }
   });
 
+  // PRE-MEETING SESSION ROUTES - Counter-questioning system
+  // Initialize a new pre-meeting session
+  app.post("/api/pre-meeting/init", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { question, agents, meetingType = "board" } = req.body;
+
+      if (!question || !agents || agents.length === 0) {
+        return res.status(400).json({ error: "Question and agents are required" });
+      }
+
+      // Get user for profile
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const userProfile = buildUserProfile(user);
+
+      // Create new pre-meeting session
+      const session = await storage.createPreMeetingSession({
+        userId: req.session.userId!,
+        initialQuestion: question,
+        selectedAgents: agents,
+        meetingType,
+        conversationHistory: [{
+          role: "user",
+          content: question,
+          timestamp: new Date().toISOString(),
+        }],
+        currentAccuracy: 0,
+        isComplete: false,
+      });
+
+      // Forward to Python API for initial accuracy evaluation
+      const pythonResponse = await axios.post("http://localhost:8000/pre-meeting/evaluate", {
+        session_id: session.id,
+        question,
+        agents,
+        user_profile: userProfile,
+        conversation_history: session.conversationHistory,
+      });
+
+      const { accuracy, counter_question, is_ready } = pythonResponse.data;
+
+      // Update session with accuracy and counter-question
+      await storage.updatePreMeetingSession(session.id, {
+        currentAccuracy: accuracy,
+        isComplete: is_ready,
+      });
+
+      res.json({
+        sessionId: session.id,
+        accuracy,
+        counterQuestion: counter_question,
+        isReady: is_ready,
+      });
+    } catch (error: any) {
+      console.error("Pre-meeting init error:", error);
+      res.status(500).json({ error: error.message || "Failed to initialize pre-meeting session" });
+    }
+  });
+
+  // Process user response and iterate conversation
+  app.post("/api/pre-meeting/iterate", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { sessionId, userResponse } = req.body;
+
+      if (!sessionId || !userResponse) {
+        return res.status(400).json({ error: "Session ID and user response are required" });
+      }
+
+      // Get session
+      const session = await storage.getPreMeetingSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      // Verify session belongs to user
+      if (session.userId !== req.session.userId) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      // Get user for profile
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const userProfile = buildUserProfile(user);
+
+      // Add user response to conversation history
+      const updatedHistory = [
+        ...session.conversationHistory,
+        {
+          role: "user",
+          content: userResponse,
+          timestamp: new Date().toISOString(),
+        },
+      ];
+
+      // Forward to Python API for evaluation
+      const pythonResponse = await axios.post("http://localhost:8000/pre-meeting/evaluate", {
+        session_id: sessionId,
+        question: session.initialQuestion,
+        agents: session.selectedAgents,
+        user_profile: userProfile,
+        conversation_history: updatedHistory,
+      });
+
+      const { accuracy, counter_question, is_ready } = pythonResponse.data;
+
+      // Add AI response to conversation history
+      const finalHistory = counter_question ? [
+        ...updatedHistory,
+        {
+          role: "assistant",
+          content: counter_question,
+          timestamp: new Date().toISOString(),
+        },
+      ] : updatedHistory;
+
+      // Update session
+      await storage.updatePreMeetingSession(sessionId, {
+        conversationHistory: finalHistory,
+        currentAccuracy: accuracy,
+        isComplete: is_ready,
+      });
+
+      res.json({
+        accuracy,
+        counterQuestion: counter_question,
+        isReady: is_ready,
+      });
+    } catch (error: any) {
+      console.error("Pre-meeting iterate error:", error);
+      res.status(500).json({ error: error.message || "Failed to process response" });
+    }
+  });
+
+  // Complete pre-meeting session and trigger meeting
+  app.post("/api/pre-meeting/complete", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.body;
+
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+
+      // Get session
+      const session = await storage.getPreMeetingSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      // Verify session belongs to user
+      if (session.userId !== req.session.userId) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      // Get user for profile
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const userProfile = buildUserProfile(user);
+
+      // Build enriched task from conversation history
+      const conversationContext = session.conversationHistory
+        .map(turn => `${turn.role === 'user' ? 'User' : 'AI'}: ${turn.content}`)
+        .join('\n');
+
+      const enrichedTask = `${session.initialQuestion}\n\nAdditional Context from Pre-Meeting:\n${conversationContext}`;
+
+      // Forward to Python API for meeting
+      const pythonResponse = await axios.post("http://localhost:8000/meeting", {
+        task: enrichedTask,
+        user_profile: userProfile,
+        turns: 1,
+        agents: session.selectedAgents,
+        user_id: req.session.userId!.toString(),
+        meeting_type: session.meetingType,
+      });
+
+      const { run_id: pythonRunId, recommendations } = pythonResponse.data;
+
+      // Save run to PostgreSQL
+      const run = await storage.createRun({
+        userId: req.session.userId!,
+        task: enrichedTask,
+        userProfile,
+        turns: 1,
+        agents: session.selectedAgents,
+        recommendations,
+      });
+
+      // Delete the session
+      await storage.deletePreMeetingSession(sessionId);
+
+      console.log(`Pre-meeting completed: DB ID ${run.id}, Python Run ID ${pythonRunId}`);
+
+      res.json({
+        runId: pythonRunId,
+        recommendations,
+      });
+    } catch (error: any) {
+      console.error("Pre-meeting complete error:", error);
+      res.status(500).json({ error: error.message || "Failed to complete pre-meeting session" });
+    }
+  });
+
   // MEETING/RUN ROUTES - Forwards ALL agent operations to Python API
   // Track recent meeting requests to prevent duplicates
   const recentMeetingRequests = new Map<string, number>();
