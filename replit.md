@@ -78,18 +78,26 @@ Preferred communication style: Simple, everyday language.
 - Metadata: run_id, user_id, sender, timestamp stored with each message
 
 **Recent Changes (November 5, 2025):**
-- **Custom Persona Creation System** (COMPLETED): Comprehensive interview-based persona creation
-  - **20-Question Persona Interview**: Structured interview covering 5 key categories
-    - Identity & Role (questions 1-4): Name, title, expertise, communication style
-    - Decision-Making & Strategy (questions 5-8): Approach, risk tolerance, values, examples
-    - Goals & Vision (questions 9-12): Q4 goals, 1-year vision, 5-year vision, KPIs
-    - Communication Style (questions 13-16): Preferences, emojis, tone, common phrases
-    - Expertise & Challenges (questions 17-20): Specializations, challenges, trends, advisory topics
+- **Custom Persona Creation System** (COMPLETED): AI-powered personalized interview system
+  - **20-Question Personalized Interview**: AI generates unique questions based on user's existing profile
+    - Gemini AI analyzes user profile to avoid redundant questions
+    - Questions tailored to user's role, industry, and context
+    - 5 categories: Identity & Expertise, Decision-Making, Goals & Vision, Communication Style, Expertise & Challenges
+    - Temperature 0.7 for conversational, natural questions
+    - Fallback to curated questions if AI generation fails
+  - **Smart Question Generation**: Doesn't ask about information already in profile
+    - If user already has name/title/company in profile, asks deeper questions
+    - Builds on existing knowledge to capture unique thinking patterns
+    - Personalizes to specific role (CEO vs CTO vs Founder)
   - **Email Writing Style Analysis**: AI-powered analysis of 10-20 email samples
     - Extracts tone, formality level, common phrases, emoji usage
     - Identifies signature patterns and key communication characteristics
   - **Domain-Based Access Control**: Personas only visible to same @domain users
-  - **Python Endpoints**: /persona-interview/questions, /next-question, /analyze-emails, /generate-summary
+  - **Python Endpoints**: 
+    - POST /persona-interview/generate-questions (generates personalized questions)
+    - POST /persona-interview/next-question (sequential interview flow)
+    - POST /persona-interview/analyze-emails (writing style analysis)
+    - POST /persona-interview/generate-summary (persona summary generation)
   - **Database Schema**: persona_interview_sessions table for session state management
   - **UI Navigation**: "Create Persona" option added between "View Profile" and "Logout"
   - **Integration**: Uses existing twin storage (ChromaDB dual collections for content + style)

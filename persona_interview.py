@@ -1,5 +1,6 @@
 """
-Persona Interview System - 20-question conversational interview for custom persona creation
+Persona Interview System - AI-generated personalized 20-question interview for custom persona creation
+Questions are dynamically generated based on user's existing profile to avoid redundancy
 """
 
 import google.generativeai as genai
@@ -19,130 +20,133 @@ def ensure_genai_configured():
     except:
         pass  # Already configured
 
-# 20 Persona Interview Questions
-PERSONA_QUESTIONS = [
-    # Identity & Role (Questions 1-4)
-    {
-        "id": "q1",
-        "category": "identity",
-        "question": "What is your full name and current professional title?"
-    },
-    {
-        "id": "q2",
-        "category": "identity",
-        "question": "What company do you work for, and what is your primary role or responsibility there?"
-    },
-    {
-        "id": "q3",
-        "category": "identity",
-        "question": "How would you describe your industry expertise in one sentence?"
-    },
-    {
-        "id": "q4",
-        "category": "identity",
-        "question": "What is your typical communication style? (e.g., Direct, Formal, Casual, Motivational)"
-    },
+
+def generate_personalized_questions(user_profile: Dict) -> List[Dict]:
+    """
+    Generate 20 personalized interview questions based on the user's existing profile.
     
-    # Decision-Making & Strategy (Questions 5-8)
-    {
-        "id": "q5",
-        "category": "decision_making",
-        "question": "How do you typically approach complex business decisions? Walk me through your thought process."
-    },
-    {
-        "id": "q6",
-        "category": "decision_making",
-        "question": "What is your risk tolerance when making strategic decisions? (Conservative, Moderate, Aggressive)"
-    },
-    {
-        "id": "q7",
-        "category": "decision_making",
-        "question": "What are your top 3 core values that guide your professional decisions?"
-    },
-    {
-        "id": "q8",
-        "category": "decision_making",
-        "question": "Describe a recent strategic decision you made and the rationale behind it."
-    },
+    Args:
+        user_profile: Dict containing user's existing profile data (name, title, company, industry, goals, etc.)
     
-    # Goals & Vision (Questions 9-12)
-    {
-        "id": "q9",
-        "category": "goals",
-        "question": "What are your primary business goals for the next quarter (Q4)?"
-    },
-    {
-        "id": "q10",
-        "category": "goals",
-        "question": "What is your 1-year vision for your team or organization?"
-    },
-    {
-        "id": "q11",
-        "category": "goals",
-        "question": "What is your 5-year strategic vision?"
-    },
-    {
-        "id": "q12",
-        "category": "goals",
-        "question": "What key metrics or KPIs do you focus on to measure success?"
-    },
+    Returns:
+        List of 20 question dictionaries with id, category, and question text
+    """
+    ensure_genai_configured()
     
-    # Communication Style (Questions 13-16)
-    {
-        "id": "q13",
-        "category": "communication",
-        "question": "How do you prefer to communicate with your team? (Email, Slack, Meetings, etc.)"
-    },
-    {
-        "id": "q14",
-        "category": "communication",
-        "question": "Do you use emojis or informal language in professional communication? If so, which ones?"
-    },
-    {
-        "id": "q15",
-        "category": "communication",
-        "question": "How would you describe your tone when giving feedback? (Supportive, Direct, Analytical, etc.)"
-    },
-    {
-        "id": "q16",
-        "category": "communication",
-        "question": "What phrases or expressions do you use frequently in conversations?"
-    },
-    
-    # Expertise & Challenges (Questions 17-20)
-    {
-        "id": "q17",
-        "category": "expertise",
-        "question": "What are your top 3 areas of expertise or specialization?"
-    },
-    {
-        "id": "q18",
-        "category": "expertise",
-        "question": "What are the biggest challenges you face in your current role?"
-    },
-    {
-        "id": "q19",
-        "category": "expertise",
-        "question": "How do you stay updated on industry trends and best practices?"
-    },
-    {
-        "id": "q20",
-        "category": "expertise",
-        "question": "If someone asked your digital twin for advice, what topics would you want it to excel at?"
-    },
+    prompt = f"""You are an expert interviewer creating a personalized digital twin profile. Generate 20 thoughtful, specific interview questions based on what we already know about this person.
+
+EXISTING USER PROFILE:
+{json.dumps(user_profile, indent=2)}
+
+IMPORTANT RULES:
+1. DO NOT ask about information already in their profile (name, company, title, industry if already known)
+2. Ask DEEPER, more specific questions that build on what we know
+3. Make questions personalized to their role, industry, and context
+4. Focus on capturing their unique thinking patterns, communication style, and expertise
+
+REQUIRED STRUCTURE (20 questions across 5 categories):
+
+Category 1: Identity & Expertise (4 questions)
+- Focus on unique aspects of their professional identity we don't yet know
+- Ask about specific expertise areas, learning journey, career defining moments
+
+Category 2: Decision-Making & Strategy (4 questions)  
+- How they approach specific types of decisions relevant to their role
+- Recent examples of strategic choices they've made
+- Their risk tolerance and decision-making frameworks
+
+Category 3: Goals & Vision (4 questions)
+- Specific goals beyond generic profile info
+- Personal definition of success in their context
+- Vision for their team, projects, or initiatives
+
+Category 4: Communication Style (4 questions)
+- How they communicate in different situations (1-on-1, team meetings, presentations)
+- Preferred communication channels and why
+- How they adapt their style for different audiences
+- Specific phrases, tone, or communication patterns they use
+
+Category 5: Expertise & Challenges (4 questions)
+- Deep dive into their specialized knowledge areas
+- Current challenges they're navigating
+- How they stay current in their field
+- Topics they want their digital twin to excel at advising on
+
+Return ONLY a JSON array of 20 questions in this exact format:
+[
+  {{"id": "q1", "category": "identity", "question": "Your specific question here"}},
+  {{"id": "q2", "category": "identity", "question": "Your specific question here"}},
+  ...
+  {{"id": "q20", "category": "expertise", "question": "Your specific question here"}}
 ]
 
+Make each question conversational, specific, and valuable for creating an authentic digital twin.
+"""
+    
+    try:
+        chat_model = genai.GenerativeModel(MODEL)
+        response = chat_model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(
+                temperature=0.7,
+                max_output_tokens=2000,
+            )
+        )
+        
+        questions_text = response.text.strip()
+        # Remove markdown code blocks if present
+        if questions_text.startswith("```"):
+            questions_text = questions_text.split("```")[1]
+            if questions_text.startswith("json"):
+                questions_text = questions_text[4:]
+            questions_text = questions_text.strip()
+        
+        questions = json.loads(questions_text)
+        print(f"✓ Generated {len(questions)} personalized questions")
+        return questions
+        
+    except Exception as e:
+        print(f"Error generating personalized questions: {e}")
+        # Fallback to basic questions if AI generation fails
+        return generate_fallback_questions()
 
-def get_next_question(current_index: int) -> Optional[Dict]:
-    """Get the next question in the interview sequence"""
-    if current_index >= len(PERSONA_QUESTIONS):
+
+def generate_fallback_questions() -> List[Dict]:
+    """Fallback questions if AI generation fails"""
+    return [
+        {"id": "q1", "category": "identity", "question": "What unique perspective do you bring to your role that others might not?"},
+        {"id": "q2", "category": "identity", "question": "Describe a defining moment in your career that shaped who you are today."},
+        {"id": "q3", "category": "identity", "question": "What aspect of your expertise are you most proud of developing?"},
+        {"id": "q4", "category": "identity", "question": "How would your team describe your leadership or working style?"},
+        {"id": "q5", "category": "decision_making", "question": "Walk me through how you made a recent important decision."},
+        {"id": "q6", "category": "decision_making", "question": "What factors do you weigh most heavily when making strategic choices?"},
+        {"id": "q7", "category": "decision_making", "question": "Describe a time when you had to make a decision with incomplete information."},
+        {"id": "q8", "category": "decision_making", "question": "What trade-offs do you commonly face in your role, and how do you navigate them?"},
+        {"id": "q9", "category": "goals", "question": "What specific outcome would make you feel successful this quarter?"},
+        {"id": "q10", "category": "goals", "question": "If you could achieve one breakthrough in the next year, what would it be?"},
+        {"id": "q11", "category": "goals", "question": "What legacy do you want to create in your current position?"},
+        {"id": "q12", "category": "goals", "question": "What metric matters most to you personally, beyond standard KPIs?"},
+        {"id": "q13", "category": "communication", "question": "How do you adapt your communication style when giving difficult feedback?"},
+        {"id": "q14", "category": "communication", "question": "What's your approach to communicating complex ideas to non-technical stakeholders?"},
+        {"id": "q15", "category": "communication", "question": "Describe your typical communication style in team meetings vs 1-on-1 conversations."},
+        {"id": "q16", "category": "communication", "question": "What phrases or frameworks do you frequently use when advising others?"},
+        {"id": "q17", "category": "expertise", "question": "What topic could you teach a masterclass on based on your experience?"},
+        {"id": "q18", "category": "expertise", "question": "What's the most complex problem you're working on right now?"},
+        {"id": "q19", "category": "expertise", "question": "How do you approach learning when entering an unfamiliar area?"},
+        {"id": "q20", "category": "expertise", "question": "If someone asks your digital twin for advice, what should it be exceptional at?"}
+    ]
+
+
+def get_next_question(questions: List[Dict], current_index: int) -> Optional[Dict]:
+    """Get the next question from the personalized question list"""
+    if current_index >= len(questions):
         return None  # type: ignore
     
-    question = PERSONA_QUESTIONS[current_index]
+    question = questions[current_index]
     return {
         "question_id": question["id"],
         "question_number": current_index + 1,
-        "total_questions": len(PERSONA_QUESTIONS),
+        "total_questions": len(questions),
         "category": question["category"],
         "question_text": question["question"]
     }
@@ -266,7 +270,12 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/persona-interview", tags=["persona-interview"])
 
 
+class GenerateQuestionsRequest(BaseModel):
+    user_profile: Dict
+
+
 class NextQuestionRequest(BaseModel):
+    questions: List[Dict]
     current_index: int
 
 
@@ -279,19 +288,23 @@ class GenerateSummaryRequest(BaseModel):
     email_style: Optional[Dict] = None
 
 
-@router.get("/questions")
-async def get_all_questions():
-    """Get all 20 persona interview questions"""
+@router.post("/generate-questions")
+async def generate_questions_endpoint(request: GenerateQuestionsRequest):
+    """
+    Generate 20 personalized interview questions based on user's profile.
+    Questions are tailored to avoid asking about information already in the profile.
+    """
+    questions = generate_personalized_questions(request.user_profile)
     return {
-        "total_questions": len(PERSONA_QUESTIONS),
-        "questions": PERSONA_QUESTIONS
+        "total_questions": len(questions),
+        "questions": questions
     }
 
 
 @router.post("/next-question")
 async def next_question(request: NextQuestionRequest):
-    """Get the next question in the interview sequence"""
-    question = get_next_question(request.current_index)
+    """Get the next question from the personalized question list"""
+    question = get_next_question(request.questions, request.current_index)
     if question is None:
         return {
             "completed": True,
