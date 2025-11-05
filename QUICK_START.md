@@ -46,22 +46,36 @@ EOF
 ```bash
 # On your local machine
 cd /path/to/project
-tar -czf project.tar.gz --exclude='node_modules' --exclude='venv' --exclude='chroma_db' --exclude='chroma_chat_db' --exclude='chroma_twins_db' .
+tar -czf project.tar.gz \
+  --exclude='node_modules' \
+  --exclude='venv' \
+  --exclude='__pycache__' \
+  --exclude='chroma_db' \
+  --exclude='chroma_chat_db' \
+  --exclude='chroma_twins_db' \
+  --exclude='dist' \
+  --exclude='uploads' \
+  .
 scp -i "rpa-data-vm-3-key-2 1.pem" project.tar.gz azureuser@74.225.252.224:~
 ```
 
 **On Azure VM:**
 ```bash
 cd ~
-tar -xzf project.tar.gz
-mkdir ask-the-expert && cd ask-the-expert
-tar -xzf ../project.tar.gz
+mkdir -p ask-the-expert
+tar -xzf project.tar.gz -C ask-the-expert
+cd ask-the-expert
+
+# Generate session secret
+SESSION_SECRET=$(openssl rand -base64 32)
+echo "Generated SESSION_SECRET: $SESSION_SECRET"
+echo "Copy this value for the .env file"
 
 # Create .env file
 nano .env
 ```
 
-**Add to .env:**
+**Add to .env (replace the placeholders with actual values):**
 ```env
 DATABASE_URL=postgresql://ask_expert_user:YourSecurePassword123@localhost:5432/ask_the_expert
 PGHOST=localhost
@@ -69,7 +83,7 @@ PGPORT=5432
 PGUSER=ask_expert_user
 PGPASSWORD=YourSecurePassword123
 PGDATABASE=ask_the_expert
-SESSION_SECRET=$(openssl rand -base64 32)
+SESSION_SECRET=paste_the_generated_secret_from_above
 GEMINI_API_KEY=your_gemini_api_key_here
 NODE_ENV=production
 ```

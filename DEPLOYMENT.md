@@ -126,23 +126,27 @@ cd ask-the-expert
 ### Option B: Using SCP (From Your Local Machine)
 ```bash
 # From your local machine (not on the VM)
-# Compress the project folder first (excluding node_modules)
+# Compress the project folder first (excluding node_modules and generated files)
 cd /path/to/your/project
 tar -czf project.tar.gz \
   --exclude='node_modules' \
-  --exclude='python-api/venv' \
-  --exclude='python-api/__pycache__' \
+  --exclude='venv' \
+  --exclude='__pycache__' \
   --exclude='.git' \
   --exclude='chroma_db' \
+  --exclude='chroma_chat_db' \
+  --exclude='chroma_twins_db' \
+  --exclude='dist' \
+  --exclude='uploads' \
   .
 
 # Transfer to Azure VM
 scp -i "rpa-data-vm-3-key-2 1.pem" project.tar.gz azureuser@74.225.252.224:~
 
-# On the Azure VM, extract
+# On the Azure VM, create directory and extract
 cd ~
-tar -xzf project.tar.gz
-mv project ask-the-expert  # Rename if needed
+mkdir -p ask-the-expert
+tar -xzf project.tar.gz -C ask-the-expert
 cd ask-the-expert
 ```
 
@@ -184,6 +188,14 @@ nano .env
 ```
 
 ### 6.2 Add Environment Variables
+
+**First, generate a secure session secret:**
+```bash
+openssl rand -base64 32
+```
+Copy the output and use it in the SESSION_SECRET field below.
+
+**Then add these environment variables to .env:**
 ```env
 # Database
 DATABASE_URL=postgresql://ask_expert_user:your_secure_password_here@localhost:5432/ask_the_expert
@@ -193,8 +205,8 @@ PGUSER=ask_expert_user
 PGPASSWORD=your_secure_password_here
 PGDATABASE=ask_the_expert
 
-# Session Secret (generate a random string)
-SESSION_SECRET=your_random_session_secret_here_at_least_32_chars
+# Session Secret (paste the output from 'openssl rand -base64 32')
+SESSION_SECRET=paste_your_generated_secret_here
 
 # Gemini API Key
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -204,11 +216,6 @@ NODE_ENV=production
 
 # Python API URL (internal communication)
 PYTHON_API_URL=http://localhost:8000
-```
-
-**To generate a secure session secret:**
-```bash
-openssl rand -base64 32
 ```
 
 Save and exit (Ctrl+X, then Y, then Enter)
