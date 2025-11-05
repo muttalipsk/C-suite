@@ -175,7 +175,7 @@ Role Details: ${user.roleDetails}
         initialQuestion: question,
         selectedAgents: agents,
         meetingType,
-        conversationHistory: [{
+        conversation: [{
           role: "user",
           content: question,
           timestamp: new Date().toISOString(),
@@ -185,12 +185,18 @@ Role Details: ${user.roleDetails}
       });
 
       // Forward to Python API for initial accuracy evaluation
+      // Strip timestamp field as Python only needs role and content
+      const conversationForPython = session.conversation.map(turn => ({
+        role: turn.role,
+        content: turn.content,
+      }));
+      
       const pythonResponse = await axios.post("http://localhost:8000/pre-meeting/evaluate", {
         session_id: session.id,
         question,
         agents,
         user_profile: userProfile,
-        conversation_history: session.conversationHistory,
+        conversation_history: conversationForPython,
       });
 
       const { accuracy, counter_question, is_ready } = pythonResponse.data;
@@ -243,7 +249,7 @@ Role Details: ${user.roleDetails}
 
       // Add user response to conversation history
       const updatedHistory = [
-        ...session.conversationHistory,
+        ...session.conversation,
         {
           role: "user",
           content: userResponse,
@@ -252,12 +258,18 @@ Role Details: ${user.roleDetails}
       ];
 
       // Forward to Python API for evaluation
+      // Strip timestamp field as Python only needs role and content
+      const conversationForPython = updatedHistory.map(turn => ({
+        role: turn.role,
+        content: turn.content,
+      }));
+      
       const pythonResponse = await axios.post("http://localhost:8000/pre-meeting/evaluate", {
         session_id: sessionId,
         question: session.initialQuestion,
         agents: session.selectedAgents,
         user_profile: userProfile,
-        conversation_history: updatedHistory,
+        conversation_history: conversationForPython,
       });
 
       const { accuracy, counter_question, is_ready } = pythonResponse.data;
@@ -274,7 +286,7 @@ Role Details: ${user.roleDetails}
 
       // Update session
       await storage.updatePreMeetingSession(sessionId, {
-        conversationHistory: finalHistory,
+        conversation: finalHistory,
         currentAccuracy: accuracy,
         isComplete: is_ready,
       });
@@ -319,7 +331,7 @@ Role Details: ${user.roleDetails}
       const userProfile = buildUserProfile(user);
 
       // Build enriched task from conversation history
-      const conversationContext = session.conversationHistory
+      const conversationContext = session.conversation
         .map(turn => `${turn.role === 'user' ? 'User' : 'AI'}: ${turn.content}`)
         .join('\n');
 
