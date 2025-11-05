@@ -281,11 +281,11 @@ Role Details: ${user.roleDetails}
 
       let { counter_question, is_ready } = pythonResponse.data;
 
-      // SAFETY: Force readiness after 2 conversation turns (4 messages total) to prevent endless questioning
+      // SAFETY: Force readiness after 5 conversation turns (10 messages total) to prevent endless questioning
       // Count only complete turns (user + assistant pairs)
       const userMessageCount = updatedHistory.filter(turn => turn.role === "user").length;
-      if (userMessageCount >= 2) {
-        console.log(`Forcing readiness after ${userMessageCount} user messages`);
+      if (userMessageCount >= 5) {
+        console.log(`Forcing readiness after ${userMessageCount} user messages (max limit reached)`);
         is_ready = true;
         counter_question = null;
       }

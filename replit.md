@@ -80,21 +80,23 @@ Preferred communication style: Simple, everyday language.
   - Replaces inline question refinement with conversational information gathering
   - **AI-Driven Readiness**: Gemini AI decides when enough information is gathered (no percentage thresholds)
     - Uses evaluate_readiness_with_ai function with READY/CONTINUE decision logic
-    - **Optimized for Speed**: Designed to ask only 1-2 questions maximum before proceeding
-    - Hard safety limit: Forces readiness after 2 user responses to prevent endless questioning
-    - AI biased toward "READY" once basic context exists - doesn't require perfect information
+    - **Dynamic Information Gathering**: Asks 3-4 questions to gather comprehensive context
+    - Hard safety limit: Forces readiness after 5 user responses (maximum questions)
+    - AI evaluates 5 key areas: context, goals, constraints, timeline, stakeholders
+    - Proceeds when 4-5 areas are sufficiently covered
     - Natural conversation flow without visible accuracy metrics
   - **Counter-Question Generation**: Uses Gemini to ask natural, conversational follow-up questions
     - Temperature 0.8 for varied, ChatGPT-like responses
-    - Focuses only on MOST CRITICAL missing information (1 sentence max)
+    - Focuses on gathering comprehensive information across key areas
+    - Questions are thoughtful and meaningful (1-2 sentences)
     - No mention of "accuracy" or percentages in user-facing messages
-    - Emphasizes that advisors can work with minimal context
+    - Tailored to expertise of selected advisors
   - **Architecture**:
     - PostgreSQL: PreMeetingSession table tracks conversation state (status: active/completed/cancelled)
-    - Node.js: /api/pre-meeting/init, /iterate, /complete endpoints with hard 2-turn limit
-    - Python: /pre-meeting/evaluate endpoint with lenient AI readiness evaluation
+    - Node.js: /api/pre-meeting/init, /iterate, /complete endpoints with hard 5-turn limit
+    - Python: /pre-meeting/generate-question (first question) and /pre-meeting/evaluate endpoints
     - Frontend: PreMeetingConversation component with pure chat UI (no progress bar)
-  - **User Flow**: Submit question → 1-2 brief clarifications → Auto-proceed to meeting
+  - **User Flow**: Submit question → 3-4 comprehensive questions → Auto-proceed to meeting (max 5 questions)
   - **Enriched Context**: Complete conversation history sent to meeting endpoint for better recommendations
 
 - **Vibrant Attractive Design**: Modern light theme with gradients and visual depth

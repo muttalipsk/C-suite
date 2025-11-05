@@ -30,7 +30,7 @@ def evaluate_readiness_with_ai(
         for turn in conversation_history
     ])
     
-    # Create evaluation prompt - BE DECISIVE, don't over-gather information
+    # Create evaluation prompt - gather comprehensive information over 3-4 questions
     evaluation_prompt = f"""You are evaluating whether enough information has been gathered for a strategic advisory meeting.
 
 Initial Question: {question}
@@ -44,24 +44,28 @@ Conversation History:
 {conversation_context}
 
 IMPORTANT INSTRUCTIONS:
-- Strategic advisors can work with MINIMAL information and still provide valuable insights
-- If you have BASIC context about what the user wants, respond with "READY"
-- Only respond with "CONTINUE" if the question is completely unclear or missing critical details
-- After 1-2 conversation turns, you should almost ALWAYS be ready
-- Don't require perfect information - basic understanding is enough
+- Aim to gather comprehensive information through 3-4 thoughtful questions
+- Strategic advisors need sufficient context to provide high-quality, tailored recommendations
+- Only respond "READY" when you have a well-rounded understanding of the user's situation
+- Consider asking about: context, goals, constraints, timeline, stakeholders, current challenges
 
 Your task: Determine if we have enough context to run a productive strategic advisory meeting.
 
-Quick checklist:
-1. Do we understand what the user is asking about? (Yes/No)
-2. Is there ANY context about their situation? (Yes/No)
+Comprehensive checklist - All should be addressed:
+1. Context: Do we understand their current situation and what they're working on?
+2. Goals: Are their desired outcomes and objectives clear?
+3. Constraints: Have any limitations, budget, or resource constraints been mentioned?
+4. Timeline: Do we know their timeframe or urgency?
+5. Stakeholders: Do we understand who's involved or impacted?
 
-If BOTH are "Yes" → Respond "READY"
-If either is "No" → Respond "CONTINUE"
+Evaluation criteria:
+- If 0-2 areas covered → "CONTINUE" (need more information)
+- If 3 areas covered → "CONTINUE" (one more question to round out)
+- If 4-5 areas covered → "READY" (sufficient information gathered)
 
 Respond with ONLY ONE WORD:
-- "READY" if enough information has been gathered
-- "CONTINUE" if more context is needed
+- "READY" if enough comprehensive information has been gathered (4-5 areas)
+- "CONTINUE" if more context is needed (0-3 areas)
 
 Decision:"""
     
@@ -86,8 +90,8 @@ Decision:"""
         
     except Exception as e:
         print(f"Error evaluating readiness: {e}")
-        # Fallback: After 2 conversation turns (1 question + 1 answer), proceed
-        return len(conversation_history) >= 2  # 1 user + 1 assistant message is enough
+        # Fallback: After 6 conversation turns (3 questions + 3 answers), proceed
+        return len(conversation_history) >= 6  # At least 3 Q&A pairs
 
 
 
@@ -130,7 +134,7 @@ def generate_counter_question(
     # Create system prompt for natural counter-question generation
     system_prompt = f"""You are a helpful assistant preparing for a strategic advisory meeting with {', '.join(agents)}.
 
-Your goal is to ask ONE brief, natural follow-up question ONLY if something CRITICAL is missing.
+Your goal is to ask ONE thoughtful, natural follow-up question to gather comprehensive information for the advisors.
 
 Initial Question: {question}
 
@@ -143,15 +147,16 @@ Conversation History:
 Information Coverage:
 {chr(10).join(f'- {area.title()}: {"✓ Mentioned" if covered else "✗ Not discussed"}' for area, covered in information_coverage.items())}
 
-CRITICAL INSTRUCTIONS:
-- Only ask about the MOST IMPORTANT missing piece of information
-- Don't try to gather every detail - advisors can work with minimal context
-- Ask like ChatGPT would - brief, natural, conversational
-- Keep it to ONE short question (1 sentence max)
+INSTRUCTIONS:
+- Ask about the MOST IMPORTANT missing piece of information from the uncovered areas
+- The advisors need comprehensive context: situation, goals, constraints, timeline, stakeholders
+- Ask like ChatGPT would - natural, conversational, professional
+- Keep it concise but meaningful (1-2 sentences)
 - Don't mention "accuracy" or percentages
-- Focus on what's absolutely essential to understand the user's need
+- Focus on gathering details that will help advisors provide specific, actionable recommendations
+- Make it relevant to the expertise of {', '.join(agents)}
 
-Generate ONE brief follow-up question:"""
+Generate ONE thoughtful follow-up question:"""
     
     try:
         model = genai.GenerativeModel("gemini-2.0-flash-exp")
