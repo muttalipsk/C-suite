@@ -183,14 +183,15 @@ Role Details: ${user.roleDetails}
         isComplete: false,
       });
 
-      // Forward to Python API for initial accuracy evaluation
+      // On FIRST call (init), always ask a counter-question without evaluation
+      // This ensures we always ask at least ONE question
       // Strip timestamp field as Python only needs role and content
       const conversationForPython = session.conversation.map(turn => ({
         role: turn.role,
         content: turn.content,
       }));
       
-      const pythonResponse = await axios.post("http://localhost:8000/pre-meeting/evaluate", {
+      const pythonResponse = await axios.post("http://localhost:8000/pre-meeting/generate-question", {
         session_id: session.id,
         question,
         agents,
@@ -198,19 +199,26 @@ Role Details: ${user.roleDetails}
         conversation_history: conversationForPython,
       });
 
-      const { counter_question, is_ready } = pythonResponse.data;
+      const { counter_question } = pythonResponse.data;
 
-      // Update session status if ready
-      if (is_ready) {
-        await storage.updatePreMeetingSession(session.id, {
-          status: "completed",
-        });
-      }
+      // Add the counter-question to conversation
+      const updatedConversation = [
+        ...session.conversation,
+        {
+          role: "assistant",
+          content: counter_question,
+          timestamp: new Date().toISOString(),
+        }
+      ];
+
+      await storage.updatePreMeetingSession(session.id, {
+        conversation: updatedConversation,
+      });
 
       res.json({
         sessionId: session.id,
         counterQuestion: counter_question,
-        isReady: is_ready,
+        isReady: false, // Always false on init - we always ask at least one question
       });
     } catch (error: any) {
       console.error("Pre-meeting init error:", error);

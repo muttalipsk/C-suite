@@ -85,6 +85,44 @@ async def ingest(persona: str = Form(...), file: UploadFile = File(...)):
     build_or_update_index(persona, CORPUS_DIR, INDEX_DIR)
     return {"status": "Index updated"}
 
+@app.post("/pre-meeting/generate-question")
+async def pre_meeting_generate_question(input_data: PreMeetingEvaluationInput = Body(...)):
+    """
+    Generate a counter-question WITHOUT evaluation (used for initial question only).
+    Always generates a question - doesn't check readiness.
+    """
+    session_id = input_data.session_id
+    question = input_data.question
+    agents = input_data.agents
+    user_profile = input_data.user_profile
+    conversation_history = input_data.conversation_history
+    
+    # Validate agents
+    for agent in agents:
+        if agent not in PERSONAS:
+            return JSONResponse(status_code=400, content={"error": f"Invalid agent: {agent}"})
+    
+    try:
+        # Always generate a counter-question for the first interaction
+        counter_question = generate_counter_question(
+            question,
+            agents,
+            conversation_history,
+            user_profile,
+            0.0  # Dummy value since we don't use accuracy anymore
+        )
+        
+        return {
+            "counter_question": counter_question
+        }
+        
+    except Exception as e:
+        print(f"Pre-meeting question generation error: {e}")
+        return JSONResponse(
+            status_code=500, 
+            content={"error": f"Question generation failed: {str(e)}"}
+        )
+
 @app.post("/pre-meeting/evaluate")
 async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)):
     """
