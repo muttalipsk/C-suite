@@ -79,8 +79,13 @@ Decision:"""
             )
         )
         
+        # Normalize decision: strip whitespace and punctuation, convert to uppercase
+        import string
         decision = response.text.strip().upper()
-        is_ready = "READY" in decision
+        decision_normalized = decision.strip(string.punctuation + string.whitespace)
+        
+        # Strict comparison to avoid false positives (e.g., "CONTINUE - not ready yet")
+        is_ready = decision_normalized == "READY"
         
         print(f"AI Readiness Evaluation:")
         print(f"  Decision: {decision}")
