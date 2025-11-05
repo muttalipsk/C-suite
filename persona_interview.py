@@ -3,7 +3,7 @@ Persona Interview System - 20-question conversational interview for custom perso
 """
 
 import google.generativeai as genai
-from typing import Dict, List
+from typing import Dict, List, Optional
 import os
 import json
 
@@ -11,11 +11,13 @@ MODEL = "gemini-2.0-flash-exp"
 
 def ensure_genai_configured():
     """Ensure Gemini API is configured"""
-    if not genai.get_default_client():
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY not found")
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not found")
+    try:
         genai.configure(api_key=api_key)
+    except:
+        pass  # Already configured
 
 # 20 Persona Interview Questions
 PERSONA_QUESTIONS = [
@@ -131,10 +133,10 @@ PERSONA_QUESTIONS = [
 ]
 
 
-def get_next_question(current_index: int) -> Dict:
+def get_next_question(current_index: int) -> Optional[Dict]:
     """Get the next question in the interview sequence"""
     if current_index >= len(PERSONA_QUESTIONS):
-        return None
+        return None  # type: ignore
     
     question = PERSONA_QUESTIONS[current_index]
     return {
@@ -210,7 +212,7 @@ Return ONLY the JSON object, no explanations.
         }
 
 
-def generate_persona_summary(answers: Dict, email_style: Dict = None) -> str:
+def generate_persona_summary(answers: Dict, email_style: Optional[Dict] = None) -> str:
     """
     Generate a comprehensive persona summary from interview answers and email analysis.
     This will be stored in the twin's profile.

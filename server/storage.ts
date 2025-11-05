@@ -1,12 +1,13 @@
 // Reference: javascript_database blueprint
 import { 
-  users, runs, chats, agentMemory, corpus, twins, preMeetingSessions,
+  users, runs, chats, agentMemory, corpus, twins, preMeetingSessions, personaInterviewSessions,
   type User, type InsertUser,
   type Run, type InsertRun,
   type Chat, type InsertChat,
   type AgentMemory, type Corpus,
   type Twin, type InsertTwin,
-  type PreMeetingSession, type InsertPreMeetingSession
+  type PreMeetingSession, type InsertPreMeetingSession,
+  type PersonaInterviewSession, type InsertPersonaInterviewSession
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -48,6 +49,12 @@ export interface IStorage {
   getPreMeetingSession(id: string): Promise<PreMeetingSession | undefined>;
   updatePreMeetingSession(id: string, updates: Partial<PreMeetingSession>): Promise<PreMeetingSession | undefined>;
   deletePreMeetingSession(id: string): Promise<void>;
+
+  // Persona Interview session operations
+  createPersonaInterviewSession(session: InsertPersonaInterviewSession & { userId: string }): Promise<PersonaInterviewSession>;
+  getPersonaInterviewSession(id: string): Promise<PersonaInterviewSession | undefined>;
+  updatePersonaInterviewSession(id: string, updates: Partial<PersonaInterviewSession>): Promise<PersonaInterviewSession | undefined>;
+  deletePersonaInterviewSession(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -214,6 +221,32 @@ export class DatabaseStorage implements IStorage {
 
   async deletePreMeetingSession(id: string): Promise<void> {
     await db.delete(preMeetingSessions).where(eq(preMeetingSessions.id, id));
+  }
+
+  async createPersonaInterviewSession(session: InsertPersonaInterviewSession & { userId: string }): Promise<PersonaInterviewSession> {
+    const [newSession] = await db
+      .insert(personaInterviewSessions)
+      .values(session)
+      .returning();
+    return newSession;
+  }
+
+  async getPersonaInterviewSession(id: string): Promise<PersonaInterviewSession | undefined> {
+    const [session] = await db.select().from(personaInterviewSessions).where(eq(personaInterviewSessions.id, id));
+    return session || undefined;
+  }
+
+  async updatePersonaInterviewSession(id: string, updates: Partial<PersonaInterviewSession>): Promise<PersonaInterviewSession | undefined> {
+    const [session] = await db
+      .update(personaInterviewSessions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(personaInterviewSessions.id, id))
+      .returning();
+    return session || undefined;
+  }
+
+  async deletePersonaInterviewSession(id: string): Promise<void> {
+    await db.delete(personaInterviewSessions).where(eq(personaInterviewSessions.id, id));
   }
 }
 
