@@ -1,20 +1,18 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AI_AGENTS } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Users, Loader2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Sparkles, Loader2, Send, X } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
-import { PreMeetingConversation } from "./PreMeetingConversation";
 
 interface MeetingFormData {
   task: string;
@@ -29,15 +27,25 @@ interface MeetingFormProps {
   selectedAgents: string[];
 }
 
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+}
+
 interface PreMeetingSession {
   sessionId: string;
-  accuracy: number;
   counterQuestion: string | null;
   isReady: boolean;
 }
 
 export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: MeetingFormProps) {
   const [preMeetingSession, setPreMeetingSession] = useState<PreMeetingSession | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [userInput, setUserInput] = useState("");
+  const [initialQuestion, setInitialQuestion] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const form = useForm<MeetingFormData>({
     defaultValues: {
       task: "",
@@ -47,6 +55,14 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
     },
   });
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   const initPreMeetingMutation = useMutation({
     mutationFn: async (data: { question: string; agents: string[]; meetingType: string }) => {
       const response = await apiRequest("POST", "/api/pre-meeting/init", data);
@@ -55,15 +71,81 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
     },
     onSuccess: (data) => {
       setPreMeetingSession(data);
+      // Add AI's first counter-question to messages
+      if (data.counterQuestion) {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: data.counterQuestion,
+          timestamp: new Date().toISOString(),
+        }]);
+      }
     },
   });
 
-  const handleSubmit = (data: MeetingFormData) => {
-    console.log("🟢 MeetingForm.handleSubmit called - Starting pre-meeting conversation");
-    console.log("  - meetingType:", data.meetingType);
-    console.log("  - selectedAgents:", selectedAgents);
-    console.log("  - task:", data.task?.substring(0, 50) + "...");
+  const iterateMutation = useMutation({
+    mutationFn: async (userResponse: string) => {
+      const response = await apiRequest("POST", "/api/pre-meeting/iterate", {
+        sessionId: preMeetingSession!.sessionId,
+        userResponse,
+      });
+      const data = await response.json();
+      return data as {
+        counterQuestion: string | null;
+        isReady: boolean;
+      };
+    },
+    onSuccess: (data) => {
+      if (data.counterQuestion) {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: data.counterQuestion,
+          timestamp: new Date().toISOString(),
+        }]);
+      }
 
+      if (data.isReady) {
+        completeMutation.mutate();
+      }
+    },
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/pre-meeting/complete", {
+        sessionId: preMeetingSession!.sessionId,
+      });
+      const data = await response.json();
+      return data;
+    },
+    onSuccess: (data) => {
+      // Meeting complete - trigger parent's onSubmit
+      onSubmit({
+        task: initialQuestion,
+        meetingType: form.getValues("meetingType"),
+        selectedAgents,
+        turns: 1,
+      });
+    },
+  });
+
+  const handleInitialSubmit = (data: MeetingFormData) => {
+    if (!data.task.trim()) return;
+
+    console.log("🟢 Starting chat-style pre-meeting conversation");
+    
+    // Save initial question
+    setInitialQuestion(data.task);
+
+    // Add user's first message to chat
+    setMessages([{
+      role: "user",
+      content: data.task,
+      timestamp: new Date().toISOString(),
+    }]);
+
+    // Clear the input
+    setUserInput("");
+    
     // Start pre-meeting conversation
     initPreMeetingMutation.mutate({
       question: data.task,
@@ -72,46 +154,34 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
     });
   };
 
-  const handlePreMeetingComplete = (runId: string, recommendations: any) => {
-    console.log("🟢 Pre-meeting completed, meeting started");
-    // Trigger the parent's onSubmit with the recommendations
-    // This will update the UI to show the results
-    onSubmit({
-      task: form.getValues("task"),
-      meetingType: form.getValues("meetingType"),
-      selectedAgents,
-      turns: 1,
-    });
+  const handleSendMessage = () => {
+    if (!userInput.trim() || iterateMutation.isPending || !preMeetingSession) return;
+
+    const userMessage: Message = {
+      role: "user",
+      content: userInput,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    iterateMutation.mutate(userInput);
+    setUserInput("");
   };
 
-  const handleCancelPreMeeting = () => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey && preMeetingSession) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const handleCancelConversation = () => {
     setPreMeetingSession(null);
+    setMessages([]);
+    setUserInput("");
+    setInitialQuestion("");
+    form.reset();
   };
-
-  // If in pre-meeting mode, show the conversation component
-  if (preMeetingSession) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Pre-Meeting Conversation
-          </CardTitle>
-          <CardDescription>
-            Let me ask a few questions to better understand your needs and provide more accurate recommendations.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PreMeetingConversation
-            sessionId={preMeetingSession.sessionId}
-            initialCounterQuestion={preMeetingSession.counterQuestion}
-            isReady={preMeetingSession.isReady}
-            onComplete={handlePreMeetingComplete}
-            onCancel={handleCancelPreMeeting}
-          />
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>
@@ -148,101 +218,191 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
       </AnimatePresence>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* Meeting Type */}
-            <FormField
-              control={form.control}
-              name="meetingType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Context Type</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="flex gap-4"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="board" id="board" data-testid="radio-board" />
-                        <Label htmlFor="board" className="cursor-pointer">Board Meeting</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="email" id="email" data-testid="radio-email" />
-                        <Label htmlFor="email" className="cursor-pointer">Email / Chat</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="chat" id="chat" data-testid="radio-chat" />
-                        <Label htmlFor="chat" className="cursor-pointer">General Strategy</Label>
-                      </div>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit(handleInitialSubmit)} className="space-y-6">
+            {/* Meeting Type - only show when not in conversation */}
+            {!preMeetingSession && (
+              <FormField
+                control={form.control}
+                name="meetingType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Context Type</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        className="flex gap-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="board" id="board" data-testid="radio-board" />
+                          <Label htmlFor="board" className="cursor-pointer">Board Meeting</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="email" id="email" data-testid="radio-email" />
+                          <Label htmlFor="email" className="cursor-pointer">Email / Chat</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="chat" id="chat" data-testid="radio-chat" />
+                          <Label htmlFor="chat" className="cursor-pointer">General Strategy</Label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-            {/* Task Input */}
+            {/* Chat Messages - shown when conversation is active */}
+            {preMeetingSession && messages.length > 0 && (
+              <div className="space-y-4">
+                <div className="max-h-96 overflow-y-auto space-y-3 p-4 bg-muted/30 rounded-lg border">
+                  {messages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      {msg.role === "assistant" && (
+                        <Avatar className="w-8 h-8 shrink-0">
+                          <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
+                        </Avatar>
+                      )}
+
+                      <div className={`flex flex-col gap-1 max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                        <div
+                          className={`rounded-lg px-4 py-2 ${
+                            msg.role === "user"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-card border"
+                          }`}
+                        >
+                          <p className="text-sm leading-relaxed">{msg.content}</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+
+                      {msg.role === "user" && (
+                        <Avatar className="w-8 h-8 shrink-0">
+                          <AvatarFallback>U</AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                  ))}
+
+                  {iterateMutation.isPending && (
+                    <div className="flex gap-3 justify-start">
+                      <Avatar className="w-8 h-8">
+                        <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
+                      </Avatar>
+                      <div className="bg-card border rounded-lg px-4 py-2">
+                        <div className="flex gap-1">
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+            )}
+
+            {/* Input Area - changes based on conversation state */}
             <FormField
               control={form.control}
               name="task"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base font-semibold">Your Question or Challenge</FormLabel>
-
-                  {/* Chat messages area - shown during pre-meeting */}
+                  {!preMeetingSession && (
+                    <>
+                      <FormLabel className="text-base font-semibold">Your Strategic Challenge or Question</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="e.g., What steps should a company take today to prepare for the emergence of AGI within the next decade?"
+                          className="min-h-32 resize-none text-base"
+                          {...field}
+                          data-testid="textarea-task"
+                        />
+                      </FormControl>
+                    </>
+                  )}
                   {preMeetingSession && (
-                    <div className="mb-4 max-h-96 overflow-y-auto space-y-3 p-4 bg-muted/30 rounded-lg border">
-                      <PreMeetingConversation
-                        sessionId={preMeetingSession.sessionId}
-                        initialCounterQuestion={preMeetingSession.counterQuestion}
-                        isReady={preMeetingSession.isReady}
-                        onComplete={handlePreMeetingComplete}
-                        onCancel={handleCancelPreMeeting}
+                    <div className="flex gap-2 items-end">
+                      <Textarea
+                        value={userInput}
+                        onChange={(e) => setUserInput(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        placeholder="Type your response..."
+                        className="resize-none min-h-16"
+                        rows={2}
+                        disabled={iterateMutation.isPending || completeMutation.isPending}
+                        data-testid="textarea-response"
                       />
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          onClick={handleSendMessage}
+                          disabled={!userInput.trim() || iterateMutation.isPending || completeMutation.isPending}
+                          size="icon"
+                          className="shrink-0"
+                          data-testid="button-send"
+                        >
+                          {iterateMutation.isPending || completeMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleCancelConversation}
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0"
+                          disabled={iterateMutation.isPending || completeMutation.isPending}
+                          data-testid="button-cancel"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   )}
-
-                  <FormControl>
-                    <Textarea
-                      placeholder="e.g., What steps should a company take today to prepare for the emergence of AGI within the next decade?"
-                      className="min-h-32 resize-none text-base"
-                      {...field}
-                      disabled={preMeetingSession !== null}
-                      data-testid="textarea-task"
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Describe the strategic question or business challenge you need expert advice on
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={initPreMeetingMutation.isPending || isLoading || selectedAgents.length === 0}
-                data-testid="button-run-meeting"
+            {/* Submit Button - only show for initial question */}
+            {!preMeetingSession && (
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
-                {initPreMeetingMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Starting Conversation...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Submit
-                  </>
-                )}
-              </Button>
-            </motion.div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={initPreMeetingMutation.isPending || isLoading || selectedAgents.length === 0}
+                  data-testid="button-run-meeting"
+                >
+                  {initPreMeetingMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Starting Conversation...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Submit
+                    </>
+                  )}
+                </Button>
+              </motion.div>
+            )}
           </form>
         </Form>
       </CardContent>
