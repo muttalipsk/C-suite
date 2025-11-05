@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -63,7 +63,7 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
     console.log("  - meetingType:", data.meetingType);
     console.log("  - selectedAgents:", selectedAgents);
     console.log("  - task:", data.task?.substring(0, 50) + "...");
-    
+
     // Start pre-meeting conversation
     initPreMeetingMutation.mutate({
       question: data.task,
@@ -117,7 +117,7 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
     <Card>
       <AnimatePresence>
         {selectedAgents.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
@@ -134,8 +134,8 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
                   exit={{ opacity: 0, scale: 0.8, y: -10 }}
                   transition={{ delay: idx * 0.05, duration: 0.2 }}
                 >
-                  <Badge 
-                    variant="secondary" 
+                  <Badge
+                    variant="secondary"
                     className="text-xs bg-gradient-to-r from-primary/90 to-accent-foreground/90 text-white border-0 shadow-sm"
                   >
                     {agent.name}
@@ -187,15 +187,33 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
               name="task"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Your Strategic Challenge or Question</FormLabel>
+                  <FormLabel className="text-base font-semibold">Your Question or Challenge</FormLabel>
+
+                  {/* Chat messages area - shown during pre-meeting */}
+                  {preMeetingSession && (
+                    <div className="mb-4 max-h-96 overflow-y-auto space-y-3 p-4 bg-muted/30 rounded-lg border">
+                      <PreMeetingConversation
+                        sessionId={preMeetingSession.sessionId}
+                        initialCounterQuestion={preMeetingSession.counterQuestion}
+                        isReady={preMeetingSession.isReady}
+                        onComplete={handlePreMeetingComplete}
+                        onCancel={handleCancelPreMeeting}
+                      />
+                    </div>
+                  )}
+
                   <FormControl>
                     <Textarea
-                      placeholder="Example: We're considering implementing AI across our operations. What strategy should we adopt for the next quarter considering our limited AI expertise?"
-                      className="min-h-48 resize-none"
+                      placeholder="e.g., What steps should a company take today to prepare for the emergence of AGI within the next decade?"
+                      className="min-h-32 resize-none text-base"
                       {...field}
-                      data-testid="input-task"
+                      disabled={preMeetingSession !== null}
+                      data-testid="textarea-task"
                     />
                   </FormControl>
+                  <FormDescription>
+                    Describe the strategic question or business challenge you need expert advice on
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

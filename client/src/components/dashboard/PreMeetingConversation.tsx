@@ -1,10 +1,9 @@
-
 import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Message {
@@ -64,15 +63,16 @@ export function PreMeetingConversation({
     onSuccess: (data) => {
       setIsReady(data.isReady);
 
-      if (data.counterQuestion && data.counterQuestion.length > 0) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: data.counterQuestion,
-            timestamp: new Date().toISOString(),
-          },
-        ]);
+      if (data.counterQuestion) {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: data.counterQuestion,
+          timestamp: new Date().toISOString(),
+        }]);
+      }
+
+      if (data.isReady) {
+        completeMutation.mutate();
       }
     },
   });
@@ -90,88 +90,69 @@ export function PreMeetingConversation({
     },
   });
 
-  const handleSendResponse = async () => {
+  const handleSendMessage = () => {
     if (!userInput.trim() || iterateMutation.isPending) return;
 
-    const currentInput = userInput;
+    const userMessage: Message = {
+      role: "user",
+      content: userInput,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    iterateMutation.mutate(userInput);
     setUserInput("");
-
-    // Add user message to chat
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "user",
-        content: currentInput,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-
-    // Send to backend
-    await iterateMutation.mutateAsync(currentInput);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSendResponse();
+      handleSendMessage();
     }
   };
 
-  // Auto-complete when ready
-  useEffect(() => {
-    if (isReady && !completeMutation.isPending) {
-      completeMutation.mutate();
-    }
-  }, [isReady]);
-
   return (
     <div className="space-y-4">
-      {/* Messages Area */}
-      <div className="max-h-96 overflow-y-auto space-y-4 pr-2 border rounded-lg p-4 bg-muted/20">
-        {messages.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            Starting conversation...
-          </p>
-        ) : (
-          messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              data-testid={`message-${msg.role}-${idx}`}
-            >
-              {msg.role === "assistant" && (
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback>AI</AvatarFallback>
-                </Avatar>
-              )}
+      {/* Messages */}
+      <div className="space-y-3">
+        {messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+          >
+            {msg.role === "assistant" && (
+              <Avatar className="w-8 h-8 shrink-0">
+                <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
+              </Avatar>
+            )}
 
-              <div className={`flex flex-col gap-1 max-w-[80%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
-                <div
-                  className={`rounded-lg px-4 py-2 ${
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border"
-                  }`}
-                >
-                  <p className="text-sm leading-relaxed">{msg.content}</p>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+            <div className={`flex flex-col gap-1 max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+              <div
+                className={`rounded-lg px-4 py-2 ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card border"
+                }`}
+              >
+                <p className="text-sm leading-relaxed">{msg.content}</p>
               </div>
-
-              {msg.role === "user" && (
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback>U</AvatarFallback>
-                </Avatar>
-              )}
+              <span className="text-xs text-muted-foreground">
+                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
-          ))
-        )}
+
+            {msg.role === "user" && (
+              <Avatar className="w-8 h-8 shrink-0">
+                <AvatarFallback>U</AvatarFallback>
+              </Avatar>
+            )}
+          </div>
+        ))}
+
         {iterateMutation.isPending && (
           <div className="flex gap-3 justify-start">
             <Avatar className="w-8 h-8">
-              <AvatarFallback>AI</AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
             </Avatar>
             <div className="bg-card border rounded-lg px-4 py-2">
               <div className="flex gap-1">
@@ -182,52 +163,44 @@ export function PreMeetingConversation({
             </div>
           </div>
         )}
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      {!isReady && (
-        <div className="flex gap-2">
-          <Textarea
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your response..."
-            className="resize-none min-h-10"
-            rows={2}
-            disabled={iterateMutation.isPending || completeMutation.isPending}
-            data-testid="input-pre-meeting-response"
-          />
+      {/* Input area */}
+      <div className="flex gap-2 items-end">
+        <Textarea
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="Type your response..."
+          className="resize-none min-h-16"
+          rows={2}
+          disabled={iterateMutation.isPending || completeMutation.isPending}
+        />
+        <div className="flex flex-col gap-2">
           <Button
-            onClick={handleSendResponse}
+            onClick={handleSendMessage}
             disabled={!userInput.trim() || iterateMutation.isPending || completeMutation.isPending}
             size="icon"
             className="shrink-0"
-            data-testid="button-send-response"
           >
-            <Send className="w-4 h-4" />
+            {iterateMutation.isPending || completeMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </Button>
+          <Button
+            onClick={onCancel}
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            disabled={iterateMutation.isPending || completeMutation.isPending}
+          >
+            <X className="w-4 h-4" />
           </Button>
         </div>
-      )}
-
-      {/* Status Message */}
-      {completeMutation.isPending && (
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Starting your meeting...</span>
-        </div>
-      )}
-
-      {/* Cancel Button */}
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          disabled={completeMutation.isPending}
-          data-testid="button-cancel-pre-meeting"
-        >
-          Cancel
-        </Button>
       </div>
     </div>
   );
