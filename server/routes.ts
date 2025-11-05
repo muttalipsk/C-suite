@@ -271,7 +271,16 @@ Role Details: ${user.roleDetails}
         conversation_history: conversationForPython,
       });
 
-      const { counter_question, is_ready } = pythonResponse.data;
+      let { counter_question, is_ready } = pythonResponse.data;
+
+      // SAFETY: Force readiness after 2 conversation turns (4 messages total) to prevent endless questioning
+      // Count only complete turns (user + assistant pairs)
+      const userMessageCount = updatedHistory.filter(turn => turn.role === "user").length;
+      if (userMessageCount >= 2) {
+        console.log(`Forcing readiness after ${userMessageCount} user messages`);
+        is_ready = true;
+        counter_question = null;
+      }
 
       // Add AI response to conversation history
       const finalHistory = counter_question ? [

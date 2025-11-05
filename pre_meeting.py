@@ -30,7 +30,7 @@ def evaluate_readiness_with_ai(
         for turn in conversation_history
     ])
     
-    # Create evaluation prompt
+    # Create evaluation prompt - BE DECISIVE, don't over-gather information
     evaluation_prompt = f"""You are evaluating whether enough information has been gathered for a strategic advisory meeting.
 
 Initial Question: {question}
@@ -43,13 +43,21 @@ User Profile:
 Conversation History:
 {conversation_context}
 
+IMPORTANT INSTRUCTIONS:
+- Strategic advisors can work with MINIMAL information and still provide valuable insights
+- If you have BASIC context about what the user wants, respond with "READY"
+- Only respond with "CONTINUE" if the question is completely unclear or missing critical details
+- After 1-2 conversation turns, you should almost ALWAYS be ready
+- Don't require perfect information - basic understanding is enough
+
 Your task: Determine if we have enough context to run a productive strategic advisory meeting.
 
-Consider:
-1. Do we understand the user's current situation/context?
-2. Are their goals and desired outcomes clear?
-3. Have any key constraints or limitations been mentioned?
-4. Is there enough detail for advisors to provide specific, actionable recommendations?
+Quick checklist:
+1. Do we understand what the user is asking about? (Yes/No)
+2. Is there ANY context about their situation? (Yes/No)
+
+If BOTH are "Yes" → Respond "READY"
+If either is "No" → Respond "CONTINUE"
 
 Respond with ONLY ONE WORD:
 - "READY" if enough information has been gathered
@@ -78,8 +86,8 @@ Decision:"""
         
     except Exception as e:
         print(f"Error evaluating readiness: {e}")
-        # Fallback: require at least 2 conversation turns
-        return len(conversation_history) >= 4  # 2 user + 2 assistant messages
+        # Fallback: After 2 conversation turns (1 question + 1 answer), proceed
+        return len(conversation_history) >= 2  # 1 user + 1 assistant message is enough
 
 
 
@@ -122,7 +130,7 @@ def generate_counter_question(
     # Create system prompt for natural counter-question generation
     system_prompt = f"""You are a helpful assistant preparing for a strategic advisory meeting with {', '.join(agents)}.
 
-Your goal is to ask ONE natural, conversational follow-up question to better understand the user's needs.
+Your goal is to ask ONE brief, natural follow-up question ONLY if something CRITICAL is missing.
 
 Initial Question: {question}
 
@@ -135,15 +143,15 @@ Conversation History:
 Information Coverage:
 {chr(10).join(f'- {area.title()}: {"✓ Mentioned" if covered else "✗ Not discussed"}' for area, covered in information_coverage.items())}
 
-Guidelines:
-- Ask like ChatGPT would - natural and conversational
-- Focus on ONE specific aspect that needs clarification
-- Make it relevant to getting better recommendations from {', '.join(agents)}
-- Keep it concise (1-2 sentences)
+CRITICAL INSTRUCTIONS:
+- Only ask about the MOST IMPORTANT missing piece of information
+- Don't try to gather every detail - advisors can work with minimal context
+- Ask like ChatGPT would - brief, natural, conversational
+- Keep it to ONE short question (1 sentence max)
 - Don't mention "accuracy" or percentages
-- Be empathetic and professional
+- Focus on what's absolutely essential to understand the user's need
 
-Generate a natural follow-up question:"""
+Generate ONE brief follow-up question:"""
     
     try:
         model = genai.GenerativeModel("gemini-2.0-flash-exp")
