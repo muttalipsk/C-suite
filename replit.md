@@ -78,16 +78,20 @@ Preferred communication style: Simple, everyday language.
 **Recent Changes (November 5, 2025):**
 - **Counter-Questioning System** (COMPLETED): ChatGPT-style pre-meeting conversation system
   - Replaces inline question refinement with conversational information gathering
-  - **Accuracy Evaluation**: 80% threshold using vector DB semantic search + slot coverage
-    - Semantic component (60%): Queries agent knowledge bases to assess contextual relevance
-    - Slot coverage (40%): Checks for key information (context, goals, constraints, timeline, stakeholders)
-  - **Counter-Question Generation**: Uses Gemini to ask contextual follow-up questions based on missing information
+  - **AI-Driven Readiness**: Gemini AI decides when enough information is gathered (no percentage thresholds)
+    - Uses evaluate_readiness_with_ai function with READY/CONTINUE decision logic
+    - Considers context, goals, constraints, timeline, stakeholders comprehensively
+    - Natural conversation flow without visible accuracy metrics
+  - **Counter-Question Generation**: Uses Gemini to ask natural, conversational follow-up questions
+    - Temperature 0.8 for varied, ChatGPT-like responses
+    - No mention of "accuracy" or percentages in user-facing messages
+    - Tracks information coverage internally (context, goals, constraints, timeline, stakeholders)
   - **Architecture**:
-    - PostgreSQL: PreMeetingSession table tracks conversation state
-    - Node.js: /api/pre-meeting/init, /iterate, /complete endpoints
-    - Python: /pre-meeting/evaluate endpoint with accuracy calculation
-    - Frontend: PreMeetingConversation component with chat UI, progress indicator
-  - **User Flow**: Submit question → Pre-meeting conversation → Accuracy reaches 80% → Proceed to meeting
+    - PostgreSQL: PreMeetingSession table tracks conversation state (status: active/completed/cancelled)
+    - Node.js: /api/pre-meeting/init, /iterate, /complete endpoints (no accuracy in responses)
+    - Python: /pre-meeting/evaluate endpoint with AI readiness evaluation
+    - Frontend: PreMeetingConversation component with pure chat UI (no progress bar)
+  - **User Flow**: Submit question → Natural conversation → AI decides readiness → Auto-proceed to meeting
   - **Enriched Context**: Complete conversation history sent to meeting endpoint for better recommendations
 
 - **Vibrant Attractive Design**: Modern light theme with gradients and visual depth

@@ -9,94 +9,7 @@ from utils import retrieve_relevant_chunks
 from constants import TEMP, INDEX_DIR, CORPUS_DIR, PERSONAS
 from chat_vectordb import ensure_genai_configured
 
-# Accuracy threshold to consider question ready for meeting
-ACCURACY_THRESHOLD = 0.80
-
-# Weights for accuracy calculation
-SEMANTIC_WEIGHT = 0.6  # Weight for semantic similarity to knowledge base
-SLOT_COVERAGE_WEIGHT = 0.4  # Weight for key information slots filled
-
-def calculate_semantic_accuracy(question: str, agents: List[str], conversation_history: List[Dict[str, str]]) -> float:
-    """
-    Calculate semantic accuracy by checking if the question has relevant context
-    in the agents' knowledge bases using vector DB retrieval.
-    
-    Returns: float between 0 and 1
-    """
-    # Combine initial question with conversation context
-    full_context = question
-    for turn in conversation_history:
-        if turn.get("role") == "user":
-            full_context += " " + turn.get("content", "")
-    
-    total_relevance = 0.0
-    agent_count = len(agents)
-    
-    if agent_count == 0:
-        return 0.0
-    
-    for agent in agents:
-        if agent not in PERSONAS:
-            continue
-            
-        try:
-            # Retrieve relevant chunks from agent's knowledge base
-            # Using top 3 chunks to evaluate relevance
-            relevant_chunks = retrieve_relevant_chunks(
-                agent, 
-                full_context, 
-                CORPUS_DIR,
-                INDEX_DIR, 
-                top_k=3
-            )
-            
-            # If we found relevant chunks, this agent has context
-            if relevant_chunks and len(relevant_chunks) > 0:
-                # Simple relevance score: 1.0 if we found chunks, scaled by number found
-                chunk_score = min(len(relevant_chunks) / 3.0, 1.0)
-                total_relevance += chunk_score
-            
-        except Exception as e:
-            print(f"Error retrieving chunks for {agent}: {e}")
-            continue
-    
-    # Average relevance across all agents
-    semantic_score = total_relevance / agent_count
-    return min(semantic_score, 1.0)
-
-
-def calculate_slot_coverage(conversation_history: List[Dict[str, str]]) -> float:
-    """
-    Calculate how many key information slots have been filled through conversation.
-    Key slots: context, goals, constraints, timeline, stakeholders
-    
-    Returns: float between 0 and 1
-    """
-    # Extract all user messages from conversation
-    user_messages = " ".join([
-        turn.get("content", "") 
-        for turn in conversation_history 
-        if turn.get("role") == "user"
-    ]).lower()
-    
-    # Define key information slots to check
-    slot_keywords = {
-        "context": ["background", "context", "currently", "situation", "working on"],
-        "goals": ["goal", "objective", "want to", "trying to", "aim to", "achieve"],
-        "constraints": ["constraint", "limitation", "cannot", "must not", "restricted"],
-        "timeline": ["timeline", "deadline", "by when", "timeframe", "schedule"],
-        "stakeholders": ["team", "stakeholder", "customer", "user", "client"],
-    }
-    
-    filled_slots = 0
-    total_slots = len(slot_keywords)
-    
-    for slot, keywords in slot_keywords.items():
-        # Check if any keyword for this slot appears in user messages
-        if any(keyword in user_messages for keyword in keywords):
-            filled_slots += 1
-    
-    return filled_slots / total_slots
+# Note: Accuracy-based evaluation removed. Now using AI decision-making via evaluate_readiness_with_ai
 
 
 def evaluate_readiness_with_ai(
@@ -169,19 +82,6 @@ Decision:"""
         return len(conversation_history) >= 4  # 2 user + 2 assistant messages
 
 
-def evaluate_accuracy(
-    question: str, 
-    agents: List[str], 
-    conversation_history: List[Dict[str, str]]
-) -> Tuple[float, bool]:
-    """
-    DEPRECATED: Legacy function for backward compatibility.
-    Now returns dummy accuracy score since we use AI decision-making.
-    
-    Returns: (dummy_accuracy, is_ready_for_meeting)
-    """
-    # Return a dummy accuracy value since we don't use it anymore
-    return 0.5, False
 
 
 def generate_counter_question(
