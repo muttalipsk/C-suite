@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AI_AGENTS } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Users, Lightbulb, ArrowRight, Loader2 } from "lucide-react";
+import { Sparkles, Users, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,9 +27,6 @@ interface MeetingFormProps {
 }
 
 export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: MeetingFormProps) {
-  const [refinementSuggestions, setRefinementSuggestions] = useState<string[]>([]);
-  const [isRefining, setIsRefining] = useState(false);
-
   const form = useForm<MeetingFormData>({
     defaultValues: {
       task: "",
@@ -38,52 +35,6 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
       selectedAgents: [],
     },
   });
-
-  // Watch task field for refinement
-  const taskValue = form.watch("task");
-
-  useEffect(() => {
-    if (!taskValue || taskValue.length < 5 || selectedAgents.length === 0) {
-      setRefinementSuggestions([]);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsRefining(true);
-      try {
-        // Send ALL selected agents for collective analysis
-        const response = await fetch("/api/refine-question", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: taskValue,
-            agents: selectedAgents, // ALL selected agents
-            runId: "meeting-form",
-          }),
-        });
-
-        const result = await response.json();
-
-        if (result.needs_refinement && result.suggestions?.length > 0) {
-          setRefinementSuggestions(result.suggestions);
-        } else {
-          setRefinementSuggestions([]);
-        }
-      } catch (error) {
-        console.error("Refinement error:", error);
-        setRefinementSuggestions([]);
-      } finally {
-        setIsRefining(false);
-      }
-    }, 1500); // Wait 1.5 seconds after user stops typing
-
-    return () => clearTimeout(timer);
-  }, [taskValue, selectedAgents]);
-
-  const handleUseSuggestion = (suggestion: string) => {
-    form.setValue("task", suggestion);
-    setRefinementSuggestions([]);
-  };
 
   const handleSubmit = (data: MeetingFormData) => {
     console.log("🟢 MeetingForm.handleSubmit called");
@@ -183,75 +134,6 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
                       data-testid="input-task"
                     />
                   </FormControl>
-                  
-                  {/* Refinement Suggestions with Animations */}
-                  <AnimatePresence mode="wait">
-                    {isRefining && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex items-center gap-2 text-sm text-muted-foreground mt-2"
-                      >
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="animate-pulse">Analyzing your question...</span>
-                      </motion.div>
-                    )}
-                    
-                    {refinementSuggestions.length > 0 && !isRefining && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="mt-3 p-5 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent border-2 border-primary/20 rounded-xl space-y-3 shadow-md backdrop-blur-sm" 
-                        data-testid="refinement-suggestions"
-                      >
-                        <motion.div 
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.1, duration: 0.2 }}
-                          className="flex items-center gap-2 text-sm font-semibold bg-gradient-to-r from-primary to-accent-foreground bg-clip-text text-transparent"
-                        >
-                          <Lightbulb className="w-5 h-5 animate-pulse text-primary" />
-                          <span>AI-Suggested Improvements</span>
-                        </motion.div>
-                        
-                        <div className="space-y-2.5">
-                          {refinementSuggestions.map((suggestion, idx) => (
-                            <motion.button
-                              key={idx}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.15 + idx * 0.1, duration: 0.3, ease: "easeOut" }}
-                              whileHover={{ scale: 1.01, x: 4, transition: { duration: 0.2 } }}
-                              whileTap={{ scale: 0.98 }}
-                              type="button"
-                              onClick={() => handleUseSuggestion(suggestion)}
-                              className="w-full text-left p-4 bg-gradient-to-r from-background to-primary/5 border-2 border-primary/30 rounded-lg hover:border-primary/50 hover:shadow-md transition-all group"
-                              data-testid={`button-suggestion-${idx}`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <ArrowRight className="w-5 h-5 mt-0.5 text-primary shrink-0 group-hover:translate-x-1 transition-transform" />
-                                <span className="text-sm text-foreground font-medium leading-relaxed">{suggestion}</span>
-                              </div>
-                            </motion.button>
-                          ))}
-                        </div>
-                        
-                        <motion.p 
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.4, duration: 0.2 }}
-                          className="text-xs text-muted-foreground"
-                        >
-                          Click a suggestion to use it, or continue with your original question
-                        </motion.p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  
                   <FormMessage />
                 </FormItem>
               )}
