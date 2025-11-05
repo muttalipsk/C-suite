@@ -51,6 +51,7 @@ def is_question_redundant(question: str, profile_keywords: set) -> bool:
     question_lower = question.lower()
     
     # Check for basic identity questions with specific patterns
+    # Only include phrases that clearly ask to state/confirm known info
     redundant_phrases = [
         "what is your name",
         "your full name",
@@ -58,11 +59,10 @@ def is_question_redundant(question: str, profile_keywords: set) -> bool:
         "your current title",
         "your professional title",
         "what is your title",
-        "what industry",
-        "which company",
+        "what is your industry",
         "please state your",
         "tell me your name",
-        "your company name"
+        "your company name is"
     ]
     
     for phrase in redundant_phrases:
@@ -70,7 +70,7 @@ def is_question_redundant(question: str, profile_keywords: set) -> bool:
             return True
     
     # Check for specific confirmation patterns with profile keywords
-    # Only match true restatement requests, not contextual mentions
+    # Only match when asking what/who the keyword IS, not contextual usage
     for keyword in profile_keywords:
         # Skip very short keywords that might be common words
         if len(keyword) <= 2:
@@ -79,14 +79,13 @@ def is_question_redundant(question: str, profile_keywords: set) -> bool:
         # Escape keyword for regex
         keyword_escaped = re.escape(keyword)
         
-        # Tightened redundant patterns - only match when asking to state/confirm known info
-        # DO NOT match contextual usage like "What strategies at [company]" or "Which [company] initiatives"
+        # VERY tightened patterns - only match direct identity questions
+        # Must be asking what/who the keyword IS, ending with punctuation or keyword at end
+        # DO NOT match: "tell me your OpenAI strategy" or "state your CEO priorities"
         redundant_patterns = [
-            rf"what is your {keyword_escaped}",
-            rf"what's your {keyword_escaped}",
-            rf"confirm your {keyword_escaped}",
-            rf"state your {keyword_escaped}",
-            rf"tell me your {keyword_escaped}"
+            rf"what is your {keyword_escaped}\??$",  # "what is your OpenAI?" at end
+            rf"what's your {keyword_escaped}\??$",   # "what's your CEO?" at end  
+            rf"confirm your {keyword_escaped}\??$",  # "confirm your OpenAI?" at end
         ]
         
         for pattern in redundant_patterns:
@@ -129,16 +128,17 @@ def validate_and_fix_questions(questions: List[Dict], user_profile: Dict) -> Lis
         category_normalized = re.sub(r'[^a-z_]', '', category.replace('&', '').replace(' ', '_').replace('-', '_'))
         
         # Map variations to standard category names
-        if any(word in category_normalized for word in ["identity", "role", "expertise"]):
-            category = "identity"
+        # IMPORTANT: Check more specific categories first to avoid precedence issues
+        if any(word in category_normalized for word in ["expertise", "challenge", "specialist"]):
+            category = "expertise"
         elif any(word in category_normalized for word in ["decision", "making", "strategy"]):
             category = "decision_making"
         elif any(word in category_normalized for word in ["goal", "vision"]):
             category = "goals"
         elif any(word in category_normalized for word in ["communication", "style"]):
             category = "communication"
-        elif any(word in category_normalized for word in ["expertise", "challenge", "specialist"]):
-            category = "expertise"
+        elif any(word in category_normalized for word in ["identity", "role"]):
+            category = "identity"
         else:
             # Safety fallback: log unrecognized category but try to guess from question content
             print(f"⚠ Unrecognized category '{q.get('category', '')}', defaulting to 'identity'")
