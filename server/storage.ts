@@ -1,11 +1,12 @@
 // Reference: javascript_database blueprint
 import { 
-  users, runs, chats, agentMemory, corpus, twins,
+  users, runs, chats, agentMemory, corpus, twins, preMeetingSessions,
   type User, type InsertUser,
   type Run, type InsertRun,
   type Chat, type InsertChat,
   type AgentMemory, type Corpus,
-  type Twin, type InsertTwin
+  type Twin, type InsertTwin,
+  type PreMeetingSession, type InsertPreMeetingSession
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -41,6 +42,12 @@ export interface IStorage {
   getUserTwins(userId: string): Promise<Twin[]>;
   getTwinsByDomain(companyDomain: string): Promise<Twin[]>;
   deleteTwin(id: string): Promise<void>;
+
+  // Pre-meeting session operations
+  createPreMeetingSession(session: InsertPreMeetingSession & { userId: string }): Promise<PreMeetingSession>;
+  getPreMeetingSession(id: string): Promise<PreMeetingSession | undefined>;
+  updatePreMeetingSession(id: string, updates: Partial<PreMeetingSession>): Promise<PreMeetingSession | undefined>;
+  deletePreMeetingSession(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -181,6 +188,32 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTwin(id: string): Promise<void> {
     await db.delete(twins).where(eq(twins.id, id));
+  }
+
+  async createPreMeetingSession(session: InsertPreMeetingSession & { userId: string }): Promise<PreMeetingSession> {
+    const [newSession] = await db
+      .insert(preMeetingSessions)
+      .values(session)
+      .returning();
+    return newSession;
+  }
+
+  async getPreMeetingSession(id: string): Promise<PreMeetingSession | undefined> {
+    const [session] = await db.select().from(preMeetingSessions).where(eq(preMeetingSessions.id, id));
+    return session || undefined;
+  }
+
+  async updatePreMeetingSession(id: string, updates: Partial<PreMeetingSession>): Promise<PreMeetingSession | undefined> {
+    const [session] = await db
+      .update(preMeetingSessions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(preMeetingSessions.id, id))
+      .returning();
+    return session || undefined;
+  }
+
+  async deletePreMeetingSession(id: string): Promise<void> {
+    await db.delete(preMeetingSessions).where(eq(preMeetingSessions.id, id));
   }
 }
 

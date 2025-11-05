@@ -143,6 +143,20 @@ export const twins = pgTable("twins", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Pre-Meeting Sessions - Counter-questioning before meeting
+export const preMeetingSessions = pgTable("pre_meeting_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  selectedAgents: text("selected_agents").array().notNull(), // Array of agent keys
+  initialQuestion: text("initial_question").notNull(), // User's original question
+  meetingType: text("meeting_type").notNull(), // "board", "email", or "chat"
+  conversation: jsonb("conversation").notNull().default('[]'), // Array of {role: "user"|"assistant", content: string}
+  accuracyScore: integer("accuracy_score").default(0), // 0-100 score
+  status: text("status").notNull().default("active"), // "active", "completed", "cancelled"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -215,6 +229,15 @@ export const insertTwinSchema = createInsertSchema(twins).omit({
   sampleMessages: z.array(z.string()).min(3, "At least 3 sample messages required"),
 });
 
+export const insertPreMeetingSessionSchema = createInsertSchema(preMeetingSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  userId: true, // Will be set from session
+  accuracyScore: true, // Calculated by system
+  status: true, // Managed by backend
+});
+
 // TypeScript types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -242,6 +265,9 @@ export type InsertCrmConnection = z.infer<typeof insertCrmConnectionSchema>;
 
 export type DecisionLog = typeof decisionLogs.$inferSelect;
 export type InsertDecisionLog = z.infer<typeof insertDecisionLogSchema>;
+
+export type PreMeetingSession = typeof preMeetingSessions.$inferSelect;
+export type InsertPreMeetingSession = z.infer<typeof insertPreMeetingSessionSchema>;
 
 // AI Agent personas constants
 export const AI_AGENTS = {
