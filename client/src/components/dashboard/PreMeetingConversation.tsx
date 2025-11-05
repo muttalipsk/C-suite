@@ -1,11 +1,11 @@
-import { useState } from "react";
+
+import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { Loader2, Send, Sparkles } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Send, Loader2 } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Message {
   role: "user" | "assistant";
@@ -28,17 +28,26 @@ export function PreMeetingConversation({
   onComplete,
   onCancel,
 }: PreMeetingConversationProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    ...(initialCounterQuestion
+  const [messages, setMessages] = useState<Message[]>(
+    initialCounterQuestion
       ? [{
           role: "assistant" as const,
           content: initialCounterQuestion,
           timestamp: new Date().toISOString(),
         }]
-      : []),
-  ]);
+      : []
+  );
   const [userInput, setUserInput] = useState("");
   const [isReady, setIsReady] = useState(initialIsReady);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const iterateMutation = useMutation({
     mutationFn: async (userResponse: string) => {
@@ -60,7 +69,7 @@ export function PreMeetingConversation({
           ...prev,
           {
             role: "assistant",
-            content: data.counterQuestion as string,
+            content: data.counterQuestion,
             timestamp: new Date().toISOString(),
           },
         ]);
@@ -74,137 +83,151 @@ export function PreMeetingConversation({
         sessionId,
       });
       const data = await response.json();
-      return data as {
-        runId: string;
-        recommendations: any;
-      };
+      return data;
     },
     onSuccess: (data) => {
       onComplete(data.runId, data.recommendations);
     },
   });
 
-  const handleSendMessage = () => {
+  const handleSendResponse = async () => {
     if (!userInput.trim() || iterateMutation.isPending) return;
 
-    const userMessage: Message = {
-      role: "user",
-      content: userInput,
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    iterateMutation.mutate(userInput);
+    const currentInput = userInput;
     setUserInput("");
+
+    // Add user message to chat
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: currentInput,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+
+    // Send to backend
+    await iterateMutation.mutateAsync(currentInput);
   };
 
-  const handleProceedToMeeting = () => {
-    completeMutation.mutate();
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendResponse();
+    }
   };
+
+  // Auto-complete when ready
+  useEffect(() => {
+    if (isReady && !completeMutation.isPending) {
+      completeMutation.mutate();
+    }
+  }, [isReady]);
 
   return (
-    <div className="flex flex-col h-full gap-4">
-      {/* Chat messages */}
-      <Card className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px] max-h-[400px]">
-        <AnimatePresence initial={false}>
-          {messages.map((message, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+    <div className="space-y-4">
+      {/* Messages Area */}
+      <div className="max-h-96 overflow-y-auto space-y-4 pr-2 border rounded-lg p-4 bg-muted/20">
+        {messages.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            Starting conversation...
+          </p>
+        ) : (
+          messages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              data-testid={`message-${msg.role}-${idx}`}
             >
-              <div
-                className={`max-w-[80%] rounded-lg p-3 ${
-                  message.role === "user"
-                    ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white"
-                    : "bg-muted"
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              {msg.role === "assistant" && (
+                <Avatar className="w-8 h-8">
+                  <AvatarFallback>AI</AvatarFallback>
+                </Avatar>
+              )}
+
+              <div className={`flex flex-col gap-1 max-w-[80%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                <div
+                  className={`rounded-lg px-4 py-2 ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card border"
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{msg.content}</p>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
               </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
 
-        {iterateMutation.isPending && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex justify-start"
-          >
-            <div className="bg-muted rounded-lg p-3">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              {msg.role === "user" && (
+                <Avatar className="w-8 h-8">
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+              )}
             </div>
-          </motion.div>
+          ))
         )}
-      </Card>
+        {iterateMutation.isPending && (
+          <div className="flex gap-3 justify-start">
+            <Avatar className="w-8 h-8">
+              <AvatarFallback>AI</AvatarFallback>
+            </Avatar>
+            <div className="bg-card border rounded-lg px-4 py-2">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
 
-      {/* Input area */}
+      {/* Input Area */}
       {!isReady && (
         <div className="flex gap-2">
           <Textarea
-            data-testid="input-pre-meeting-response"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
+            onKeyPress={handleKeyPress}
             placeholder="Type your response..."
-            className="resize-none"
+            className="resize-none min-h-10"
             rows={2}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-            disabled={iterateMutation.isPending}
+            disabled={iterateMutation.isPending || completeMutation.isPending}
+            data-testid="input-pre-meeting-response"
           />
           <Button
+            onClick={handleSendResponse}
+            disabled={!userInput.trim() || iterateMutation.isPending || completeMutation.isPending}
+            size="icon"
+            className="shrink-0"
             data-testid="button-send-response"
-            onClick={handleSendMessage}
-            disabled={!userInput.trim() || iterateMutation.isPending}
-            className="self-end"
           >
-            {iterateMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
+            <Send className="w-4 h-4" />
           </Button>
         </div>
       )}
 
-      {/* Action buttons */}
-      <div className="flex gap-2 justify-end">
+      {/* Status Message */}
+      {completeMutation.isPending && (
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Starting your meeting...</span>
+        </div>
+      )}
+
+      {/* Cancel Button */}
+      <div className="flex justify-end">
         <Button
-          data-testid="button-cancel-pre-meeting"
           variant="outline"
           onClick={onCancel}
           disabled={completeMutation.isPending}
+          data-testid="button-cancel-pre-meeting"
         >
           Cancel
         </Button>
-        {isReady && (
-          <Button
-            data-testid="button-proceed-to-meeting"
-            onClick={handleProceedToMeeting}
-            disabled={completeMutation.isPending}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-          >
-            {completeMutation.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Starting Meeting...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Proceed to Meeting
-              </>
-            )}
-          </Button>
-        )}
       </div>
     </div>
   );
