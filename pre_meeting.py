@@ -189,11 +189,11 @@ def generate_counter_question(
     agents: List[str],
     conversation_history: List[Dict[str, str]],
     user_profile: str,
-    current_accuracy: float
+    _dummy_accuracy: float = 0.0  # Kept for backward compatibility but not used
 ) -> str:
     """
-    Generate a counter-question to gather missing information.
-    Uses Gemini to create contextual follow-up questions.
+    Generate a conversational counter-question to gather missing information.
+    Uses Gemini to create natural follow-up questions like ChatGPT.
     """
     ensure_genai_configured()
     
@@ -203,61 +203,55 @@ def generate_counter_question(
         for turn in conversation_history
     ])
     
-    # Identify which slots are missing
+    # Identify which information areas might need more detail
     user_messages = " ".join([
         turn.get("content", "") 
         for turn in conversation_history 
         if turn.get("role") == "user"
     ]).lower()
     
-    missing_slots = []
-    slot_keywords = {
-        "context": ["background", "context", "currently", "situation"],
-        "goals": ["goal", "objective", "want to", "trying to"],
-        "constraints": ["constraint", "limitation", "cannot", "must not"],
-        "timeline": ["timeline", "deadline", "by when", "timeframe"],
-        "stakeholders": ["team", "stakeholder", "customer", "user"],
+    # Check what areas have been covered
+    information_coverage = {
+        "context": any(keyword in user_messages for keyword in ["background", "context", "currently", "situation", "working on"]),
+        "goals": any(keyword in user_messages for keyword in ["goal", "objective", "want to", "trying to", "aim to", "achieve"]),
+        "constraints": any(keyword in user_messages for keyword in ["constraint", "limitation", "cannot", "must not", "restricted", "budget"]),
+        "timeline": any(keyword in user_messages for keyword in ["timeline", "deadline", "by when", "timeframe", "schedule", "month", "year"]),
+        "stakeholders": any(keyword in user_messages for keyword in ["team", "stakeholder", "customer", "user", "client", "officer"]),
     }
     
-    for slot, keywords in slot_keywords.items():
-        if not any(keyword in user_messages for keyword in keywords):
-            missing_slots.append(slot)
-    
-    # Create system prompt for counter-question generation
-    system_prompt = f"""You are an executive assistant helping to gather information before a strategic advisory meeting.
+    # Create system prompt for natural counter-question generation
+    system_prompt = f"""You are a helpful assistant preparing for a strategic advisory meeting with {', '.join(agents)}.
 
-The user wants to consult with: {', '.join(agents)}
+Your goal is to ask ONE natural, conversational follow-up question to better understand the user's needs.
 
-Current question: {question}
+Initial Question: {question}
 
-User profile:
+User Profile:
 {user_profile}
 
-Conversation so far:
+Conversation History:
 {conversation_context}
 
-Current accuracy: {current_accuracy * 100:.0f}%
-Missing information areas: {', '.join(missing_slots) if missing_slots else 'None - focus on depth'}
-
-Your task: Ask ONE focused counter-question to gather the most critical missing information.
+Information Coverage:
+{chr(10).join(f'- {area.title()}: {"✓ Mentioned" if covered else "✗ Not discussed"}' for area, covered in information_coverage.items())}
 
 Guidelines:
-- Be conversational and professional
-- Focus on strategic context, not technical details
-- Ask about the most important missing piece
-- Keep it concise (1-2 sentences max)
-- Make it specific to their situation
-- Don't ask multiple questions at once
+- Ask like ChatGPT would - natural and conversational
+- Focus on ONE specific aspect that needs clarification
+- Make it relevant to getting better recommendations from {', '.join(agents)}
+- Keep it concise (1-2 sentences)
+- Don't mention "accuracy" or percentages
+- Be empathetic and professional
 
-Generate the counter-question:"""
+Generate a natural follow-up question:"""
     
     try:
         model = genai.GenerativeModel("gemini-2.0-flash-exp")
         response = model.generate_content(
             system_prompt,
             generation_config=genai.types.GenerationConfig(
-                temperature=0.7,
-                max_output_tokens=200,
+                temperature=0.8,  # Higher for more natural variation
+                max_output_tokens=150,
             )
         )
         
@@ -270,12 +264,12 @@ Generate the counter-question:"""
         
     except Exception as e:
         print(f"Error generating counter-question: {e}")
-        # Fallback counter-question
-        if "context" in missing_slots:
-            return "Could you provide more background on your current situation?"
-        elif "goals" in missing_slots:
-            return "What specific outcomes are you hoping to achieve?"
-        elif "timeline" in missing_slots:
-            return "What's your timeframe for making progress on this?"
+        # Fallback to natural questions
+        if not information_coverage["context"]:
+            return "Could you tell me a bit more about your current situation and what you're working on?"
+        elif not information_coverage["goals"]:
+            return "What specific outcomes are you hoping to achieve with this?"
+        elif not information_coverage["timeline"]:
+            return "What's your timeframe for making progress on this initiative?"
         else:
-            return "Could you elaborate on any specific challenges you're facing?"
+            return "Is there anything specific you'd like the advisors to focus on?"
