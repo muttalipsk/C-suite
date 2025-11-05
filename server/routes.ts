@@ -180,7 +180,6 @@ Role Details: ${user.roleDetails}
           content: question,
           timestamp: new Date().toISOString(),
         }],
-        currentAccuracy: 0,
         isComplete: false,
       });
 
@@ -199,17 +198,17 @@ Role Details: ${user.roleDetails}
         conversation_history: conversationForPython,
       });
 
-      const { accuracy, counter_question, is_ready } = pythonResponse.data;
+      const { counter_question, is_ready } = pythonResponse.data;
 
-      // Update session with accuracy and counter-question
-      await storage.updatePreMeetingSession(session.id, {
-        currentAccuracy: accuracy,
-        isComplete: is_ready,
-      });
+      // Update session status if ready
+      if (is_ready) {
+        await storage.updatePreMeetingSession(session.id, {
+          status: "completed",
+        });
+      }
 
       res.json({
         sessionId: session.id,
-        accuracy,
         counterQuestion: counter_question,
         isReady: is_ready,
       });
@@ -272,7 +271,7 @@ Role Details: ${user.roleDetails}
         conversation_history: conversationForPython,
       });
 
-      const { accuracy, counter_question, is_ready } = pythonResponse.data;
+      const { counter_question, is_ready } = pythonResponse.data;
 
       // Add AI response to conversation history
       const finalHistory = counter_question ? [
@@ -287,12 +286,10 @@ Role Details: ${user.roleDetails}
       // Update session
       await storage.updatePreMeetingSession(sessionId, {
         conversation: finalHistory,
-        currentAccuracy: accuracy,
-        isComplete: is_ready,
+        ...(is_ready && { status: "completed" }),
       });
 
       res.json({
-        accuracy,
         counterQuestion: counter_question,
         isReady: is_ready,
       });

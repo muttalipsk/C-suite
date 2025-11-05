@@ -99,34 +99,89 @@ def calculate_slot_coverage(conversation_history: List[Dict[str, str]]) -> float
     return filled_slots / total_slots
 
 
+def evaluate_readiness_with_ai(
+    question: str, 
+    agents: List[str], 
+    conversation_history: List[Dict[str, str]],
+    user_profile: str
+) -> bool:
+    """
+    Use AI to decide if enough information has been gathered to proceed with the meeting.
+    Returns: is_ready_for_meeting (boolean)
+    """
+    ensure_genai_configured()
+    
+    # Build conversation context
+    conversation_context = "\n".join([
+        f"{turn.get('role', 'unknown').upper()}: {turn.get('content', '')}"
+        for turn in conversation_history
+    ])
+    
+    # Create evaluation prompt
+    evaluation_prompt = f"""You are evaluating whether enough information has been gathered for a strategic advisory meeting.
+
+Initial Question: {question}
+
+Selected Advisors: {', '.join(agents)}
+
+User Profile:
+{user_profile}
+
+Conversation History:
+{conversation_context}
+
+Your task: Determine if we have enough context to run a productive strategic advisory meeting.
+
+Consider:
+1. Do we understand the user's current situation/context?
+2. Are their goals and desired outcomes clear?
+3. Have any key constraints or limitations been mentioned?
+4. Is there enough detail for advisors to provide specific, actionable recommendations?
+
+Respond with ONLY ONE WORD:
+- "READY" if enough information has been gathered
+- "CONTINUE" if more context is needed
+
+Decision:"""
+    
+    try:
+        model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        response = model.generate_content(
+            evaluation_prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.3,  # Lower temperature for more consistent decisions
+                max_output_tokens=10,
+            )
+        )
+        
+        decision = response.text.strip().upper()
+        is_ready = "READY" in decision
+        
+        print(f"AI Readiness Evaluation:")
+        print(f"  Decision: {decision}")
+        print(f"  Ready for meeting: {is_ready}")
+        
+        return is_ready
+        
+    except Exception as e:
+        print(f"Error evaluating readiness: {e}")
+        # Fallback: require at least 2 conversation turns
+        return len(conversation_history) >= 4  # 2 user + 2 assistant messages
+
+
 def evaluate_accuracy(
     question: str, 
     agents: List[str], 
     conversation_history: List[Dict[str, str]]
 ) -> Tuple[float, bool]:
     """
-    Evaluate overall accuracy of the question based on:
-    1. Semantic similarity to agent knowledge bases (60%)
-    2. Coverage of key information slots (40%)
+    DEPRECATED: Legacy function for backward compatibility.
+    Now returns dummy accuracy score since we use AI decision-making.
     
-    Returns: (accuracy_score, is_ready_for_meeting)
+    Returns: (dummy_accuracy, is_ready_for_meeting)
     """
-    semantic_score = calculate_semantic_accuracy(question, agents, conversation_history)
-    slot_coverage = calculate_slot_coverage(conversation_history)
-    
-    # Weighted combination
-    overall_accuracy = (semantic_score * SEMANTIC_WEIGHT) + (slot_coverage * SLOT_COVERAGE_WEIGHT)
-    
-    # Check if ready for meeting
-    is_ready = overall_accuracy >= ACCURACY_THRESHOLD
-    
-    print(f"Accuracy Evaluation:")
-    print(f"  Semantic Score: {semantic_score:.2f}")
-    print(f"  Slot Coverage: {slot_coverage:.2f}")
-    print(f"  Overall Accuracy: {overall_accuracy:.2f}")
-    print(f"  Ready: {is_ready}")
-    
-    return overall_accuracy, is_ready
+    # Return a dummy accuracy value since we don't use it anymore
+    return 0.5, False
 
 
 def generate_counter_question(

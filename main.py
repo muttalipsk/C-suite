@@ -15,7 +15,7 @@ from agents import run_meeting
 import google.generativeai as genai
 from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats, ensure_genai_configured
 from twin_manager import create_twin_vectors, query_twin_content, query_twin_style, UPLOADS_DIR
-from pre_meeting import evaluate_accuracy, generate_counter_question
+from pre_meeting import evaluate_readiness_with_ai, generate_counter_question
 
 # Create directories
 os.makedirs(CORPUS_DIR, exist_ok=True)
@@ -88,8 +88,8 @@ async def ingest(persona: str = Form(...), file: UploadFile = File(...)):
 @app.post("/pre-meeting/evaluate")
 async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)):
     """
-    Evaluate question accuracy and generate counter-questions for pre-meeting session.
-    Uses vector DB to assess if question has sufficient context (80% threshold).
+    Evaluate readiness using AI decision-making and generate counter-questions.
+    AI decides when enough information is gathered, not based on percentage.
     """
     session_id = input_data.session_id
     question = input_data.question
@@ -103,8 +103,8 @@ async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)
             return JSONResponse(status_code=400, content={"error": f"Invalid agent: {agent}"})
     
     try:
-        # Calculate accuracy using vector DB
-        accuracy, is_ready = evaluate_accuracy(question, agents, conversation_history)
+        # Use AI to decide if ready for meeting
+        is_ready = evaluate_readiness_with_ai(question, agents, conversation_history, user_profile)
         
         # Generate counter-question if not ready
         counter_question = None
@@ -114,11 +114,10 @@ async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)
                 agents,
                 conversation_history,
                 user_profile,
-                accuracy
+                0.0  # Dummy value since we don't use accuracy anymore
             )
         
         return {
-            "accuracy": accuracy,
             "counter_question": counter_question,
             "is_ready": is_ready
         }

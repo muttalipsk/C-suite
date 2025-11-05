@@ -151,7 +151,6 @@ export const preMeetingSessions = pgTable("pre_meeting_sessions", {
   initialQuestion: text("initial_question").notNull(), // User's original question
   meetingType: text("meeting_type").notNull(), // "board", "email", or "chat"
   conversation: jsonb("conversation").notNull().default('[]'), // Array of {role: "user"|"assistant", content: string}
-  accuracyScore: integer("accuracy_score").default(0), // 0-100 score
   status: text("status").notNull().default("active"), // "active", "completed", "cancelled"
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -234,7 +233,6 @@ export const insertPreMeetingSessionSchema = createInsertSchema(preMeetingSessio
   createdAt: true,
   updatedAt: true,
   userId: true, // Will be set from session
-  accuracyScore: true, // Calculated by system
   status: true, // Managed by backend
 });
 
