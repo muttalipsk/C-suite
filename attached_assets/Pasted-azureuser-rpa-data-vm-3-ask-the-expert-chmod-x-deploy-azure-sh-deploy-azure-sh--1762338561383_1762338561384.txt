@@ -1,0 +1,149 @@
+azureuser@rpa-data-vm-3:~/ask-the-expert$ chmod +x deploy-azure.sh
+./deploy-azure.sh
+==================================================
+Ask the Expert - Azure VM Deployment Script
+==================================================
+
+[INFO] Project directory: /home/azureuser/ask-the-expert
+[STEP] Installing Node.js dependencies...
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+
+added 526 packages, and audited 527 packages in 12s
+
+69 packages are looking for funding
+  run `npm fund` for details
+
+8 vulnerabilities (3 low, 5 moderate)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.6.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+npm notice To update run: npm install -g npm@11.6.2
+npm notice
+[STEP] Creating Python virtual environment...
+[STEP] Installing Python dependencies...
+Collecting fastapi==0.115.5 (from -r requirements.txt (line 2))
+  Downloading fastapi-0.115.5-py3-none-any.whl.metadata (27 kB)
+Collecting uvicorn==0.32.1 (from -r requirements.txt (line 3))
+  Downloading uvicorn-0.32.1-py3-none-any.whl.metadata (6.6 kB)
+Collecting langchain==0.3.13 (from -r requirements.txt (line 4))
+  Downloading langchain-0.3.13-py3-none-any.whl.metadata (7.1 kB)
+Collecting langchain-core==0.3.28 (from -r requirements.txt (line 5))
+  Downloading langchain_core-0.3.28-py3-none-any.whl.metadata (6.3 kB)
+Collecting langchain-google-genai==2.0.8 (from -r requirements.txt (line 6))
+  Downloading langchain_google_genai-2.0.8-py3-none-any.whl.metadata (3.6 kB)
+Collecting pypdf==5.1.0 (from -r requirements.txt (line 7))
+  Downloading pypdf-5.1.0-py3-none-any.whl.metadata (7.2 kB)
+Collecting python-multipart==0.0.20 (from -r requirements.txt (line 8))
+  Downloading python_multipart-0.0.20-py3-none-any.whl.metadata (1.8 kB)
+Collecting google-generativeai==0.8.3 (from -r requirements.txt (line 9))
+  Downloading google_generativeai-0.8.3-py3-none-any.whl.metadata (3.9 kB)
+Collecting pydantic==2.10.3 (from -r requirements.txt (line 10))
+  Downloading pydantic-2.10.3-py3-none-any.whl.metadata (172 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 172.0/172.0 kB 1.8 MB/s eta 0:00:00
+Collecting jinja2==3.1.4 (from -r requirements.txt (line 11))
+  Downloading jinja2-3.1.4-py3-none-any.whl.metadata (2.6 kB)
+Collecting pandas==2.2.3 (from -r requirements.txt (line 12))
+  Downloading pandas-2.2.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (89 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 89.9/89.9 kB 4.0 MB/s eta 0:00:00
+Collecting faiss-cpu==1.9.0 (from -r requirements.txt (line 13))
+  Downloading faiss_cpu-1.9.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.4 kB)
+Collecting numpy==2.2.1 (from -r requirements.txt (line 14))
+  Downloading numpy-2.2.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (62 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.0/62.0 kB 2.8 MB/s eta 0:00:00
+Collecting langchain-community==0.3.13 (from -r requirements.txt (line 15))
+  Downloading langchain_community-0.3.13-py3-none-any.whl.metadata (2.9 kB)
+Collecting langchain-chroma==0.1.4 (from -r requirements.txt (line 16))
+  Downloading langchain_chroma-0.1.4-py3-none-any.whl.metadata (1.6 kB)
+Collecting langgraph==0.2.60 (from -r requirements.txt (line 17))
+  Downloading langgraph-0.2.60-py3-none-any.whl.metadata (15 kB)
+Collecting chromadb (from -r requirements.txt (line 18))
+  Downloading chromadb-1.3.3-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.2 kB)
+Collecting sentence-transformers (from -r requirements.txt (line 19))
+  Downloading sentence_transformers-5.1.2-py3-none-any.whl.metadata (16 kB)
+Collecting starlette<0.42.0,>=0.40.0 (from fastapi==0.115.5->-r requirements.txt (line 2))
+  Downloading starlette-0.41.3-py3-none-any.whl.metadata (6.0 kB)
+Collecting typing-extensions>=4.8.0 (from fastapi==0.115.5->-r requirements.txt (line 2))
+  Using cached typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting click>=7.0 (from uvicorn==0.32.1->-r requirements.txt (line 3))
+  Downloading click-8.3.0-py3-none-any.whl.metadata (2.6 kB)
+Collecting h11>=0.8 (from uvicorn==0.32.1->-r requirements.txt (line 3))
+  Using cached h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Collecting PyYAML>=5.3 (from langchain==0.3.13->-r requirements.txt (line 4))
+  Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Collecting SQLAlchemy<3,>=1.4 (from langchain==0.3.13->-r requirements.txt (line 4))
+  Using cached sqlalchemy-2.0.44-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (9.5 kB)
+Collecting aiohttp<4.0.0,>=3.8.3 (from langchain==0.3.13->-r requirements.txt (line 4))
+  Downloading aiohttp-3.13.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.1 kB)
+Collecting langchain-text-splitters<0.4.0,>=0.3.3 (from langchain==0.3.13->-r requirements.txt (line 4))
+  Downloading langchain_text_splitters-0.3.11-py3-none-any.whl.metadata (1.8 kB)
+Collecting langsmith<0.3,>=0.1.17 (from langchain==0.3.13->-r requirements.txt (line 4))
+  Downloading langsmith-0.2.11-py3-none-any.whl.metadata (14 kB)
+Collecting requests<3,>=2 (from langchain==0.3.13->-r requirements.txt (line 4))
+  Using cached requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+Collecting tenacity!=8.4.0,<10,>=8.1.0 (from langchain==0.3.13->-r requirements.txt (line 4))
+  Downloading tenacity-9.1.2-py3-none-any.whl.metadata (1.2 kB)
+Collecting jsonpatch<2.0,>=1.33 (from langchain-core==0.3.28->-r requirements.txt (line 5))
+  Downloading jsonpatch-1.33-py2.py3-none-any.whl.metadata (3.0 kB)
+Collecting packaging<25,>=23.2 (from langchain-core==0.3.28->-r requirements.txt (line 5))
+  Downloading packaging-24.2-py3-none-any.whl.metadata (3.2 kB)
+Collecting filetype<2.0.0,>=1.2.0 (from langchain-google-genai==2.0.8->-r requirements.txt (line 6))
+  Downloading filetype-1.2.0-py2.py3-none-any.whl.metadata (6.5 kB)
+Collecting google-ai-generativelanguage==0.6.10 (from google-generativeai==0.8.3->-r requirements.txt (line 9))
+  Downloading google_ai_generativelanguage-0.6.10-py3-none-any.whl.metadata (5.6 kB)
+Collecting google-api-core (from google-generativeai==0.8.3->-r requirements.txt (line 9))
+  Downloading google_api_core-2.28.1-py3-none-any.whl.metadata (3.3 kB)
+Collecting google-api-python-client (from google-generativeai==0.8.3->-r requirements.txt (line 9))
+  Downloading google_api_python_client-2.186.0-py3-none-any.whl.metadata (7.0 kB)
+Collecting google-auth>=2.15.0 (from google-generativeai==0.8.3->-r requirements.txt (line 9))
+  Downloading google_auth-2.42.1-py2.py3-none-any.whl.metadata (6.6 kB)
+Collecting protobuf (from google-generativeai==0.8.3->-r requirements.txt (line 9))
+  Downloading protobuf-6.33.0-cp39-abi3-manylinux2014_x86_64.whl.metadata (593 bytes)
+Collecting tqdm (from google-generativeai==0.8.3->-r requirements.txt (line 9))
+  Downloading tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 57.7/57.7 kB 4.0 MB/s eta 0:00:00
+Collecting annotated-types>=0.6.0 (from pydantic==2.10.3->-r requirements.txt (line 10))
+  Downloading annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+Collecting pydantic-core==2.27.1 (from pydantic==2.10.3->-r requirements.txt (line 10))
+  Downloading pydantic_core-2.27.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+Collecting MarkupSafe>=2.0 (from jinja2==3.1.4->-r requirements.txt (line 11))
+  Downloading markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Collecting python-dateutil>=2.8.2 (from pandas==2.2.3->-r requirements.txt (line 12))
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Collecting pytz>=2020.1 (from pandas==2.2.3->-r requirements.txt (line 12))
+  Using cached pytz-2025.2-py2.py3-none-any.whl.metadata (22 kB)
+Collecting tzdata>=2022.7 (from pandas==2.2.3->-r requirements.txt (line 12))
+  Using cached tzdata-2025.2-py2.py3-none-any.whl.metadata (1.4 kB)
+Collecting dataclasses-json<0.7,>=0.5.7 (from langchain-community==0.3.13->-r requirements.txt (line 15))
+  Downloading dataclasses_json-0.6.7-py3-none-any.whl.metadata (25 kB)
+Collecting httpx-sse<0.5.0,>=0.4.0 (from langchain-community==0.3.13->-r requirements.txt (line 15))
+  Downloading httpx_sse-0.4.3-py3-none-any.whl.metadata (9.7 kB)
+Collecting pydantic-settings<3.0.0,>=2.4.0 (from langchain-community==0.3.13->-r requirements.txt (line 15))
+  Downloading pydantic_settings-2.11.0-py3-none-any.whl.metadata (3.4 kB)
+Collecting chromadb (from -r requirements.txt (line 18))
+  Downloading chromadb-0.5.23-py3-none-any.whl.metadata (6.8 kB)
+INFO: pip is looking at multiple versions of langchain-chroma to determine which version is compatible with other requirements. This could take a while.
+ERROR: Cannot install -r requirements.txt (line 12), -r requirements.txt (line 13), -r requirements.txt (line 15), -r requirements.txt (line 16), -r requirements.txt (line 4) and numpy==2.2.1 because these package versions have conflicting dependencies.
+
+The conflict is caused by:
+    The user requested numpy==2.2.1
+    langchain 0.3.13 depends on numpy<3 and >=1.26.2; python_version >= "3.12"
+    pandas 2.2.3 depends on numpy>=1.26.0; python_version >= "3.12"
+    faiss-cpu 1.9.0 depends on numpy<3.0 and >=1.25.0
+    langchain-community 0.3.13 depends on numpy<3 and >=1.26.2; python_version >= "3.12"
+    langchain-chroma 0.1.4 depends on numpy<2.0.0 and >=1.26.0; python_version >= "3.12"
+
+To fix this you could try to:
+1. loosen the range of package versions you've specified
+2. remove package versions to allow pip attempt to solve the dependency conflict
+
+ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts
+azureuser@rpa-data-vm-3:~/ask-the-expert$ 
