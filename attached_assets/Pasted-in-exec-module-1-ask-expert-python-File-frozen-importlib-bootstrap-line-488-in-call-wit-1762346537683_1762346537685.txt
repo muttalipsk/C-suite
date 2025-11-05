@@ -1,0 +1,662 @@
+in exec_module
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/main.py", line 10, in <module>
+1|ask-expert-python  |     from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/constants.py", line 7, in <module>
+1|ask-expert-python  |     raise ValueError("GEMINI_API_KEY environment variable must be set")
+1|ask-expert-python  | ValueError: GEMINI_API_KEY environment variable must be set
+PM2                  | App [ask-expert-python:1] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-python:1] starting in -fork mode-
+PM2                  | App [ask-expert-python:1] online
+0|ask-expert-node    | file:///home/digitaltwin/ask-the-expert/dist/index.js:359
+0|ask-expert-node    |   throw new Error(
+0|ask-expert-node    |         ^
+0|ask-expert-node    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|ask-expert-node    |     at file:///home/digitaltwin/ask-the-expert/dist/index.js:359:9
+0|ask-expert-node    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|ask-expert-node    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|ask-expert-node    |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+0|ask-expert-node    | Node.js v20.19.5
+PM2                  | App [ask-expert-node:0] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-node:0] starting in -fork mode-
+PM2                  | App [ask-expert-node:0] online
+0|ask-expert-node    | > rest-express@1.0.0 start
+0|ask-expert-node    | > NODE_ENV=production node dist/index.js
+1|ask-expert-python  | Traceback (most recent call last):
+1|ask-expert-python  |   File "<frozen runpy>", line 198, in _run_module_as_main
+1|ask-expert-python  |   File "<frozen runpy>", line 88, in _run_code
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
+1|ask-expert-python  |     uvicorn.main()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+1|ask-expert-python  |     return self.main(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1383, in main
+1|ask-expert-python  |     rv = self.invoke(ctx)
+1|ask-expert-python  |          ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+1|ask-expert-python  |     return ctx.invoke(self.callback, **ctx.params)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+1|ask-expert-python  |     return callback(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 412, in main
+1|ask-expert-python  |     run(
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 579, in run
+1|ask-expert-python  |     server.run()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+1|ask-expert-python  |     return asyncio.run(self.serve(sockets=sockets))
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+1|ask-expert-python  |     return runner.run(main)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+1|ask-expert-python  |     return self._loop.run_until_complete(task)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+1|ask-expert-python  |     await self._serve(sockets)
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+1|ask-expert-python  |     config.load()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+1|ask-expert-python  |     self.loaded_app = import_from_string(self.app)
+1|ask-expert-python  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+1|ask-expert-python  |     module = importlib.import_module(module_str)
+1|ask-expert-python  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+1|ask-expert-python  |     return _bootstrap._gcd_import(name[level:], package, level)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/main.py", line 10, in <module>
+1|ask-expert-python  |     from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/constants.py", line 7, in <module>
+1|ask-expert-python  |     raise ValueError("GEMINI_API_KEY environment variable must be set")
+1|ask-expert-python  | ValueError: GEMINI_API_KEY environment variable must be set
+PM2                  | App [ask-expert-python:1] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-python:1] starting in -fork mode-
+PM2                  | App [ask-expert-python:1] online
+0|ask-expert-node    | file:///home/digitaltwin/ask-the-expert/dist/index.js:359
+0|ask-expert-node    |   throw new Error(
+0|ask-expert-node    |         ^
+0|ask-expert-node    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|ask-expert-node    |     at file:///home/digitaltwin/ask-the-expert/dist/index.js:359:9
+0|ask-expert-node    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|ask-expert-node    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|ask-expert-node    |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+0|ask-expert-node    | Node.js v20.19.5
+PM2                  | App [ask-expert-node:0] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-node:0] starting in -fork mode-
+PM2                  | App [ask-expert-node:0] online
+0|ask-expert-node    | > rest-express@1.0.0 start
+0|ask-expert-node    | > NODE_ENV=production node dist/index.js
+1|ask-expert-python  | Traceback (most recent call last):
+1|ask-expert-python  |   File "<frozen runpy>", line 198, in _run_module_as_main
+1|ask-expert-python  |   File "<frozen runpy>", line 88, in _run_code
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
+1|ask-expert-python  |     uvicorn.main()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+1|ask-expert-python  |     return self.main(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1383, in main
+1|ask-expert-python  |     rv = self.invoke(ctx)
+1|ask-expert-python  |          ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+1|ask-expert-python  |     return ctx.invoke(self.callback, **ctx.params)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+1|ask-expert-python  |     return callback(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 412, in main
+1|ask-expert-python  |     run(
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 579, in run
+1|ask-expert-python  |     server.run()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+1|ask-expert-python  |     return asyncio.run(self.serve(sockets=sockets))
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+1|ask-expert-python  |     return runner.run(main)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+1|ask-expert-python  |     return self._loop.run_until_complete(task)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+1|ask-expert-python  |     await self._serve(sockets)
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+1|ask-expert-python  |     config.load()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+1|ask-expert-python  |     self.loaded_app = import_from_string(self.app)
+1|ask-expert-python  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+1|ask-expert-python  |     module = importlib.import_module(module_str)
+1|ask-expert-python  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+1|ask-expert-python  |     return _bootstrap._gcd_import(name[level:], package, level)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/main.py", line 10, in <module>
+1|ask-expert-python  |     from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/constants.py", line 7, in <module>
+1|ask-expert-python  |     raise ValueError("GEMINI_API_KEY environment variable must be set")
+1|ask-expert-python  | ValueError: GEMINI_API_KEY environment variable must be set
+PM2                  | App [ask-expert-python:1] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-python:1] starting in -fork mode-
+PM2                  | App [ask-expert-python:1] online
+0|ask-expert-node    | file:///home/digitaltwin/ask-the-expert/dist/index.js:359
+0|ask-expert-node    |   throw new Error(
+0|ask-expert-node    |         ^
+0|ask-expert-node    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|ask-expert-node    |     at file:///home/digitaltwin/ask-the-expert/dist/index.js:359:9
+0|ask-expert-node    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|ask-expert-node    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|ask-expert-node    |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+0|ask-expert-node    | Node.js v20.19.5
+PM2                  | App [ask-expert-node:0] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-node:0] starting in -fork mode-
+PM2                  | App [ask-expert-node:0] online
+0|ask-expert-node    | > rest-express@1.0.0 start
+0|ask-expert-node    | > NODE_ENV=production node dist/index.js
+1|ask-expert-python  | Traceback (most recent call last):
+1|ask-expert-python  |   File "<frozen runpy>", line 198, in _run_module_as_main
+1|ask-expert-python  |   File "<frozen runpy>", line 88, in _run_code
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
+1|ask-expert-python  |     uvicorn.main()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+1|ask-expert-python  |     return self.main(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1383, in main
+1|ask-expert-python  |     rv = self.invoke(ctx)
+1|ask-expert-python  |          ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+1|ask-expert-python  |     return ctx.invoke(self.callback, **ctx.params)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+1|ask-expert-python  |     return callback(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 412, in main
+1|ask-expert-python  |     run(
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 579, in run
+1|ask-expert-python  |     server.run()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+1|ask-expert-python  |     return asyncio.run(self.serve(sockets=sockets))
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+1|ask-expert-python  |     return runner.run(main)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+1|ask-expert-python  |     return self._loop.run_until_complete(task)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+1|ask-expert-python  |     await self._serve(sockets)
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+1|ask-expert-python  |     config.load()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+1|ask-expert-python  |     self.loaded_app = import_from_string(self.app)
+1|ask-expert-python  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+1|ask-expert-python  |     module = importlib.import_module(module_str)
+1|ask-expert-python  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+1|ask-expert-python  |     return _bootstrap._gcd_import(name[level:], package, level)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/main.py", line 10, in <module>
+1|ask-expert-python  |     from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/constants.py", line 7, in <module>
+1|ask-expert-python  |     raise ValueError("GEMINI_API_KEY environment variable must be set")
+1|ask-expert-python  | ValueError: GEMINI_API_KEY environment variable must be set
+PM2                  | App [ask-expert-python:1] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-python:1] starting in -fork mode-
+PM2                  | App [ask-expert-python:1] online
+0|ask-expert-node    | file:///home/digitaltwin/ask-the-expert/dist/index.js:359
+0|ask-expert-node    |   throw new Error(
+0|ask-expert-node    |         ^
+0|ask-expert-node    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|ask-expert-node    |     at file:///home/digitaltwin/ask-the-expert/dist/index.js:359:9
+0|ask-expert-node    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|ask-expert-node    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|ask-expert-node    |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+0|ask-expert-node    | Node.js v20.19.5
+PM2                  | App [ask-expert-node:0] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-node:0] starting in -fork mode-
+PM2                  | App [ask-expert-node:0] online
+0|ask-expert-node    | > rest-express@1.0.0 start
+0|ask-expert-node    | > NODE_ENV=production node dist/index.js
+1|ask-expert-python  | Traceback (most recent call last):
+1|ask-expert-python  |   File "<frozen runpy>", line 198, in _run_module_as_main
+1|ask-expert-python  |   File "<frozen runpy>", line 88, in _run_code
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
+1|ask-expert-python  |     uvicorn.main()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+1|ask-expert-python  |     return self.main(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1383, in main
+1|ask-expert-python  |     rv = self.invoke(ctx)
+1|ask-expert-python  |          ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+1|ask-expert-python  |     return ctx.invoke(self.callback, **ctx.params)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+1|ask-expert-python  |     return callback(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 412, in main
+1|ask-expert-python  |     run(
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 579, in run
+1|ask-expert-python  |     server.run()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+1|ask-expert-python  |     return asyncio.run(self.serve(sockets=sockets))
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+1|ask-expert-python  |     return runner.run(main)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+1|ask-expert-python  |     return self._loop.run_until_complete(task)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+1|ask-expert-python  |     await self._serve(sockets)
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+1|ask-expert-python  |     config.load()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+1|ask-expert-python  |     self.loaded_app = import_from_string(self.app)
+1|ask-expert-python  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+1|ask-expert-python  |     module = importlib.import_module(module_str)
+1|ask-expert-python  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+1|ask-expert-python  |     return _bootstrap._gcd_import(name[level:], package, level)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/main.py", line 10, in <module>
+1|ask-expert-python  |     from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/constants.py", line 7, in <module>
+1|ask-expert-python  |     raise ValueError("GEMINI_API_KEY environment variable must be set")
+1|ask-expert-python  | ValueError: GEMINI_API_KEY environment variable must be set
+PM2                  | App [ask-expert-python:1] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-python:1] starting in -fork mode-
+PM2                  | App [ask-expert-python:1] online
+0|ask-expert-node    | file:///home/digitaltwin/ask-the-expert/dist/index.js:359
+0|ask-expert-node    |   throw new Error(
+0|ask-expert-node    |         ^
+0|ask-expert-node    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|ask-expert-node    |     at file:///home/digitaltwin/ask-the-expert/dist/index.js:359:9
+0|ask-expert-node    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|ask-expert-node    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|ask-expert-node    |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+0|ask-expert-node    | Node.js v20.19.5
+PM2                  | App [ask-expert-node:0] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-node:0] starting in -fork mode-
+PM2                  | App [ask-expert-node:0] online
+0|ask-expert-node    | > rest-express@1.0.0 start
+0|ask-expert-node    | > NODE_ENV=production node dist/index.js
+1|ask-expert-python  | Traceback (most recent call last):
+1|ask-expert-python  |   File "<frozen runpy>", line 198, in _run_module_as_main
+1|ask-expert-python  |   File "<frozen runpy>", line 88, in _run_code
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
+1|ask-expert-python  |     uvicorn.main()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+1|ask-expert-python  |     return self.main(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1383, in main
+1|ask-expert-python  |     rv = self.invoke(ctx)
+1|ask-expert-python  |          ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+1|ask-expert-python  |     return ctx.invoke(self.callback, **ctx.params)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+1|ask-expert-python  |     return callback(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 412, in main
+1|ask-expert-python  |     run(
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 579, in run
+1|ask-expert-python  |     server.run()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+1|ask-expert-python  |     return asyncio.run(self.serve(sockets=sockets))
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+1|ask-expert-python  |     return runner.run(main)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+1|ask-expert-python  |     return self._loop.run_until_complete(task)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+1|ask-expert-python  |     await self._serve(sockets)
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+1|ask-expert-python  |     config.load()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+1|ask-expert-python  |     self.loaded_app = import_from_string(self.app)
+1|ask-expert-python  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+1|ask-expert-python  |     module = importlib.import_module(module_str)
+1|ask-expert-python  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+1|ask-expert-python  |     return _bootstrap._gcd_import(name[level:], package, level)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/main.py", line 10, in <module>
+1|ask-expert-python  |     from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/constants.py", line 7, in <module>
+1|ask-expert-python  |     raise ValueError("GEMINI_API_KEY environment variable must be set")
+1|ask-expert-python  | ValueError: GEMINI_API_KEY environment variable must be set
+0|ask-expert-node    | file:///home/digitaltwin/ask-the-expert/dist/index.js:359
+0|ask-expert-node    |   throw new Error(
+0|ask-expert-node    |         ^
+0|ask-expert-node    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|ask-expert-node    |     at file:///home/digitaltwin/ask-the-expert/dist/index.js:359:9
+0|ask-expert-node    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|ask-expert-node    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|ask-expert-node    |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+0|ask-expert-node    | Node.js v20.19.5
+PM2                  | App [ask-expert-node:0] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-node:0] starting in -fork mode-
+PM2                  | App [ask-expert-node:0] online
+PM2                  | App [ask-expert-python:1] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-python:1] starting in -fork mode-
+PM2                  | App [ask-expert-python:1] online
+0|ask-expert-node    | > rest-express@1.0.0 start
+0|ask-expert-node    | > NODE_ENV=production node dist/index.js
+1|ask-expert-python  | Traceback (most recent call last):
+1|ask-expert-python  |   File "<frozen runpy>", line 198, in _run_module_as_main
+1|ask-expert-python  |   File "<frozen runpy>", line 88, in _run_code
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
+1|ask-expert-python  |     uvicorn.main()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+1|ask-expert-python  |     return self.main(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1383, in main
+1|ask-expert-python  |     rv = self.invoke(ctx)
+1|ask-expert-python  |          ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+1|ask-expert-python  |     return ctx.invoke(self.callback, **ctx.params)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+1|ask-expert-python  |     return callback(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 412, in main
+1|ask-expert-python  |     run(
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 579, in run
+1|ask-expert-python  |     server.run()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+1|ask-expert-python  |     return asyncio.run(self.serve(sockets=sockets))
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+1|ask-expert-python  |     return runner.run(main)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+1|ask-expert-python  |     return self._loop.run_until_complete(task)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+1|ask-expert-python  |     await self._serve(sockets)
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+1|ask-expert-python  |     config.load()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+1|ask-expert-python  |     self.loaded_app = import_from_string(self.app)
+1|ask-expert-python  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+1|ask-expert-python  |     module = importlib.import_module(module_str)
+1|ask-expert-python  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+1|ask-expert-python  |     return _bootstrap._gcd_import(name[level:], package, level)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/main.py", line 10, in <module>
+1|ask-expert-python  |     from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/constants.py", line 7, in <module>
+1|ask-expert-python  |     raise ValueError("GEMINI_API_KEY environment variable must be set")
+1|ask-expert-python  | ValueError: GEMINI_API_KEY environment variable must be set
+PM2                  | App [ask-expert-python:1] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-python:1] starting in -fork mode-
+PM2                  | App [ask-expert-python:1] online
+0|ask-expert-node    | file:///home/digitaltwin/ask-the-expert/dist/index.js:359
+0|ask-expert-node    |   throw new Error(
+0|ask-expert-node    |         ^
+0|ask-expert-node    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|ask-expert-node    |     at file:///home/digitaltwin/ask-the-expert/dist/index.js:359:9
+0|ask-expert-node    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|ask-expert-node    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|ask-expert-node    |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+0|ask-expert-node    | Node.js v20.19.5
+PM2                  | App [ask-expert-node:0] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-node:0] starting in -fork mode-
+PM2                  | App [ask-expert-node:0] online
+0|ask-expert-node    | > rest-express@1.0.0 start
+0|ask-expert-node    | > NODE_ENV=production node dist/index.js
+1|ask-expert-python  | Traceback (most recent call last):
+1|ask-expert-python  |   File "<frozen runpy>", line 198, in _run_module_as_main
+1|ask-expert-python  |   File "<frozen runpy>", line 88, in _run_code
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
+1|ask-expert-python  |     uvicorn.main()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+1|ask-expert-python  |     return self.main(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1383, in main
+1|ask-expert-python  |     rv = self.invoke(ctx)
+1|ask-expert-python  |          ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+1|ask-expert-python  |     return ctx.invoke(self.callback, **ctx.params)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+1|ask-expert-python  |     return callback(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 412, in main
+1|ask-expert-python  |     run(
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 579, in run
+1|ask-expert-python  |     server.run()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+1|ask-expert-python  |     return asyncio.run(self.serve(sockets=sockets))
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+1|ask-expert-python  |     return runner.run(main)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+1|ask-expert-python  |     return self._loop.run_until_complete(task)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+1|ask-expert-python  |     await self._serve(sockets)
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+1|ask-expert-python  |     config.load()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+1|ask-expert-python  |     self.loaded_app = import_from_string(self.app)
+1|ask-expert-python  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+1|ask-expert-python  |     module = importlib.import_module(module_str)
+1|ask-expert-python  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+1|ask-expert-python  |     return _bootstrap._gcd_import(name[level:], package, level)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/main.py", line 10, in <module>
+1|ask-expert-python  |     from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/constants.py", line 7, in <module>
+1|ask-expert-python  |     raise ValueError("GEMINI_API_KEY environment variable must be set")
+1|ask-expert-python  | ValueError: GEMINI_API_KEY environment variable must be set
+0|ask-expert-node    | file:///home/digitaltwin/ask-the-expert/dist/index.js:359
+0|ask-expert-node    |   throw new Error(
+0|ask-expert-node    |         ^
+0|ask-expert-node    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|ask-expert-node    |     at file:///home/digitaltwin/ask-the-expert/dist/index.js:359:9
+0|ask-expert-node    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|ask-expert-node    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|ask-expert-node    |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+0|ask-expert-node    | Node.js v20.19.5
+PM2                  | App [ask-expert-python:1] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-python:1] starting in -fork mode-
+PM2                  | App [ask-expert-python:1] online
+PM2                  | App [ask-expert-node:0] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-node:0] starting in -fork mode-
+PM2                  | App [ask-expert-node:0] online
+0|ask-expert-node    | > rest-express@1.0.0 start
+0|ask-expert-node    | > NODE_ENV=production node dist/index.js
+1|ask-expert-python  | Traceback (most recent call last):
+1|ask-expert-python  |   File "<frozen runpy>", line 198, in _run_module_as_main
+1|ask-expert-python  |   File "<frozen runpy>", line 88, in _run_code
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
+1|ask-expert-python  |     uvicorn.main()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+1|ask-expert-python  |     return self.main(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1383, in main
+1|ask-expert-python  |     rv = self.invoke(ctx)
+1|ask-expert-python  |          ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+1|ask-expert-python  |     return ctx.invoke(self.callback, **ctx.params)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+1|ask-expert-python  |     return callback(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 412, in main
+1|ask-expert-python  |     run(
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 579, in run
+1|ask-expert-python  |     server.run()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+1|ask-expert-python  |     return asyncio.run(self.serve(sockets=sockets))
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+1|ask-expert-python  |     return runner.run(main)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+1|ask-expert-python  |     return self._loop.run_until_complete(task)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+1|ask-expert-python  |     await self._serve(sockets)
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+1|ask-expert-python  |     config.load()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+1|ask-expert-python  |     self.loaded_app = import_from_string(self.app)
+1|ask-expert-python  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+1|ask-expert-python  |     module = importlib.import_module(module_str)
+1|ask-expert-python  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+1|ask-expert-python  |     return _bootstrap._gcd_import(name[level:], package, level)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/main.py", line 10, in <module>
+1|ask-expert-python  |     from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/constants.py", line 7, in <module>
+1|ask-expert-python  |     raise ValueError("GEMINI_API_KEY environment variable must be set")
+1|ask-expert-python  | ValueError: GEMINI_API_KEY environment variable must be set
+PM2                  | App [ask-expert-python:1] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-python:1] starting in -fork mode-
+PM2                  | App [ask-expert-python:1] online
+0|ask-expert-node    | file:///home/digitaltwin/ask-the-expert/dist/index.js:359
+0|ask-expert-node    |   throw new Error(
+0|ask-expert-node    |         ^
+0|ask-expert-node    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|ask-expert-node    |     at file:///home/digitaltwin/ask-the-expert/dist/index.js:359:9
+0|ask-expert-node    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|ask-expert-node    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|ask-expert-node    |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+0|ask-expert-node    | Node.js v20.19.5
+PM2                  | App [ask-expert-node:0] exited with code [1] via signal [SIGINT]
+PM2                  | App [ask-expert-node:0] starting in -fork mode-
+PM2                  | App [ask-expert-node:0] online
+0|ask-expert-node    | > rest-express@1.0.0 start
+0|ask-expert-node    | > NODE_ENV=production node dist/index.js
+0|ask-expert-node    | file:///home/digitaltwin/ask-the-expert/dist/index.js:359
+0|ask-expert-node    |   throw new Error(
+0|ask-expert-node    |         ^
+0|ask-expert-node    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|ask-expert-node    |     at file:///home/digitaltwin/ask-the-expert/dist/index.js:359:9
+0|ask-expert-node    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|ask-expert-node    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|ask-expert-node    |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+0|ask-expert-node    | Node.js v20.19.5
+1|ask-expert-python  | Traceback (most recent call last):
+1|ask-expert-python  |   File "<frozen runpy>", line 198, in _run_module_as_main
+1|ask-expert-python  |   File "<frozen runpy>", line 88, in _run_code
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
+1|ask-expert-python  |     uvicorn.main()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+1|ask-expert-python  |     return self.main(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1383, in main
+1|ask-expert-python  |     rv = self.invoke(ctx)
+1|ask-expert-python  |          ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+1|ask-expert-python  |     return ctx.invoke(self.callback, **ctx.params)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+1|ask-expert-python  |     return callback(*args, **kwargs)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 412, in main
+1|ask-expert-python  |     run(
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/main.py", line 579, in run
+1|ask-expert-python  |     server.run()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+1|ask-expert-python  |     return asyncio.run(self.serve(sockets=sockets))
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+1|ask-expert-python  |     return runner.run(main)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+1|ask-expert-python  |     return self._loop.run_until_complete(task)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+1|ask-expert-python  |     await self._serve(sockets)
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+1|ask-expert-python  |     config.load()
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+PM2                  | App [ask-expert-node:0] exited with code [1] via signal [SIGINT]
+1|ask-expert-python  |     self.loaded_app = import_from_string(self.app)
+1|ask-expert-python  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+1|ask-expert-python  |     module = importlib.import_module(module_str)
+1|ask-expert-python  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+1|ask-expert-python  |     return _bootstrap._gcd_import(name[level:], package, level)
+1|ask-expert-python  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+1|ask-expert-python  |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+1|ask-expert-python  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+1|ask-expert-python  |   File "/home/digitaltwin/ask-the-expert/main.py", line 10, in <module>
+1|ask-expert-python  |     from constants import MODEL as model, GEMINI_KEY as ge
