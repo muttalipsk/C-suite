@@ -46,9 +46,9 @@ export function PreMeetingConversation({
 
   const iterateMutation = useMutation({
     mutationFn: async (userResponse: string) => {
-      const response = await apiRequest("/api/pre-meeting/iterate", {
-        method: "POST",
-        body: JSON.stringify({ sessionId, userResponse }),
+      const response = await apiRequest("POST", "/api/pre-meeting/iterate", {
+        sessionId,
+        userResponse,
       });
       const data = await response.json();
       return data as {
@@ -61,12 +61,12 @@ export function PreMeetingConversation({
       setAccuracy(data.accuracy);
       setIsReady(data.isReady);
 
-      if (data.counterQuestion) {
+      if (data.counterQuestion && data.counterQuestion.length > 0) {
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: data.counterQuestion,
+            content: data.counterQuestion as string,
             timestamp: new Date().toISOString(),
           },
         ]);
@@ -76,9 +76,8 @@ export function PreMeetingConversation({
 
   const completeMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("/api/pre-meeting/complete", {
-        method: "POST",
-        body: JSON.stringify({ sessionId }),
+      const response = await apiRequest("POST", "/api/pre-meeting/complete", {
+        sessionId,
       });
       const data = await response.json();
       return data as {

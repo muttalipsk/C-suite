@@ -49,10 +49,7 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
 
   const initPreMeetingMutation = useMutation({
     mutationFn: async (data: { question: string; agents: string[]; meetingType: string }) => {
-      const response = await apiRequest("/api/pre-meeting/init", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("POST", "/api/pre-meeting/init", data);
       const result = await response.json();
       return result as PreMeetingSession;
     },
