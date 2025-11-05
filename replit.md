@@ -13,7 +13,11 @@ The application enables users to:
 - **NEW: Inline question refinement** - AI analyzes meeting tasks in real-time and suggests improved versions before running meetings
 - **NEW: Create personalized digital twins** that mirror their communication style and expertise
 - **NEW: Chat with digital twins** from colleagues within their company domain
-- **NEW: 20-Question Persona Interview** - Conversational AI-guided interview system for comprehensive persona creation
+- **NEW: 20-Question Personalized Interview** - AI generates unique questions based on user's profile to avoid redundancy
+  - Gemini analyzes existing profile (name, company, title, industry) to generate personalized questions
+  - Two-layer redundancy prevention: AI prompt instruction + post-generation validation filter
+  - Validation ensures exactly 4 questions per category (Identity, Decision-Making, Goals, Communication, Expertise)
+  - Best-effort filter catches common confirmation patterns while allowing strategic contextual questions
 - **NEW: Email Writing Style Analysis** - Upload/paste 10-20 emails for AI-powered communication style extraction
 
 ## User Preferences

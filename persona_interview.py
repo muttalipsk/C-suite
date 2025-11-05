@@ -46,53 +46,87 @@ def extract_profile_keywords(user_profile: Dict) -> set:
 
 
 def is_question_redundant(question: str, profile_keywords: set) -> bool:
-    """Check if question asks about information already in profile"""
-    import re
-    question_lower = question.lower()
+    """Two-stage redundancy check: Has confirmation language? Lacks strategic depth?
     
-    # Check for basic identity questions with specific patterns
-    # Only include phrases that clearly ask to state/confirm known info
-    redundant_phrases = [
-        "what is your name",
-        "your full name",
-        "what company do you work",
-        "your current title",
-        "your professional title",
-        "what is your title",
-        "what is your industry",
-        "please state your",
-        "tell me your name",
-        "your company name is"
+    Strategy: Questions that ASK for identity info (what/which/confirm) without
+    strategic elements (how/why/strategy/priorities) are redundant.
+    """
+    import re
+    question_lower = question.lower().strip()
+    
+    # Stage 1: Check if question contains confirmation language about identity
+    # Note: This is a best-effort filter. Primary redundancy prevention is via AI prompt.
+    confirmation_signals = [
+        # Name confirmations
+        r"\bwhat (is|are|'s) your (full )?name\b",
+        r"\btell me your name\b",
+        r"\bstate your name\b",
+        r"\bconfirm your name\b",
+        r"\bwho are you\b",
+        r"\bcan you tell me your name\b",
+        
+        # Company confirmations (comprehensive - cover all variations)
+        r"\bwhat (is|are|'s) your company\b",
+        r"\bwhich company (do you|are you)",
+        r"\bwhat company do you (work|lead|run|manage)",
+        r"\bwhich company do you (work|lead|run|manage)",
+        r"\bwhat is the name of your (company|organization|firm)",
+        r"\bcan you tell me your company",
+        r"\bconfirm your company\b",
+        r"\bstate your company\b",
+        r"\bremind me (which|what) (company|organization)",
+        r"\bwho do you (work for|lead|run)",
+        r"\bwhich (organization|firm) do you",
+        
+        # Title/Role confirmations (comprehensive - cover all variations)
+        r"\bwhat (is|are|'s) your (current |professional )?title\b",
+        r"\bwhat (is|are|'s) your (current |professional )?role\b",
+        r"\bwhat is the name of your (title|position|role)",
+        r"\bcan you tell me your (title|position|role)",
+        r"\bconfirm (your |what your )?(current |professional )?title\b",
+        r"\bstate your (current |professional )?title\b",
+        r"\bcould you confirm (what )?your (current |professional )?title\b",
+        r"\bremind me (what|which) (your )?(current |professional )?title\b",
+        r"\bwhat (do|does) you (do|lead|manage)\b",
+        r"\bwhat position (do you|are you)",
+        
+        # Industry confirmations
+        r"\bwhat (is|are|'s) your industry\b",
+        r"\bwhich industry (are you|do you)",
+        r"\bwhat is the name of your industry\b",
+        r"\bconfirm your industry\b",
+        r"\bwhat field (do you|are you)",
+        r"\bwhat sector (do you|are you)",
     ]
     
-    for phrase in redundant_phrases:
-        if phrase in question_lower:
-            return True
+    # Check if question has confirmation language
+    has_confirmation = any(re.search(pattern, question_lower) for pattern in confirmation_signals)
     
-    # Check for specific confirmation patterns with profile keywords
-    # Only match when asking what/who the keyword IS, not contextual usage
-    for keyword in profile_keywords:
-        # Skip very short keywords that might be common words
-        if len(keyword) <= 2:
-            continue
-        
-        # Escape keyword for regex
-        keyword_escaped = re.escape(keyword)
-        
-        # VERY tightened patterns - only match direct identity questions
-        # Must be asking what/who the keyword IS, ending with punctuation or keyword at end
-        # DO NOT match: "tell me your OpenAI strategy" or "state your CEO priorities"
-        redundant_patterns = [
-            rf"what is your {keyword_escaped}\??$",  # "what is your OpenAI?" at end
-            rf"what's your {keyword_escaped}\??$",   # "what's your CEO?" at end  
-            rf"confirm your {keyword_escaped}\??$",  # "confirm your OpenAI?" at end
-        ]
-        
-        for pattern in redundant_patterns:
-            if re.search(pattern, question_lower):
-                return True
+    if not has_confirmation:
+        return False  # No confirmation language = not redundant
     
-    return False
+    # Stage 2: Check if question has strategic/analytical depth
+    # If it has strategic language, it's using identity in context (not redundant)
+    strategic_signals = [
+        r"\bhow (do|does|did|can|could|should|would)\b",
+        r"\bwhy (do|does|did|is|are)\b",
+        r"\binfluence",
+        r"\baffect",
+        r"\bimpact",
+        r"\bstrateg(y|ies|ic)",
+        r"\bpriorit(y|ies|ize)",
+        r"\bapproach",
+        r"\bdecision",
+        r"\bchallenge",
+        r"\bgoal",
+        r"\bvision",
+        r"\bleadership\b",
+    ]
+    
+    has_strategic_depth = any(re.search(pattern, question_lower) for pattern in strategic_signals)
+    
+    # Redundant if: has confirmation language AND lacks strategic depth
+    return has_confirmation and not has_strategic_depth
 
 
 def validate_and_fix_questions(questions: List[Dict], user_profile: Dict) -> List[Dict]:
