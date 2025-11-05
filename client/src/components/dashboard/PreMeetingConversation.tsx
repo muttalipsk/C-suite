@@ -65,8 +65,8 @@ export function PreMeetingConversation({
 
       if (data.counterQuestion) {
         setMessages(prev => [...prev, {
-          role: "assistant",
-          content: data.counterQuestion,
+          role: "assistant" as const,
+          content: data.counterQuestion as string,
           timestamp: new Date().toISOString(),
         }]);
       }

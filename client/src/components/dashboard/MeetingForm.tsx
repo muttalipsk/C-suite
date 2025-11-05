@@ -74,8 +74,8 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
       // Add AI's first counter-question to messages
       if (data.counterQuestion) {
         setMessages(prev => [...prev, {
-          role: "assistant",
-          content: data.counterQuestion,
+          role: "assistant" as const,
+          content: data.counterQuestion as string,
           timestamp: new Date().toISOString(),
         }]);
       }
@@ -97,8 +97,8 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
     onSuccess: (data) => {
       if (data.counterQuestion) {
         setMessages(prev => [...prev, {
-          role: "assistant",
-          content: data.counterQuestion,
+          role: "assistant" as const,
+          content: data.counterQuestion as string,
           timestamp: new Date().toISOString(),
         }]);
       }
@@ -118,12 +118,15 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
       return data;
     },
     onSuccess: (data) => {
-      // Meeting complete - trigger parent's onSubmit
+      // Meeting complete - pass the runId and recommendations to parent
       onSubmit({
         task: initialQuestion,
         meetingType: form.getValues("meetingType"),
         selectedAgents,
         turns: 1,
+        // Include the completed meeting data
+        runId: data.runId,
+        recommendations: data.recommendations,
       });
     },
   });

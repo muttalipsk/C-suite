@@ -114,7 +114,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     console.log("🔵 handleRunMeeting called with data:", {
       meetingType: data.meetingType,
       agents: data.selectedAgents,
-      task: data.task?.substring(0, 50) + "..."
+      task: data.task?.substring(0, 50) + "...",
+      hasRecommendations: !!data.recommendations
     });
 
     const now = Date.now();
@@ -133,6 +134,34 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       return;
     }
 
+    setIsLoading(true);
+    // Clear previous conversation state
+    setSelectedConversation(null);
+    setResults(null);
+    setRecommendations({});
+    setCurrentRunId("");
+
+    // If recommendations are already provided (from pre-meeting completion), skip API call
+    if (data.runId && data.recommendations) {
+      console.log("✅ Using pre-meeting recommendations, skipping API call");
+      setRecommendations(data.recommendations);
+      setCurrentRunId(data.runId);
+      setResults({
+        runId: data.runId,
+        recommendations: data.recommendations,
+        selectedAgents: data.selectedAgents,
+      });
+
+      // Scroll to results after a brief delay
+      setTimeout(() => {
+        const resultsSection = document.querySelector('[data-results-section]');
+        resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+
+      setIsLoading(false);
+      return;
+    }
+
     // Cancel any pending request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -141,13 +170,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     // Create new abort controller
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
-
-    setIsLoading(true);
-    // Clear previous conversation state
-    setSelectedConversation(null);
-    setResults(null);
-    setRecommendations({});
-    setCurrentRunId("");
     
     try {
       const requestBody = {
