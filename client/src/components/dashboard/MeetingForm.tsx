@@ -28,6 +28,7 @@ interface MeetingFormProps {
   onSubmit: (data: MeetingFormData) => void;
   isLoading?: boolean;
   selectedAgents: string[];
+  onClearResults?: () => void; // New callback to clear parent state
 }
 
 interface Message {
@@ -42,7 +43,7 @@ interface PreMeetingSession {
   isReady: boolean;
 }
 
-export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: MeetingFormProps) {
+export function MeetingForm({ onSubmit, isLoading = false, selectedAgents, onClearResults }: MeetingFormProps) {
   const [preMeetingSession, setPreMeetingSession] = useState<PreMeetingSession | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState("");
@@ -65,6 +66,30 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Watch for meeting type changes during conversation
+  const currentMeetingType = form.watch("meetingType");
+  const [lastMeetingType, setLastMeetingType] = useState<string>(currentMeetingType);
+
+  useEffect(() => {
+    // If meeting type changed and there's an active conversation, clear it
+    if (currentMeetingType !== lastMeetingType && (messages.length > 0 || preMeetingSession)) {
+      console.log(`🔄 Meeting type changed from ${lastMeetingType} to ${currentMeetingType} - clearing conversation and recommendations`);
+      
+      // Clear the conversation
+      setMessages([]);
+      setPreMeetingSession(null);
+      setInitialQuestion("");
+      setUserInput("");
+      
+      // Update task field with empty value to allow fresh start
+      form.setValue("task", "");
+      
+      // Notify parent to clear recommendations
+      onClearResults?.();
+    }
+    setLastMeetingType(currentMeetingType);
+  }, [currentMeetingType, lastMeetingType, messages.length, preMeetingSession, form, onClearResults]);
 
   const initPreMeetingMutation = useMutation({
     mutationFn: async (data: { question: string; agents: string[]; meetingType: string }) => {

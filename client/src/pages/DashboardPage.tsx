@@ -106,6 +106,14 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     });
   }, []);
 
+  const handleClearResults = useCallback(() => {
+    console.log("🧹 Clearing recommendations and conversation results");
+    setResults(null);
+    setRecommendations({});
+    setCurrentRunId("");
+    setSelectedConversation(null);
+  }, []);
+
   // Abort controller to cancel duplicate requests
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastSubmitTimeRef = useRef<number>(0);
@@ -371,6 +379,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                   onSubmit={handleRunMeeting}
                   isLoading={isLoading}
                   selectedAgents={selectedAgents}
+                  onClearResults={handleClearResults}
                 />
 
                 {/* Results */}
