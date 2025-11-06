@@ -197,6 +197,7 @@ Role Details: ${user.roleDetails}
         agents,
         user_profile: userProfile,
         conversation_history: conversationForPython,
+        meeting_type: meetingType,
       });
 
       const { counter_question } = pythonResponse.data;

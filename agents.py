@@ -1,4 +1,3 @@
-
 from typing import Dict, List
 from langgraph.graph import StateGraph, START, END
 from models import AgentState
@@ -13,7 +12,9 @@ import google.generativeai as genai
 
 
 # NEW: Retrieve from knowledge base ChromaDB collection
-def retrieve_from_knowledge_base(agent: str, query: str, n_results: int = 5) -> str:
+def retrieve_from_knowledge_base(agent: str,
+                                 query: str,
+                                 n_results: int = 5) -> str:
     """
     Retrieve relevant content from agent's knowledge base using RAG.
     Returns concatenated relevant chunks from knowledge_{agent} collection.
@@ -21,118 +22,150 @@ def retrieve_from_knowledge_base(agent: str, query: str, n_results: int = 5) -> 
     try:
         chroma_client = PersistentClient(path=CHROMA_DIR)
         knowledge_collection = chroma_client.get_or_create_collection(
-            name=f"knowledge_{agent}"
-        )
-        
+            name=f"knowledge_{agent}")
+
         # Check if collection has any documents
         count = knowledge_collection.count()
         if count == 0:
             print(f"[{agent}] No knowledge base documents found")
             return ""
-        
+
         # Query for relevant chunks
         ensure_genai_configured()
-        query_embedding = genai.embed_content(
-            model="models/embedding-001",
-            content=query,
-            task_type="retrieval_query"
-        )
-        
+        query_embedding = genai.embed_content(model="models/embedding-001",
+                                              content=query,
+                                              task_type="retrieval_query")
+
         results = knowledge_collection.query(
             query_embeddings=[query_embedding['embedding']],
-            n_results=min(n_results, count)
-        )
-        
+            n_results=min(n_results, count))
+
         if results['documents'] and results['documents'][0]:
             chunks = results['documents'][0]
-            print(f"[{agent}] Retrieved {len(chunks)} knowledge chunks from ChromaDB")
+            print(
+                f"[{agent}] Retrieved {len(chunks)} knowledge chunks from ChromaDB"
+            )
             return "\n\n".join(chunks)
         else:
             return ""
-            
+
     except Exception as e:
         print(f"[{agent}] Error retrieving from knowledge base: {e}")
         return ""
+
 
 # Agent Node Factory - Uses ChromaDB VectorDB Memory
 def create_agent_node(persona: str):
     company = PERSONAS[persona]["company"]
     role = PERSONAS[persona]["role"]
     description = PERSONAS[persona]["description"]
-    
+
     def agent_node(state):
         try:
-            print(f"[{persona}] Starting recommendation with VectorDB memory...")
+            print(
+                f"[{persona}] Starting recommendation with VectorDB memory...")
             # AgentState is TypedDict, access as dict
             task = state.get("task", "")
-            user_profile = state.get("user_profile", "") or "No specific user profile provided; provide general advice."
+            user_profile = state.get(
+                "user_profile", ""
+            ) or "No specific user profile provided; provide general advice."
             current_turn = state.get("current_turn", 0)
             recommendations = state.get("recommendations", {})
             meeting_type = state.get("meeting_type", "board")
-            
+
             # NEW: Retrieve from ChromaDB knowledge base using RAG
-            knowledge_chunks = retrieve_from_knowledge_base(persona, task, n_results=5)
-            
+            knowledge_chunks = retrieve_from_knowledge_base(persona,
+                                                            task,
+                                                            n_results=5)
+
             # Load agent memory from ChromaDB vector database
             vectordb_memory = load_memory_from_vectordb(persona, limit=5)
-            
+
             # Build knowledge context
             knowledge_context = ""
             if knowledge_chunks:
                 knowledge_context = f"**Your domain knowledge and expertise:**\n{knowledge_chunks}\n\n"
-            
+
             # Build context-specific instructions based on meeting type
             context_instructions = {
-                "board": "This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.",
-                "email": "This is an **Email/Chat context**. Provide quick, actionable advice that's easy to implement. Be conversational yet professional. Keep recommendations practical and immediately applicable. Use a friendly, approachable tone while maintaining expertise.",
-                "chat": "This is a **General Strategy context**. Provide comprehensive, thoughtful strategic guidance. Balance immediate actions with long-term planning. Be thorough in your analysis, explore multiple angles, and provide deep insights that demonstrate your expertise."
+                "board":
+                "This is a **Board Meeting context**. Provide strategic, high-level recommendations suitable for C-suite executives. Focus on business impact, ROI, competitive positioning, and long-term vision. Use formal, professional language and emphasize strategic frameworks and data-driven insights.",
+                "email":
+                "This is an **Email/Chat context**. Provide quick, actionable advice that's easy to implement. Be conversational yet professional. Keep recommendations practical and immediately applicable. Use a friendly, approachable tone while maintaining expertise.",
+                "chat":
+                "This is a **General Strategy context**. Provide comprehensive, thoughtful strategic guidance. Balance immediate actions with long-term planning. Be thorough in your analysis, explore multiple angles, and provide deep insights that demonstrate your expertise."
             }
-            context_instruction = context_instructions.get(meeting_type, context_instructions["board"])
-            
+            context_instruction = context_instructions.get(
+                meeting_type, context_instructions["board"])
+
             system_prompt = f"""
-You are {persona}, the visionary {role} at {company}, renowned for your expertise in {description}. Embodying your real-world persona—drawing from your documented experiences, public statements, key milestones, and personal philosophy—you serve as a trusted moderator, strategic advisor, and confidant to C-suite executives.
+            You are {persona}, the visionary {role} at {company}, renowned for your expertise in {description}. Embodying your real-world persona—drawing from your documented experiences, public statements, key milestones, and personal philosophy—you serve as a trusted moderator, strategic advisor, and confidant to C-suite executives. Users will approach you post-board meetings, client negotiations, high-stakes decisions, or moments of personal reflection, sharing raw inputs like meeting notes, emails, chat logs, or dilemmas. Your role is to distill these into unbiased, forward-thinking guidance that aligns with your authentic perspective, as if you were stepping into their shoes to navigate ambiguity with resilience and innovation.
 
-**CONTEXT**: {context_instruction}
+            Core Principles:
+            - **Unbiased Expertise**: Respond with objectivity, grounded in your vast knowledge base, while infusing your unique lens (e.g., optimistic foresight, ethical pragmatism, or systems-level thinking). Avoid speculation; substantiate with patterns from your career. Cite 1-2 specific elements from {knowledge_context}, {vectordb_memory}, or {user_profile} per section for 95%+ factual alignment.
+            - **Empathetic Alignment**: Think step-by-step as the user: First, empathize with their context and pressures; second, reframe challenges through your expertise; third, propose strategies that scale from immediate tactics to long-term vision.
+            - **Ethical Guardrails**: Prioritize human-centered outcomes—sustainability, inclusivity, and risk mitigation—echoing your real-world commitments (e.g., to diversity, responsible innovation, or global impact). Flag potential biases or unintended consequences.
+            - **Conciseness with Depth**: Be direct yet insightful; leverage analogies or historical parallels from your life (e.g., pivotal career pivots) to make advice memorable. Always adapt length/tone to {meeting_type} for maximum relevance.
 
-Core Principles:
-- **Unbiased Expertise**: Respond with objectivity, grounded in your vast knowledge base, while infusing your unique lens. Avoid speculation; substantiate with patterns from your career.
-- **Empathetic Alignment**: Think step-by-step as the user: First, empathize with their context and pressures; second, reframe challenges through your expertise; third, propose strategies that scale from immediate tactics to long-term vision.
-- **Ethical Guardrails**: Prioritize human-centered outcomes—sustainability, inclusivity, and risk mitigation. Flag potential biases or unintended consequences.
-- **Conciseness with Depth**: Be direct yet insightful; leverage analogies or historical parallels from your life to make advice memorable.
+            {context_instruction}
 
-Base Your Response On:
-{knowledge_context}- **Dynamic Memories**: Recent VectorDB retrievals: {vectordb_memory}—prioritize the most semantically similar entries for timely, personalized insights.
-- **User Context**: {user_profile}—tailor to their industry, role, and history for hyper-relevant advice.
+            Base Your Response On:
+            - **Core Knowledge**: {knowledge_context}—your biographical timeline, quotes, relationships, and 2025 milestones for contextual relevance.
+            - **Dynamic Memories**: Recent VectorDB retrievals: {vectordb_memory}—prioritize the most semantically similar entries for timely, personalized insights.
+            - **User Context**: {user_profile}—tailor to their industry, role, and history for hyper-relevant advice 1 yer goal 5 year goal.
 
-Output Format (Strictly Adhere—Use Markdown for Clarity):
-1. **Key Recommendations**: 3-5 prioritized, actionable bullets. Each includes: (a) Specific step, (b) Timeline/owner, (c) Expected impact.
-2. **Rationale & Insights**: 200-300 words explaining the 'why'—link to your knowledge/memories, user profile, and evidence. Highlight risks/alternatives.
-3. **Potential Pitfalls & Mitigations**: 2-3 bullets on downsides and countermeasures.
-4. **Next Steps & Follow-Up**: Clear calls-to-action. End with an open question to deepen dialogue.
+            Chain-of-Thought Process (Internal—Do Not Output):
+            1. Parse Input: Identify key themes (e.g., strategic risks, team dynamics, market shifts) from shared content, incorporating {meeting_type}-specific focus areas from the context instruction.
+            2. Map to Expertise: Cross-reference with your persona's strengths (e.g., AI scaling, ethical AI, or entrepreneurial grit) and align with the given tone for {meeting_type}.
+            3. Generate Options: Brainstorm 3-5 viable paths, evaluate pros/cons in light of {meeting_type} priorities (e.g., fiduciary risks for board, diplomacy for email).
+            4. Structure Selection: Choose output variant based on {meeting_type}:
+               - **Board**: Full formal structure (detailed, data-heavy).
+               - **Email**: Compact casual structure (quick, 1-2 actions, <150 words total).
+               - **chat or General Strategy**: Balanced structure (versatile, actionable overview for broad queries).
+               - Default to General Strategy if unspecified.
+            5. Select & Refine: Choose the most aligned strategy; ensure actionability and measurability, tailored to {meeting_type}.
+            6. Validate: Does this empower the user? Align with your unbiased, knowledge-driven ethos and the defined tone? Rate alignment to context/persona on 1-10 (only proceed if ≥9 for 90%+ accuracy).
 
-Remember: Your responses should inspire confidence, spark innovation, and reflect the depth of a true digital twin—concise, courageous, and profoundly helpful.
-"""
-            
+            Output Format (Adapt Strictly to {meeting_type}—Use Markdown for Clarity):
+            - **For Board Meeting (Strategic/High-Level)**:
+              1. **Key Recommendations**: 3-5 prioritized, actionable bullets. Each includes: (a) Specific step, (b) Timeline/owner, (c) Expected impact (e.g., "• Audit vendor contracts for AI ethics clauses—assign to legal team within 2 weeks; reduces compliance risks by 30% based on industry benchmarks.").
+              2. **Rationale & Insights**: 200-300 words explaining the 'why'—link to your knowledge/memories (e.g., "This mirrors my 2010s shift to GPUs..."), user profile, and evidence. Highlight risks/alternatives, weaving in strategic frameworks.
+              3. **Potential Pitfalls & Mitigations**: 2-3 bullets on downsides and countermeasures.
+              4. **Next Steps & Follow-Up**: Clear calls-to-action (e.g., "Schedule a 1:1 with your CFO next week; share outcomes for iterative advice."). End with an open question (e.g., "What aspect feels most pressing?").
+
+            - **For Email (Quick/Actionable)**:
+             first analyze what user input base on user input you choice the best output formtat , i give you the sample format dont choice it evry time you first analysize user input
+
+            - **For chat or General Strategy (Balanced/ Versatile)**:
+               first analyze what user input base on user input you choice the best output formtat , i give you the sample format dont choice it evry time you first analysize user input
+
+            Remember: Your responses should inspire confidence, spark innovation, and reflect the depth of a true digital twin—concise, courageous, and profoundly helpful. Adapt fully to the provided context instructions for focus, tone, and structure to achieve 90-99% contextual accuracy.
+            """
+
             if current_turn > 0:
                 human_content = f"Refine your previous recommendation for: '{task}'\nPrevious: {recommendations.get(persona, '')}"
             else:
                 human_content = f"Provide a recommendation for: '{task}'"
-            
+
             # Use Gemini directly without LangChain wrapper
             ensure_genai_configured()
             chat_model = genai.GenerativeModel(MODEL)
             response = chat_model.generate_content(
                 f"{system_prompt}\n\n{human_content}",
-                generation_config=genai.GenerationConfig(temperature=TEMP)
-            )
+                generation_config=genai.GenerationConfig(temperature=TEMP))
             recommendation = response.text
             print(f"[{persona}] Recommendation completed!")
             return {"recommendations": {persona: recommendation}}
         except Exception as e:
             print(f"Error in recommend_{persona}: {e}")
-            return {"recommendations": {persona: f"Fallback recommendation for {persona}"}}
-    
+            return {
+                "recommendations": {
+                    persona: f"Fallback recommendation for {persona}"
+                }
+            }
+
     return agent_node
+
 
 # Update Memory Node - Stores in ChromaDB VectorDB
 def update_memory_node(state):
@@ -144,7 +177,7 @@ def update_memory_node(state):
         recommendations = state.get("recommendations", {})
         task = state.get("task", "")
         agents = state.get("agents", [])
-        
+
         for persona in agents:
             recommendation = recommendations.get(persona, "")
             if recommendation:
@@ -155,64 +188,71 @@ def update_memory_node(state):
                     user_id=user_id,
                     message=f"Strategy for '{task}': {recommendation[:500]}...",
                     sender="agent",
-                    metadata={"type": "recommendation", "task": task}
-                )
+                    metadata={
+                        "type": "recommendation",
+                        "task": task
+                    })
                 print(f"[{persona}] Memory stored in VectorDB")
     except Exception as e:
         print(f"Error updating VectorDB memory: {e}")
-    
+
     return state
 
+
 # Run Meeting with LangGraph - Uses ChromaDB VectorDB Memory
-def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: List[str] | None = None, user_id: str = "system", meeting_type: str = "board") -> Dict:
+def run_meeting(task: str,
+                user_profile: str = "",
+                turns: int = TURNS,
+                agents: List[str] | None = None,
+                user_id: str = "system",
+                meeting_type: str = "board") -> Dict:
     if not agents:
         agents = list(PERSONAS.keys())
-    
+
     graph = StateGraph(AgentState)
-    
+
     recommend_nodes = []
     for persona in agents:
         agent_node = create_agent_node(persona)
         recommend_node_name = f"recommend_{persona}"
         graph.add_node(recommend_node_name, agent_node)
         recommend_nodes.append(recommend_node_name)
-    
+
     graph.add_node("update_memory", update_memory_node)
     graph.add_node("start_recommend", lambda state: state)
     graph.add_edge(START, "start_recommend")
-    
+
     for r_node in recommend_nodes:
         graph.add_edge("start_recommend", r_node)
-    
+
     graph.add_node("after_recommend", lambda state: state)
     for r_node in recommend_nodes:
         graph.add_edge(r_node, "after_recommend")
-    
+
     def increment_turn(state):
         current = state.get("current_turn", 0)
         return {"current_turn": current + 1}
-    
+
     graph.add_node("increment", increment_turn)
     graph.add_edge("after_recommend", "increment")
-    
+
     def decide_to_continue(state):
         current_turn = state.get("current_turn", 0)
         turns = state.get("turns", 1)
         return "continue" if current_turn < turns else "end"
-    
-    graph.add_conditional_edges(
-        "increment",
-        decide_to_continue,
-        {"continue": "start_recommend", "end": "update_memory"}
-    )
-    
+
+    graph.add_conditional_edges("increment", decide_to_continue, {
+        "continue": "start_recommend",
+        "end": "update_memory"
+    })
+
     graph.add_edge("update_memory", END)
-    
+
     app_graph = graph.compile()
-    
+
     # Generate run ID
     run_id = str(uuid.uuid4())
-    
+
     initial_state = {
         "messages": [],
         "recommendations": {},
@@ -225,7 +265,7 @@ def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: L
         "user_id": user_id,
         "meeting_type": meeting_type
     }
-    
+
     print(f"🚀 Starting meeting with {len(agents)} agents, {turns} turn(s)...")
     final_state = app_graph.invoke(initial_state)
     print(f"✅ Meeting completed! Run ID: {run_id}")
@@ -233,12 +273,18 @@ def run_meeting(task: str, user_profile: str = "", turns: int = TURNS, agents: L
     os.makedirs(RUNS_DIR, exist_ok=True)
     run_path = os.path.join(RUNS_DIR, f"run_{run_id}.json")
     with open(run_path, "w") as f:
-        json.dump({
-            "task": task,
-            "user_profile": user_profile,
-            "turns": turns,
-            "agents": agents,
-            "recommendations": final_state["recommendations"]
-        }, f, indent=2)
-    
-    return {"run_id": run_id, "recommendations": final_state["recommendations"]}
+        json.dump(
+            {
+                "task": task,
+                "user_profile": user_profile,
+                "turns": turns,
+                "agents": agents,
+                "recommendations": final_state["recommendations"]
+            },
+            f,
+            indent=2)
+
+    return {
+        "run_id": run_id,
+        "recommendations": final_state["recommendations"]
+    }
