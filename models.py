@@ -30,6 +30,7 @@ class PreMeetingEvaluationInput(BaseModel):
     agents: List[str]
     user_profile: str
     conversation_history: List[Dict[str, str]]
+    meeting_type: str = "board"  # board, email, chat (general)
 
 # Define a merge function for dictionaries
 def merge_dicts(left: Dict[str, str], right: Dict[str, str]) -> Dict[str, str]:

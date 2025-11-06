@@ -106,6 +106,8 @@ async def pre_meeting_generate_question(input_data: PreMeetingEvaluationInput = 
         if agent not in PERSONAS:
             return JSONResponse(status_code=400, content={"error": f"Invalid agent: {agent}"})
     
+    meeting_type = input_data.meeting_type  # Get meeting type from request
+    
     try:
         # Always generate a counter-question for the first interaction
         counter_question = generate_counter_question(
@@ -113,6 +115,7 @@ async def pre_meeting_generate_question(input_data: PreMeetingEvaluationInput = 
             agents,
             conversation_history,
             user_profile,
+            meeting_type,  # Pass meeting type to customize questions
             0.0  # Dummy value since we don't use accuracy anymore
         )
         
@@ -144,9 +147,11 @@ async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)
         if agent not in PERSONAS:
             return JSONResponse(status_code=400, content={"error": f"Invalid agent: {agent}"})
     
+    meeting_type = input_data.meeting_type  # Get meeting type from request
+    
     try:
         # Use AI to decide if ready for meeting
-        is_ready = evaluate_readiness_with_ai(question, agents, conversation_history, user_profile)
+        is_ready = evaluate_readiness_with_ai(question, agents, conversation_history, user_profile, meeting_type)
         
         # Generate counter-question if not ready
         counter_question = None
@@ -156,6 +161,7 @@ async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)
                 agents,
                 conversation_history,
                 user_profile,
+                meeting_type,  # Pass meeting type to customize questions
                 0.0  # Dummy value since we don't use accuracy anymore
             )
         

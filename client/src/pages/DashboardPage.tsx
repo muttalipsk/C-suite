@@ -137,62 +137,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     // If recommendations are already provided (from pre-meeting completion), skip API call
     if (data.runId && data.recommendations) {
       console.log("✅ Using pre-meeting recommendations, skipping API call");
-      const abortControllerRef = useRef<AbortController | null>(null);
-      const lastSubmitTimeRef = useRef<number>(0);
-
-      // const abortControllerRef = useState<AbortController | null>(null);
-      const handleRunMeeting = useCallback(async (data: any) => {
-        // Prevent double execution
-        const now = Date.now();
-
-        // Debounce: Ignore if submitted within last 2 seconds
-        if (now - lastSubmitTimeRef.current < 2000) {
-          console.log("⚠️ Duplicate submission ignored (debounced)");
-          return;
-        }
-        if (isLoading) {
-          console.log("Meeting already in progress, ignoring duplicate request");
-          return;
-        }
-        lastSubmitTimeRef.current = now;
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-        }
-        // const abortController = new AbortController();
-        // abortControllerRef[1](abortController);
-        const abortController = new AbortController();
-        abortControllerRef.current = abortController;
       setIsLoading(true);
       setSelectedConversation(null);
       setResults(null);
       setRecommendations({});
       setCurrentRunId("");
-      try {
-        console.log("Running meeting with agents:", data.selectedAgents);
-        console.log("Meeting type from form:", data.meetingType);
-        console.log("Current selectedAgents state:", selectedAgents);
 
-        const requestBody = {
-          task: data.task,
-          agents: data.selectedAgents,
-          turns: data.turns || 1,
-          meetingType: data.meetingType || "board",
-        };
-
-        console.log("Request body being sent:", requestBody);
-
-        const response = await fetch("/api/meeting", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),signal: abortController.signal,
-        });
-
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || "Failed to run meeting");
-        }
       setRecommendations(data.recommendations);
       setCurrentRunId(data.runId);
       setResults({

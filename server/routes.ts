@@ -278,6 +278,7 @@ Role Details: ${user.roleDetails}
         agents: session.selectedAgents,
         user_profile: userProfile,
         conversation_history: conversationForPython,
+        meeting_type: session.meetingType,
       });
 
       let { counter_question, is_ready } = pythonResponse.data;
