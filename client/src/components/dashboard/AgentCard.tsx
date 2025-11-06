@@ -39,7 +39,12 @@ export function AgentCard({
     setShowChat(autoOpenChat);
   }, [autoOpenChat]);
 
-  // Parse recommendation into structured sections
+  // Check if recommendation contains HTML tags
+  const isHtmlContent = (text: string) => {
+    return /<\/?[a-z][\s\S]*>/i.test(text);
+  };
+
+  // Parse recommendation into structured sections (for markdown/plain text)
   const parseRecommendation = (text: string) => {
     console.log(`[${agentKey}] Parsing recommendation:`, text.substring(0, 200));
     
@@ -78,7 +83,13 @@ export function AgentCard({
     return sections;
   };
 
-  const sections = parseRecommendation(recommendation);
+  const hasHtmlContent = isHtmlContent(recommendation);
+  const sections = !hasHtmlContent ? parseRecommendation(recommendation) : {
+    keyRecommendations: [],
+    rationale: "",
+    pitfalls: [],
+    nextSteps: "",
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -166,50 +177,66 @@ export function AgentCard({
           </CollapsibleTrigger>
 
           <CollapsibleContent className="space-y-4 mt-4">
-            {sections.keyRecommendations.length > 0 && (
-              <div>
-                <h4 className="font-semibold text-sm text-foreground mb-2">Key Recommendations</h4>
-                <ul className="space-y-2">
-                  {sections.keyRecommendations.map((rec, idx) => (
-                    <li key={idx} className="text-sm text-muted-foreground flex gap-2">
-                      <span className="text-primary">•</span>
-                      <span className="flex-1">{rec}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {hasHtmlContent ? (
+              <div 
+                className="prose prose-sm max-w-none dark:prose-invert
+                  prose-p:text-muted-foreground prose-p:leading-relaxed
+                  prose-headings:text-foreground prose-headings:font-semibold
+                  prose-ul:text-muted-foreground prose-ul:space-y-1
+                  prose-li:text-muted-foreground
+                  prose-strong:text-foreground prose-strong:font-semibold
+                  prose-a:text-primary hover:prose-a:text-primary/80"
+                dangerouslySetInnerHTML={{ __html: recommendation }}
+                data-testid={`recommendation-content-${agentKey}`}
+              />
+            ) : (
+              <>
+                {sections.keyRecommendations.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-foreground mb-2">Key Recommendations</h4>
+                    <ul className="space-y-2">
+                      {sections.keyRecommendations.map((rec, idx) => (
+                        <li key={idx} className="text-sm text-muted-foreground flex gap-2">
+                          <span className="text-primary">•</span>
+                          <span className="flex-1">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-            {sections.rationale && (
-              <div>
-                <h4 className="font-semibold text-sm text-foreground mb-2">Rationale & Insights</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{sections.rationale}</p>
-              </div>
-            )}
+                {sections.rationale && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-foreground mb-2">Rationale & Insights</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{sections.rationale}</p>
+                  </div>
+                )}
 
-            {sections.pitfalls.length > 0 && (
-              <div>
-                <h4 className="font-semibold text-sm text-foreground mb-2">Potential Pitfalls & Mitigations</h4>
-                <ul className="space-y-2">
-                  {sections.pitfalls.map((pitfall, idx) => (
-                    <li key={idx} className="text-sm text-muted-foreground flex gap-2">
-                      <span className="text-destructive">•</span>
-                      <span className="flex-1">{pitfall}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                {sections.pitfalls.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-foreground mb-2">Potential Pitfalls & Mitigations</h4>
+                    <ul className="space-y-2">
+                      {sections.pitfalls.map((pitfall, idx) => (
+                        <li key={idx} className="text-sm text-muted-foreground flex gap-2">
+                          <span className="text-destructive">•</span>
+                          <span className="flex-1">{pitfall}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-            {sections.nextSteps && (
-              <div>
-                <h4 className="font-semibold text-sm text-foreground mb-2">Next Steps & Follow-Up</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{sections.nextSteps}</p>
-              </div>
-            )}
+                {sections.nextSteps && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-foreground mb-2">Next Steps & Follow-Up</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{sections.nextSteps}</p>
+                  </div>
+                )}
 
-            {!sections.keyRecommendations.length && !sections.rationale && (
-              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{recommendation}</p>
+                {!sections.keyRecommendations.length && !sections.rationale && (
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{recommendation}</p>
+                )}
+              </>
             )}
           </CollapsibleContent>
         </Collapsible>
