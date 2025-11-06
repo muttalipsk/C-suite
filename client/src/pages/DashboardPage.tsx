@@ -137,12 +137,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     // If recommendations are already provided (from pre-meeting completion), skip API call
     if (data.runId && data.recommendations) {
       console.log("✅ Using pre-meeting recommendations, skipping API call");
-      setIsLoading(true);
-      setSelectedConversation(null);
-      setResults(null);
-      setRecommendations({});
-      setCurrentRunId("");
-
       setRecommendations(data.recommendations);
       setCurrentRunId(data.runId);
       setResults({
