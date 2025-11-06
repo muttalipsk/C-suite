@@ -87,9 +87,11 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents }: Mee
 
   const iterateMutation = useMutation({
     mutationFn: async (userResponse: string) => {
+      const currentMeetingType = form.getValues("meetingType");
       const response = await apiRequest("POST", "/api/pre-meeting/iterate", {
         sessionId: preMeetingSession!.sessionId,
         userResponse,
+        meetingType: currentMeetingType, // Pass current meeting type
       });
       const data = await response.json();
       return data as {
