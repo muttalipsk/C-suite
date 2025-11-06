@@ -111,12 +111,11 @@ async def pre_meeting_generate_question(input_data: PreMeetingEvaluationInput = 
     try:
         # Always generate a counter-question for the first interaction
         counter_question = generate_counter_question(
-            question,
-            agents,
-            conversation_history,
-            user_profile,
-            meeting_type,  # Pass meeting type to customize questions
-            0.0  # Dummy value since we don't use accuracy anymore
+            question=question,
+            agents=agents,
+            conversation_history=conversation_history,
+            user_profile=user_profile,
+            meeting_type=meeting_type  # Pass meeting type to customize questions
         )
         
         return {
@@ -151,18 +150,23 @@ async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)
     
     try:
         # Use AI to decide if ready for meeting
-        is_ready = evaluate_readiness_with_ai(question, agents, conversation_history, user_profile, meeting_type)
+        is_ready = evaluate_readiness_with_ai(
+            question=question,
+            agents=agents,
+            conversation_history=conversation_history,
+            user_profile=user_profile,
+            meeting_type=meeting_type
+        )
         
         # Generate counter-question if not ready
         counter_question = None
         if not is_ready:
             counter_question = generate_counter_question(
-                question,
-                agents,
-                conversation_history,
-                user_profile,
-                meeting_type,  # Pass meeting type to customize questions
-                0.0  # Dummy value since we don't use accuracy anymore
+                question=question,
+                agents=agents,
+                conversation_history=conversation_history,
+                user_profile=user_profile,
+                meeting_type=meeting_type  # Pass meeting type to customize questions
             )
         
         return {
