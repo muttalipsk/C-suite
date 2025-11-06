@@ -1,0 +1,65 @@
+(venv) digitaltwin@DigitalTwin:~/ask-the-expert$ pm2 logs ask-expert-node --lines 30
+[TAILING] Tailing last 30 lines for [ask-expert-node] process (change the value with --lines option)
+/home/digitaltwin/ask-the-expert/logs/node-out-0.log last 30 lines:
+0|ask-expe | 2025-11-06T06:25:28: > rest-express@1.0.0 start
+0|ask-expe | 2025-11-06T06:25:28: > NODE_ENV=production node dist/index.js
+0|ask-expe | 2025-11-06T06:25:28: 
+0|ask-expe | 2025-11-06T06:25:28: 6:25:28 AM [express] Starting Python FastAPI server on port 8000...
+0|ask-expe | 2025-11-06T06:25:28: 6:25:28 AM [express] serving on port 5000
+0|ask-expe | 2025-11-06T06:25:36: 6:25:36 AM [express] POST /api/pre-meeting/iterate 500 in 56ms :: {"error":"connect ECONNREFUSED 127…
+0|ask-expe | 2025-11-06T06:29:39: 6:29:39 AM [express] Shutting down servers...
+0|ask-expe | 2025-11-06T06:29:39: 
+0|ask-expe | 2025-11-06T06:29:39: > rest-express@1.0.0 start
+0|ask-expe | 2025-11-06T06:29:39: > NODE_ENV=production node dist/index.js
+0|ask-expe | 2025-11-06T06:29:39: 
+0|ask-expe | 2025-11-06T06:29:39: 6:29:39 AM [express] Starting Python FastAPI server on port 8000...
+0|ask-expe | 2025-11-06T06:29:39: 6:29:39 AM [express] serving on port 5000
+0|ask-expe | 2025-11-06T06:30:28: 6:30:28 AM [express] POST /api/pre-meeting/iterate 500 in 59ms :: {"error":"connect ECONNREFUSED 127…
+0|ask-expe | 2025-11-06T06:43:47: 6:43:47 AM [express] GET /api/auth/me 304 in 19ms :: {"id":"ddd4b4c4-a09f-44fb-98e0-8e7bdfdbeb7d","e…
+0|ask-expe | 2025-11-06T06:43:47: 6:43:47 AM [express] GET /api/auth/me 304 in 6ms :: {"id":"ddd4b4c4-a09f-44fb-98e0-8e7bdfdbeb7d","em…
+0|ask-expe | 2025-11-06T06:43:47: 6:43:47 AM [express] GET /api/agent-memory 304 in 6ms :: {"memories":[]}
+0|ask-expe | 2025-11-06T06:44:02: 6:44:02 AM [express] POST /api/pre-meeting/init 500 in 23ms :: {"error":"connect ECONNREFUSED 127.0.…
+0|ask-expe | 2025-11-06T06:44:03: 6:44:03 AM [express] POST /api/pre-meeting/init 500 in 12ms :: {"error":"connect ECONNREFUSED 127.0.…
+0|ask-expe | 2025-11-06T06:44:35: 6:44:35 AM [express] POST /api/pre-meeting/init 500 in 21ms :: {"error":"connect ECONNREFUSED 127.0.…
+0|ask-expe | 2025-11-06T06:54:10: 6:54:10 AM [express] GET /api/auth/me 304 in 6ms :: {"id":"ddd4b4c4-a09f-44fb-98e0-8e7bdfdbeb7d","em…
+0|ask-expe | 2025-11-06T06:54:10: 6:54:10 AM [express] GET /api/auth/me 304 in 5ms :: {"id":"ddd4b4c4-a09f-44fb-98e0-8e7bdfdbeb7d","em…
+0|ask-expe | 2025-11-06T06:54:10: 6:54:10 AM [express] GET /api/agent-memory 304 in 6ms :: {"memories":[]}
+0|ask-expe | 2025-11-06T07:05:25: 7:05:25 AM [express] Shutting down servers...
+0|ask-expe | 2025-11-06T07:05:25: 
+0|ask-expe | 2025-11-06T07:05:25: > rest-express@1.0.0 start
+0|ask-expe | 2025-11-06T07:05:25: > NODE_ENV=production node dist/index.js
+0|ask-expe | 2025-11-06T07:05:25: 
+0|ask-expe | 2025-11-06T07:05:26: 7:05:26 AM [express] Starting Python FastAPI server on port 8000...
+0|ask-expe | 2025-11-06T07:05:26: 7:05:26 AM [express] serving on port 5000
+
+/home/digitaltwin/ask-the-expert/logs/node-error-0.log last 30 lines:
+0|ask-expe | 2025-11-06T07:05:28:   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+0|ask-expe | 2025-11-06T07:05:28:     return self._loop.run_until_complete(task)
+0|ask-expe | 2025-11-06T07:05:28:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+0|ask-expe | 2025-11-06T07:05:28:   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+0|ask-expe | 2025-11-06T07:05:28:   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+0|ask-expe | 2025-11-06T07:05:28:     await self._serve(sockets)
+0|ask-expe | 2025-11-06T07:05:28:   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+0|ask-expe | 2025-11-06T07:05:28:     config.load()
+0|ask-expe | 2025-11-06T07:05:28:   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+0|ask-expe | 2025-11-06T07:05:28:     self.loaded_app = import_from_string(self.app)
+0|ask-expe | 2025-11-06T07:05:28:                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+0|ask-expe | 2025-11-06T07:05:28:   File "/home/digitaltwin/ask-the-expert/venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+0|ask-expe | 2025-11-06T07:05:28:     module = importlib.import_module(module_str)
+0|ask-expe | 2025-11-06T07:05:28:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+0|ask-expe | 2025-11-06T07:05:28:   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+0|ask-expe | 2025-11-06T07:05:28:     return _bootstrap._gcd_import(name[level:], package, level)
+0|ask-expe | 2025-11-06T07:05:28:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+0|ask-expe | 2025-11-06T07:05:28:   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+0|ask-expe | 2025-11-06T07:05:28:   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+0|ask-expe | 2025-11-06T07:05:28:   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+0|ask-expe | 2025-11-06T07:05:28:   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+0|ask-expe | 2025-11-06T07:05:28:   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+0|ask-expe | 2025-11-06T07:05:28:   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+0|ask-expe | 2025-11-06T07:05:28:   File "/home/digitaltwin/ask-the-expert/main.py", line 18, in <module>
+0|ask-expe | 2025-11-06T07:05:28:     from pre_meeting import evaluate_readiness_with_ai, generate_counter_question
+0|ask-expe | 2025-11-06T07:05:28:   File "/home/digitaltwin/ask-the-expert/pre_meeting.py", line 1
+0|ask-expe | 2025-11-06T07:05:28:     import type { Express } from "express";
+0|ask-expe | 2025-11-06T07:05:28:                 ^
+0|ask-expe | 2025-11-06T07:05:28: SyntaxError: invalid syntax
+0|ask-expe | 2025-11-06T07:05:28: [python] Server exited with code 1
