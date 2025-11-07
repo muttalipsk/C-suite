@@ -82,14 +82,22 @@ Role Details: ${user.roleDetails}
         password: hashedPassword,
       });
 
-      // Set session
+      // Set session and explicitly save it before responding
       req.session.userId = user.id;
-
-      res.json({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        photo: user.photo
+      
+      // Explicitly save the session to prevent race conditions
+      req.session.save((err: any) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ error: "Session save failed" });
+        }
+        
+        res.json({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          photo: user.photo
+        });
       });
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -113,14 +121,22 @@ Role Details: ${user.roleDetails}
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      // Set session
+      // Set session and explicitly save it before responding
       req.session.userId = user.id;
-
-      res.json({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        photo: user.photo
+      
+      // Explicitly save the session to prevent race conditions
+      req.session.save((err: any) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ error: "Session save failed" });
+        }
+        
+        res.json({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          photo: user.photo
+        });
       });
     } catch (error: any) {
       console.error("Login error:", error);
