@@ -188,6 +188,10 @@ INSTRUCTIONS:
 Generate ONE thoughtful follow-up question:"""
     
     try:
+        # Debug: Print API key status
+        from constants import GEMINI_KEY
+        print(f"[DEBUG generate_counter_question] API Key present: {bool(GEMINI_KEY)}, Length: {len(GEMINI_KEY) if GEMINI_KEY else 0}")
+        
         model = genai.GenerativeModel("gemini-2.0-flash-exp")
         response = model.generate_content(
             system_prompt,
@@ -205,7 +209,9 @@ Generate ONE thoughtful follow-up question:"""
         return counter_question
         
     except Exception as e:
+        import traceback
         print(f"Error generating counter-question: {e}")
+        print(f"Full traceback: {traceback.format_exc()}")
         # Fallback to natural questions
         if not information_coverage["context"]:
             return "Could you tell me a bit more about your current situation and what you're working on?"

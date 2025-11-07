@@ -5,6 +5,9 @@ import os
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_KEY:
     raise ValueError("GEMINI_API_KEY environment variable must be set")
+if GEMINI_KEY and len(GEMINI_KEY.strip()) == 0:
+    raise ValueError("GEMINI_API_KEY is empty - please set a valid API key")
+print(f"[DEBUG] GEMINI_API_KEY loaded: {GEMINI_KEY[:10]}...{GEMINI_KEY[-4:] if len(GEMINI_KEY) > 14 else ''}")
 MODEL = "gemini-2.0-flash"
 EMBEDDING_MODEL = "models/embedding-001"
 TURNS = int(os.getenv("TURNS", 1))
