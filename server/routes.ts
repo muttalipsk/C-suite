@@ -945,11 +945,21 @@ Role Details: ${user.roleDetails}
     }
   });
   
-  // Create persona from 20 answered questions
-  app.post("/api/persona-interview/create-persona", requireAuth, async (req, res) => {
+  // Create persona from 20 answered questions + emails + documents
+  app.post("/api/persona-interview/create-persona", requireAuth, upload.array('files', 20), async (req, res) => {
     try {
-      const { answers } = req.body;
       const userId = req.session.userId;
+      const files = req.files as Express.Multer.File[];
+      
+      // Parse answers from FormData
+      const answersStr = req.body.answers;
+      const emailsStr = req.body.emails;
+      
+      if (!answersStr) {
+        return res.status(400).json({ error: "Answers are required" });
+      }
+      
+      const answers = JSON.parse(answersStr);
       
       if (!answers || answers.length !== 20) {
         return res.status(400).json({ error: "All 20 questions must be answered" });
@@ -964,19 +974,66 @@ Role Details: ${user.roleDetails}
       // Extract company domain from email
       const emailDomain = user.email.split('@')[1];
       
-      // Forward to Python API to generate persona summary and create twin
-      const pythonResponse = await axios.post(
-        'http://localhost:8000/persona-interview/create-persona',
-        {
-          user_id: userId,
-          user_email: user.email,
-          company_domain: emailDomain,
-          answers
-        },
-        { timeout: 60000 } // 1 minute for persona generation
-      );
+      // Prepare request payload
+      const payload: any = {
+        user_id: userId,
+        user_email: user.email,
+        company_domain: emailDomain,
+        answers
+      };
       
-      res.json(pythonResponse.data);
+      // Add emails if provided
+      if (emailsStr) {
+        try {
+          payload.emails = JSON.parse(emailsStr);
+        } catch (e) {
+          console.error("Failed to parse emails:", e);
+        }
+      }
+      
+      // If files are uploaded, we need to send them via FormData
+      if (files && files.length > 0) {
+        const formData = new FormData();
+        formData.append('user_id', userId!.toString());
+        formData.append('user_email', user.email);
+        formData.append('company_domain', emailDomain);
+        formData.append('answers', JSON.stringify(answers));
+        
+        if (payload.emails) {
+          formData.append('emails', JSON.stringify(payload.emails));
+        }
+        
+        // Add files
+        for (const file of files) {
+          const fileStream = fs.createReadStream(file.path);
+          formData.append('files', fileStream, file.originalname);
+        }
+        
+        const pythonResponse = await axios.post(
+          'http://localhost:8000/persona-interview/create-persona',
+          formData,
+          {
+            headers: formData.getHeaders(),
+            timeout: 120000 // 2 minutes for file processing
+          }
+        );
+        
+        // Clean up uploaded files
+        for (const file of files) {
+          fs.unlinkSync(file.path);
+        }
+        
+        res.json(pythonResponse.data);
+      } else {
+        // No files, send JSON
+        const pythonResponse = await axios.post(
+          'http://localhost:8000/persona-interview/create-persona',
+          payload,
+          { timeout: 60000 } // 1 minute for persona generation
+        );
+        
+        res.json(pythonResponse.data);
+      }
     } catch (error: any) {
       console.error("Create persona error:", error);
       res.status(500).json({

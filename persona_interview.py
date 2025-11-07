@@ -543,49 +543,94 @@ async def generate_summary(request: GenerateSummaryRequest):
     return {"summary": summary}
 
 
-class CreatePersonaRequest(BaseModel):
-    user_id: str
-    user_email: str
-    company_domain: str
-    answers: List[Dict]  # List of {question, answer, category}
+from fastapi import Form, File, UploadFile
+from typing import Optional
 
 
 @router.post("/create-persona")
-async def create_persona_from_answers(request: CreatePersonaRequest):
+async def create_persona_from_answers(
+    user_id: str = Form(...),
+    user_email: str = Form(...),
+    company_domain: str = Form(...),
+    answers: str = Form(...),  # JSON string
+    emails: Optional[str] = Form(None),  # JSON string, optional
+    files: Optional[List[UploadFile]] = File(None)  # Optional files
+):
     """
-    Create a digital twin persona from 20 interview question answers.
-    This generates a comprehensive persona summary and stores it in ChromaDB.
+    Create a digital twin persona from:
+    1. 20 interview question answers (required)
+    2. Email samples for writing style analysis (optional)
+    3. Documents for content analysis (optional)
     """
     try:
         from twin_manager import create_twin
+        import json
         
-        if len(request.answers) != 20:
+        # Parse answers from JSON string
+        answers_list = json.loads(answers)
+        
+        if len(answers_list) != 20:
             raise HTTPException(
                 status_code=400,
-                detail=f"Expected 20 answers, got {len(request.answers)}"
+                detail=f"Expected 20 answers, got {len(answers_list)}"
             )
         
         # Extract twin name from answers (look for identity questions)
         twin_name = "My Digital Twin"
-        for qa in request.answers:
+        for qa in answers_list:
             if "name" in qa.get("question", "").lower() and "company" not in qa.get("question", "").lower():
                 twin_name = qa.get("answer", "My Digital Twin")[:100]
                 break
         
         # Generate comprehensive persona summary from all 20 answers
-        persona_summary = generate_persona_summary_from_interview(request.answers)
+        persona_summary = generate_persona_summary_from_interview(answers_list)
         
-        # Create twin in ChromaDB with the generated summary
+        # Process email writing style if provided
+        email_style = None
+        if emails:
+            try:
+                email_list = json.loads(emails)
+                if len(email_list) >= 3:
+                    from persona_interview import analyze_email_writing_style
+                    email_style = analyze_email_writing_style(email_list)
+                    
+                    # Add email style to persona summary
+                    if not email_style.get("error"):
+                        persona_summary += f"\n\n## Writing Style Analysis\n\n"
+                        persona_summary += f"**Tone:** {email_style.get('tone', 'Not specified')}\n"
+                        persona_summary += f"**Formality:** {email_style.get('formality', 'Not specified')}\n"
+                        persona_summary += f"**Common Phrases:** {', '.join(email_style.get('common_phrases', []))}\n"
+            except Exception as e:
+                print(f"Email analysis error: {e}")
+        
+        # Process uploaded documents if provided
+        content_documents = [persona_summary]
+        if files:
+            for file in files:
+                try:
+                    content = await file.read()
+                    # Basic text extraction (for .txt and .md files)
+                    if file.filename.endswith(('.txt', '.md')):
+                        text = content.decode('utf-8', errors='ignore')
+                        content_documents.append(text[:5000])  # Limit to 5000 chars per doc
+                    # For PDF/DOCX, we'd need additional libraries
+                    # For now, just acknowledge the upload
+                except Exception as e:
+                    print(f"File processing error for {file.filename}: {e}")
+        
+        # Create twin in ChromaDB with the generated summary and documents
         twin_id = create_twin(
-            user_id=request.user_id,
+            user_id=user_id,
             twin_name=twin_name,
-            company_domain=request.company_domain,
-            content_documents=[persona_summary],  # Store the full persona summary
+            company_domain=company_domain,
+            content_documents=content_documents,
             style_messages=[],  # No sample messages in this flow
             profile_data={
-                "user_email": request.user_email,
+                "user_email": user_email,
                 "interview_completed": True,
-                "total_answers": len(request.answers)
+                "total_answers": len(answers_list),
+                "email_samples_provided": emails is not None,
+                "documents_uploaded": len(files) if files else 0
             }
         )
         
@@ -593,7 +638,12 @@ async def create_persona_from_answers(request: CreatePersonaRequest):
             "success": True,
             "twin_id": twin_id,
             "twin_name": twin_name,
-            "message": "Digital twin persona created successfully from interview answers"
+            "message": "Digital twin persona created successfully",
+            "details": {
+                "answers": len(answers_list),
+                "emails": len(json.loads(emails)) if emails else 0,
+                "documents": len(files) if files else 0
+            }
         }
         
     except Exception as e:
