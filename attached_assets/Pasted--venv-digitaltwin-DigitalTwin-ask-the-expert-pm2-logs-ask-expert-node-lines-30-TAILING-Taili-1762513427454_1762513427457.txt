@@ -1,0 +1,33 @@
+(venv) digitaltwin@DigitalTwin:~/ask-the-expert$ pm2 logs ask-expert-node --lines 30
+[TAILING] Tailing last 30 lines for [ask-expert-node] process (change the value with --lines option)
+/home/digitaltwin/ask-the-expert/logs/node-out-0.log last 30 lines:
+0|ask-expe | 2025-11-07T10:59:56: metadata {
+0|ask-expe | 2025-11-07T10:59:56:   key: "service"
+0|ask-expe | 2025-11-07T10:59:56:   value: "generativelanguage.googleapis.com"
+0|ask-expe | 2025-11-07T10:59:56: }
+0|ask-expe | 2025-11-07T10:59:56: , locale: "en-US"
+0|ask-expe | 2025-11-07T10:59:56: message: "API Key not found. Please pass a valid API key."
+0|ask-expe | 2025-11-07T10:59:56: ]
+0|ask-expe | 2025-11-07T10:59:56: INFO:     127.0.0.1:49498 - "POST /pre-meeting/generate-question HTTP/1.1" 200 OK
+0|ask-expe | 2025-11-07T10:59:56: 10:59:56 AM [express] POST /api/pre-meeting/init 200 in 157ms :: {"sessionId":"8c0f1aa0-0472-4361-b6a…
+0|ask-expe | 2025-11-07T11:01:43: 11:01:43 AM [express] GET /api/auth/me 304 in 8ms :: {"id":"ddd4b4c4-a09f-44fb-98e0-8e7bdfdbeb7d","em…
+0|ask-expe | 2025-11-07T11:01:43: 11:01:43 AM [express] GET /api/auth/me 304 in 6ms :: {"id":"ddd4b4c4-a09f-44fb-98e0-8e7bdfdbeb7d","em…
+0|ask-expe | 2025-11-07T11:01:43: 11:01:43 AM [express] GET /api/agent-memory 304 in 6ms :: {"memories":[{"id":"8e67af19-ffda-445d-ba5c…
+0|ask-expe | 2025-11-07T11:01:49: 11:01:49 AM [express] [python] Error generating counter-question: 400 API Key not found. Please pass a valid API key. [reason: "API_KEY_INVALID"
+0|ask-expe | 2025-11-07T11:01:49: domain: "googleapis.com"
+0|ask-expe | 2025-11-07T11:01:49: metadata {
+0|ask-expe | 2025-11-07T11:01:49:   key: "service"
+0|ask-expe | 2025-11-07T11:01:49:   value: "generativelanguage.googleapis.com"
+0|ask-expe | 2025-11-07T11:01:49: }
+0|ask-expe | 2025-11-07T11:01:49: , locale: "en-US"
+0|ask-expe | 2025-11-07T11:01:49: message: "API Key not found. Please pass a valid API key."
+0|ask-expe | 2025-11-07T11:01:49: ]
+0|ask-expe | 2025-11-07T11:01:49: INFO:     127.0.0.1:36900 - "POST /pre-meeting/generate-question HTTP/1.1" 200 OK
+0|ask-expe | 2025-11-07T11:01:49: 11:01:49 AM [express] POST /api/pre-meeting/init 200 in 117ms :: {"sessionId":"7b81f084-da36-42d0-855…
+0|ask-expe | 2025-11-07T11:02:09: 11:02:09 AM [express] Shutting down servers...
+0|ask-expe | 2025-11-07T11:02:09: 
+0|ask-expe | 2025-11-07T11:02:09: > rest-express@1.0.0 start
+0|ask-expe | 2025-11-07T11:02:09: > NODE_ENV=production node dist/index.js
+0|ask-expe | 2025-11-07T11:02:09: 
+0|ask-expe | 2025-11-07T11:02:10: 11:02:10 AM [express] Starting Python FastAPI server on port 8000...
+0|ask-expe | 2025-11-07T11:02:10: 11:02:10 AM [express] serving on port 5000
