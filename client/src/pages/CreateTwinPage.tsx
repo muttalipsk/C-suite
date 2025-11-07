@@ -1,513 +1,372 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Plus, X, ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Send, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
+import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { motion, AnimatePresence } from "framer-motion";
 
-const twinFormSchema = z.object({
-  twinName: z.string().min(1, "Twin name is required"),
-  companyName: z.string().min(1, "Company name is required"),
-  designation: z.string().min(1, "Designation is required"),
-  toneStyle: z.string().min(1, "Communication tone is required"),
-  riskTolerance: z.string().min(1, "Risk tolerance is required"),
-  coreValues: z.string().min(10, "Core values must be at least 10 characters"),
-  emojiPreference: z.string().optional(),
-  q4Goal: z.string().optional(),
-  coreStrategy: z.string().optional(),
-});
+interface Question {
+  category: string;
+  question: string;
+}
 
-type TwinFormValues = z.infer<typeof twinFormSchema>;
+interface QuestionAnswer {
+  question: string;
+  answer: string;
+  category: string;
+}
 
 export default function CreateTwinPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  
+  // Interview state
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentAnswer, setCurrentAnswer] = useState("");
+  const [answers, setAnswers] = useState<QuestionAnswer[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [sampleMessages, setSampleMessages] = useState<string[]>(["", "", ""]);
-
-  const form = useForm<TwinFormValues>({
-    resolver: zodResolver(twinFormSchema),
-    defaultValues: {
-      twinName: "",
-      companyName: "",
-      designation: "",
-      toneStyle: "",
-      riskTolerance: "",
-      coreValues: "",
-      emojiPreference: "None",
-      q4Goal: "",
-      coreStrategy: "",
-    },
-  });
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setUploadedFiles(prev => [...prev, ...newFiles]);
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const addSampleMessage = () => {
-    setSampleMessages(prev => [...prev, ""]);
-  };
-
-  const updateSampleMessage = (index: number, value: string) => {
-    setSampleMessages(prev => prev.map((msg, i) => i === index ? value : msg));
-  };
-
-  const removeSampleMessage = (index: number) => {
-    if (sampleMessages.length > 3) {
-      setSampleMessages(prev => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  const onSubmit = async (data: TwinFormValues) => {
-    setIsSubmitting(true);
-
-    try {
-      const formData = new FormData();
-
-      // Add text fields
-      formData.append("twinName", data.twinName);
-      formData.append("toneStyle", data.toneStyle);
-      formData.append("riskTolerance", data.riskTolerance);
-      formData.append("coreValues", data.coreValues);
-      formData.append("emojiPreference", data.emojiPreference || "None");
-
-      // Add sample messages as JSON
-      const filteredMessages = sampleMessages.filter(msg => msg.trim());
-      formData.append("sampleMessages", JSON.stringify(filteredMessages));
-
-      // Add profile data as JSON
-      const profileData = {
-        company_name: data.companyName,
-        designation: data.designation,
-        q4_goal: data.q4Goal || "",
-        core_strategy: data.coreStrategy || "",
-        core_values: data.coreValues,
-        risk_tolerance: data.riskTolerance,
-        twin_name: data.twinName,
-      };
-      formData.append("profileData", JSON.stringify(profileData));
-
-      // Add files
-      uploadedFiles.forEach(file => {
-        formData.append("files", file);
-      });
-
-      const response = await fetch("/api/twins/create", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Digital Twin Created",
-          description: "Your twin has been successfully created and is ready to use.",
+  
+  // Fetch user profile and generate personalized questions
+  useEffect(() => {
+    const generateQuestions = async () => {
+      try {
+        setIsLoadingQuestions(true);
+        
+        // Get user profile
+        const userResponse = await fetch("/api/auth/me");
+        if (!userResponse.ok) {
+          throw new Error("Failed to fetch user profile");
+        }
+        const userData = await userResponse.json();
+        
+        // Generate 20 personalized questions based on user profile
+        const questionResponse = await fetch("/api/persona-interview/generate-questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_profile: {
+              name: userData.name || "",
+              company: userData.companyName || "",  // Fixed: use companyName
+              title: userData.designation || "",    // Fixed: use designation
+              industry: userData.industry || "",
+              goalOneYear: userData.goalOneYear || "",
+              goalFiveYears: userData.goalFiveYears || "",
+            }
+          }),
         });
-        navigate("/twins");
-      } else {
-        const error = await response.json();
+        
+        if (!questionResponse.ok) {
+          throw new Error("Failed to generate questions");
+        }
+        
+        const data = await questionResponse.json();
+        setQuestions(data.questions || []);
+        
+        toast({
+          title: "Questions Generated",
+          description: `${data.questions?.length || 0} personalized questions are ready for you.`,
+        });
+      } catch (error: any) {
+        console.error("Error generating questions:", error);
         toast({
           title: "Error",
-          description: error.error || "Failed to create twin",
+          description: error.message || "Failed to generate questions",
           variant: "destructive",
         });
+        navigate("/dashboard");
+      } finally {
+        setIsLoadingQuestions(false);
       }
-    } catch (error) {
-      console.error("Twin creation error:", error);
+    };
+    
+    generateQuestions();
+  }, [toast, navigate]);
+  
+  const handleNextQuestion = () => {
+    if (!currentAnswer.trim()) {
+      toast({
+        title: "Answer Required",
+        description: "Please provide an in-depth answer before proceeding.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Save current answer
+    const questionAnswer: QuestionAnswer = {
+      question: questions[currentQuestionIndex].question,
+      answer: currentAnswer,
+      category: questions[currentQuestionIndex].category,
+    };
+    setAnswers(prev => [...prev, questionAnswer]);
+    
+    // Move to next question
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setCurrentAnswer("");
+    }
+  };
+  
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
+      // Restore previous answer
+      const previousAnswer = answers[currentQuestionIndex - 1];
+      if (previousAnswer) {
+        setCurrentAnswer(previousAnswer.answer);
+        // Remove the previous answer from the list
+        setAnswers(prev => prev.slice(0, -1));
+      }
+    }
+  };
+  
+  const handleFinishInterview = async () => {
+    if (!currentAnswer.trim()) {
+      toast({
+        title: "Answer Required",
+        description: "Please provide an in-depth answer before finishing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Save final answer
+      const finalAnswer: QuestionAnswer = {
+        question: questions[currentQuestionIndex].question,
+        answer: currentAnswer,
+        category: questions[currentQuestionIndex].category,
+      };
+      const allAnswers = [...answers, finalAnswer];
+      
+      // Create persona from all 20 answers
+      const response = await fetch("/api/persona-interview/create-persona", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          answers: allAnswers,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create persona");
+      }
+      
+      toast({
+        title: "Persona Created Successfully",
+        description: "Your digital twin has been created from your 20 in-depth answers.",
+      });
+      
+      navigate("/twins");
+    } catch (error: any) {
+      console.error("Error creating persona:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: error.message || "Failed to create persona",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
+  const currentQuestion = questions[currentQuestionIndex];
+  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+  
+  if (isLoadingQuestions) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl border-2 shadow-2xl">
+          <CardContent className="flex flex-col items-center justify-center p-12">
+            <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">Generating Your Personalized Questions</h3>
+            <p className="text-sm text-muted-foreground text-center">
+              AI is analyzing your profile to create 20 in-depth questions tailored just for you...
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl border-2 shadow-2xl">
+          <CardContent className="flex flex-col items-center justify-center p-12">
+            <p className="text-muted-foreground">No questions generated. Please try again.</p>
+            <Button onClick={() => navigate("/dashboard")} className="mt-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl mx-auto py-8 px-4">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/twins")}
-          className="mb-6"
-          data-testid="button-back-to-twins"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Twins
-        </Button>
-
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Sparkles className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold">Create Your Digital Twin</h1>
-          </div>
-          <p className="text-muted-foreground">
-            Build an AI-powered version of yourself that thinks, communicates, and advises like you do.
-          </p>
-        </div>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Basic Information</CardTitle>
-                <CardDescription>Define your twin's identity and role</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="twinName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Twin Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Sarah Chen Digital Twin"
-                          {...field}
-                          data-testid="input-twin-name"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="companyName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Company Name</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., TechCorp"
-                            {...field}
-                            data-testid="input-company-name"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="designation"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Designation</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., Chief Technology Officer"
-                            {...field}
-                            data-testid="input-designation"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Communication Style */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Communication Style</CardTitle>
-                <CardDescription>How does your twin communicate?</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="toneStyle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tone & Style</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-tone-style">
-                              <SelectValue placeholder="Select communication style" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Direct">Direct</SelectItem>
-                            <SelectItem value="Motivational">Motivational</SelectItem>
-                            <SelectItem value="Sarcastic">Sarcastic</SelectItem>
-                            <SelectItem value="Formal">Formal</SelectItem>
-                            <SelectItem value="Humorous">Humorous</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="emojiPreference"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Emoji Usage</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-emoji-preference">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="None">None</SelectItem>
-                            <SelectItem value="Minimal">Minimal</SelectItem>
-                            <SelectItem value="Moderate">Moderate</SelectItem>
-                            <SelectItem value="Frequent">Frequent</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="riskTolerance"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Risk Tolerance</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-risk-tolerance">
-                            <SelectValue placeholder="Select risk approach" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Conservative">Conservative - Prefer proven approaches</SelectItem>
-                          <SelectItem value="Balanced">Balanced - Measured risk-taking</SelectItem>
-                          <SelectItem value="Aggressive">Aggressive - Bold, experimental</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="coreValues"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Core Values</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="e.g., Innovation, customer obsession, data-driven decision making..."
-                          className="min-h-[100px]"
-                          {...field}
-                          data-testid="textarea-core-values"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Describe the principles that guide your decision-making
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Strategic Context */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Strategic Context</CardTitle>
-                <CardDescription>Optional: Add strategic goals and priorities</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="q4Goal"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Q4 Goals</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="e.g., Launch new product line, increase market share by 15%..."
-                          className="min-h-[80px]"
-                          {...field}
-                          data-testid="textarea-q4-goal"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="coreStrategy"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Core Strategy</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="e.g., Focus on AI-driven automation, expand into enterprise market..."
-                          className="min-h-[80px]"
-                          {...field}
-                          data-testid="textarea-core-strategy"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Sample Messages */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Sample Messages</CardTitle>
-                <CardDescription>
-                  Provide at least 3 examples of how you typically communicate (emails, messages, responses)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ScrollArea className="max-h-[400px]">
-                  <div className="space-y-3">
-                    {sampleMessages.map((message, index) => (
-                      <div key={index} className="flex gap-2">
-                        <Textarea
-                          placeholder={`Sample message ${index + 1}`}
-                          value={message}
-                          onChange={(e) => updateSampleMessage(index, e.target.value)}
-                          className="min-h-[80px]"
-                          data-testid={`textarea-sample-message-${index}`}
-                        />
-                        {sampleMessages.length > 3 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeSampleMessage(index)}
-                            data-testid={`button-remove-message-${index}`}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addSampleMessage}
-                  className="w-full"
-                  data-testid="button-add-sample-message"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Another Sample
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* File Upload */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Upload Documents</CardTitle>
-                <CardDescription>
-                  Upload documents that represent your communication style and expertise (optional)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Upload PDF, TXT, DOC, or MD files (Max 100MB)
-                  </p>
-                  <Input
-                    type="file"
-                    multiple
-                    accept=".txt,.pdf,.doc,.docx,.md"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                    data-testid="input-file-upload"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById("file-upload")?.click()}
-                    data-testid="button-choose-files"
-                  >
-                    Choose Files
-                  </Button>
-                </div>
-
-                {uploadedFiles.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Uploaded Files:</p>
-                    {uploadedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 border rounded">
-                        <span className="text-sm truncate">{file.name}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeFile(index)}
-                          data-testid={`button-remove-file-${index}`}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Separator />
-
-            <div className="flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/twins")}
-                data-testid="button-cancel"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                data-testid="button-create-twin"
-              >
-                {isSubmitting ? "Creating..." : "Create Digital Twin"}
-              </Button>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
+      <div className="max-w-4xl mx-auto py-8">
+        {/* Header */}
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/dashboard")}
+            className="mb-4"
+            data-testid="button-back"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent-foreground bg-clip-text text-transparent">
+                Create Your Digital Twin
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Answer 20 in-depth questions to create a personalized AI persona
+              </p>
             </div>
-          </form>
-        </Form>
+            <Badge variant="secondary" className="text-lg px-4 py-2">
+              Question {currentQuestionIndex + 1} of {questions.length}
+            </Badge>
+          </div>
+          
+          <Progress value={progress} className="mt-4 h-2" />
+        </div>
+        
+        {/* Question Card */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentQuestionIndex}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="border-2 shadow-2xl hover:shadow-3xl transition-all">
+              <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pb-6">
+                <div className="flex items-start gap-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent-foreground/30 rounded-full blur-md"></div>
+                    <div className="relative w-12 h-12 bg-gradient-to-br from-primary to-accent-foreground rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                      {currentQuestionIndex + 1}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <Badge variant="outline" className="mb-2">
+                      {currentQuestion?.category || "General"}
+                    </Badge>
+                    <CardTitle className="text-xl leading-relaxed">
+                      {currentQuestion?.question}
+                    </CardTitle>
+                    <CardDescription className="mt-2">
+                      Please provide an in-depth, detailed answer. The more comprehensive your response, the better your digital twin will represent you.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="pt-6">
+                <Textarea
+                  value={currentAnswer}
+                  onChange={(e) => setCurrentAnswer(e.target.value)}
+                  placeholder="Type your in-depth answer here... (minimum 50 characters recommended)"
+                  className="min-h-[200px] text-base resize-none"
+                  data-testid="input-answer"
+                  autoFocus
+                />
+                
+                <div className="mt-4 text-sm text-muted-foreground">
+                  Character count: {currentAnswer.length}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </AnimatePresence>
+        
+        {/* Navigation Buttons */}
+        <div className="mt-6 flex items-center justify-between gap-4">
+          <Button
+            variant="outline"
+            onClick={handlePreviousQuestion}
+            disabled={currentQuestionIndex === 0 || isSubmitting}
+            className="flex-1"
+            data-testid="button-previous"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Previous Question
+          </Button>
+          
+          {!isLastQuestion ? (
+            <Button
+              onClick={handleNextQuestion}
+              disabled={!currentAnswer.trim() || isSubmitting}
+              className="flex-1 bg-gradient-to-r from-primary to-accent-foreground hover:from-primary/90 hover:to-accent-foreground/90"
+              data-testid="button-next"
+            >
+              Next Question
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleFinishInterview}
+              disabled={!currentAnswer.trim() || isSubmitting}
+              className="flex-1 bg-gradient-to-r from-primary to-accent-foreground hover:from-primary/90 hover:to-accent-foreground/90"
+              data-testid="button-finish"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating Persona...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Finish & Create Persona
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+        
+        {/* Answered Questions Summary */}
+        {answers.length > 0 && (
+          <Card className="mt-6 border">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold">Answered Questions ({answers.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-2">
+                  {answers.map((qa, index) => (
+                    <div key={index} className="text-sm p-3 bg-muted/30 rounded-md">
+                      <div className="font-medium text-foreground mb-1">
+                        Q{index + 1}: {qa.question.substring(0, 80)}...
+                      </div>
+                      <div className="text-muted-foreground text-xs">
+                        A: {qa.answer.substring(0, 100)}...
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

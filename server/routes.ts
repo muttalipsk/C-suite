@@ -922,6 +922,69 @@ Role Details: ${user.roleDetails}
     }
   });
 
+  // ===== PERSONA INTERVIEW ROUTES (20-Question AI-Powered Interview) =====
+  
+  // Generate 20 personalized questions based on user profile
+  app.post("/api/persona-interview/generate-questions", requireAuth, async (req, res) => {
+    try {
+      const { user_profile } = req.body;
+      
+      // Forward to Python API for AI-generated questions
+      const pythonResponse = await axios.post(
+        'http://localhost:8000/persona-interview/generate-questions',
+        { user_profile },
+        { timeout: 30000 }
+      );
+      
+      res.json(pythonResponse.data);
+    } catch (error: any) {
+      console.error("Generate questions error:", error);
+      res.status(500).json({
+        error: error.response?.data?.error || "Failed to generate questions"
+      });
+    }
+  });
+  
+  // Create persona from 20 answered questions
+  app.post("/api/persona-interview/create-persona", requireAuth, async (req, res) => {
+    try {
+      const { answers } = req.body;
+      const userId = req.session.userId;
+      
+      if (!answers || answers.length !== 20) {
+        return res.status(400).json({ error: "All 20 questions must be answered" });
+      }
+      
+      // Get user info for company domain
+      const user = await storage.getUserById(userId!);
+      if (!user || !user.email) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Extract company domain from email
+      const emailDomain = user.email.split('@')[1];
+      
+      // Forward to Python API to generate persona summary and create twin
+      const pythonResponse = await axios.post(
+        'http://localhost:8000/persona-interview/create-persona',
+        {
+          user_id: userId,
+          user_email: user.email,
+          company_domain: emailDomain,
+          answers
+        },
+        { timeout: 60000 } // 1 minute for persona generation
+      );
+      
+      res.json(pythonResponse.data);
+    } catch (error: any) {
+      console.error("Create persona error:", error);
+      res.status(500).json({
+        error: error.response?.data?.error || "Failed to create persona"
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

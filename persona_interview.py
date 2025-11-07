@@ -541,3 +541,121 @@ async def generate_summary(request: GenerateSummaryRequest):
     """Generate persona summary from interview answers and email style"""
     summary = generate_persona_summary(request.answers, request.email_style)
     return {"summary": summary}
+
+
+class CreatePersonaRequest(BaseModel):
+    user_id: str
+    user_email: str
+    company_domain: str
+    answers: List[Dict]  # List of {question, answer, category}
+
+
+@router.post("/create-persona")
+async def create_persona_from_answers(request: CreatePersonaRequest):
+    """
+    Create a digital twin persona from 20 interview question answers.
+    This generates a comprehensive persona summary and stores it in ChromaDB.
+    """
+    try:
+        from twin_manager import create_twin
+        
+        if len(request.answers) != 20:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Expected 20 answers, got {len(request.answers)}"
+            )
+        
+        # Extract twin name from answers (look for identity questions)
+        twin_name = "My Digital Twin"
+        for qa in request.answers:
+            if "name" in qa.get("question", "").lower() and "company" not in qa.get("question", "").lower():
+                twin_name = qa.get("answer", "My Digital Twin")[:100]
+                break
+        
+        # Generate comprehensive persona summary from all 20 answers
+        persona_summary = generate_persona_summary_from_interview(request.answers)
+        
+        # Create twin in ChromaDB with the generated summary
+        twin_id = create_twin(
+            user_id=request.user_id,
+            twin_name=twin_name,
+            company_domain=request.company_domain,
+            content_documents=[persona_summary],  # Store the full persona summary
+            style_messages=[],  # No sample messages in this flow
+            profile_data={
+                "user_email": request.user_email,
+                "interview_completed": True,
+                "total_answers": len(request.answers)
+            }
+        )
+        
+        return {
+            "success": True,
+            "twin_id": twin_id,
+            "twin_name": twin_name,
+            "message": "Digital twin persona created successfully from interview answers"
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def generate_persona_summary_from_interview(answers: List[Dict]) -> str:
+    """
+    Generate a comprehensive persona summary from 20 interview answers.
+    Uses Gemini AI to synthesize all answers into a cohesive persona description.
+    """
+    ensure_genai_configured()
+    model = genai.GenerativeModel(MODEL)
+    
+    # Organize answers by category
+    answers_by_category = {}
+    for qa in answers:
+        category = qa.get("category", "General")
+        if category not in answers_by_category:
+            answers_by_category[category] = []
+        answers_by_category[category].append({
+            "question": qa.get("question"),
+            "answer": qa.get("answer")
+        })
+    
+    # Create prompt for summary generation
+    prompt = f"""You are creating a comprehensive digital twin persona based on a 20-question interview.
+
+**Interview Answers by Category:**
+
+"""
+    
+    for category, qas in answers_by_category.items():
+        prompt += f"\n### {category}\n\n"
+        for qa in qas:
+            prompt += f"**Q:** {qa['question']}\n"
+            prompt += f"**A:** {qa['answer']}\n\n"
+    
+    prompt += """
+
+**Your Task:**
+Generate a comprehensive persona summary that captures:
+1. **Professional Identity** - Name, role, expertise, company context
+2. **Communication Style** - Tone, vocabulary, how they express ideas
+3. **Decision-Making Approach** - How they think, their priorities, risk tolerance
+4. **Core Values & Beliefs** - What drives them, their principles
+5. **Goals & Aspirations** - Short-term and long-term objectives
+6. **Unique Characteristics** - What makes this person distinctive
+
+Write in third-person, as if describing this person to someone who will impersonate them.
+Be specific and detailed - use exact phrases, examples, and patterns from their answers.
+Length: 800-1200 words.
+"""
+    
+    response = model.generate_content(
+        prompt,
+        generation_config=genai.types.GenerationConfig(
+            temperature=0.3,  # Low temperature for consistency
+            max_output_tokens=2000,
+        )
+    )
+    
+    return response.text
