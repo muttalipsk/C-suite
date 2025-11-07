@@ -1,0 +1,32 @@
+/home/digitaltwin/ask-the-expert/logs/node-out-0.log last 30 lines:
+0|ask-expe | 2025-11-07T10:47:29: domain: "googleapis.com"
+0|ask-expe | 2025-11-07T10:47:29: metadata {
+0|ask-expe | 2025-11-07T10:47:29:   key: "service"
+0|ask-expe | 2025-11-07T10:47:29:   value: "generativelanguage.googleapis.com"
+0|ask-expe | 2025-11-07T10:47:29: }
+0|ask-expe | 2025-11-07T10:47:29: , locale: "en-US"
+0|ask-expe | 2025-11-07T10:47:29: message: "API Key not found. Please pass a valid API key."
+0|ask-expe | 2025-11-07T10:47:29: ]
+0|ask-expe | 2025-11-07T10:47:29: Error in recommend_Andrew_Ng: 400 API Key not found. Please pass a valid API key. [reason: "API_KEY_INVALID"
+0|ask-expe | 2025-11-07T10:47:29: domain: "googleapis.com"
+0|ask-expe | 2025-11-07T10:47:29: metadata {
+0|ask-expe | 2025-11-07T10:47:29:   key: "service"
+0|ask-expe | 2025-11-07T10:47:29:   value: "generativelanguage.googleapis.com"
+0|ask-expe | 2025-11-07T10:47:29: }
+0|ask-expe | 2025-11-07T10:47:29: , locale: "en-US"
+0|ask-expe | 2025-11-07T10:47:29: message: "API Key not found. Please pass a valid API key."
+0|ask-expe | 2025-11-07T10:47:29: ]
+0|ask-expe | 2025-11-07T10:47:29: Error updating VectorDB memory: 400 API Key not found. Please pass a valid API key. [reason: "API_KEY_INVALID"
+0|ask-expe | 2025-11-07T10:47:29: domain: "googleapis.com"
+0|ask-expe | 2025-11-07T10:47:29: metadata {
+0|ask-expe | 2025-11-07T10:47:29:   key: "service"
+0|ask-expe | 2025-11-07T10:47:29:   value: "generativelanguage.googleapis.com"
+0|ask-expe | 2025-11-07T10:47:29: }
+0|ask-expe | 2025-11-07T10:47:29: , locale: "en-US"
+0|ask-expe | 2025-11-07T10:47:29: message: "API Key not found. Please pass a valid API key."
+0|ask-expe | 2025-11-07T10:47:29: ]
+0|ask-expe | 2025-11-07T10:47:29: ✅ Meeting completed! Run ID: 8d26cd19-8653-4824-983b-30f8d9824272
+0|ask-expe | 2025-11-07T10:47:29: INFO:     127.0.0.1:33612 - "POST /meeting HTTP/1.1" 200 OK
+0|ask-expe | 2025-11-07T10:47:29: Pre-meeting completed: DB ID 6ecd87dd-d28b-465a-92b4-3a679d7d45f3, Python Run ID 8d26cd19-8653-4824-983b-30f8d9824272
+0|ask-expe | 2025-11-07T10:47:29: 10:47:29 AM [express] POST /api/pre-meeting/complete 200 in 590ms :: {"runId":"8d26cd19-8653-4824-983…
+
