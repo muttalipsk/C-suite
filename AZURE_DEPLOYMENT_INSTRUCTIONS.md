@@ -1,6 +1,16 @@
 # Azure VM Deployment Instructions
 
-## Issue: Gemini API Key Not Found
+## Known Issues & Fixes
+
+### Issue 1: Session Cookie Not Working (401 Unauthorized after login)
+
+**Symptom**: User logs in successfully but gets 401 errors on next request
+
+**Root Cause**: Session cookies with `secure: true` flag don't work over HTTP (only HTTPS)
+
+**Fix**: Set `COOKIE_SECURE=false` in your environment variables for HTTP deployments
+
+### Issue 2: Gemini API Key Not Found
 
 The error `API Key not found. Please pass a valid API key` occurs when the Python server doesn't have access to the `GEMINI_API_KEY` environment variable.
 
@@ -28,6 +38,7 @@ module.exports = {
       GEMINI_API_KEY: 'YOUR_ACTUAL_GEMINI_API_KEY_HERE',
       DATABASE_URL: 'postgresql://user:password@localhost:5432/digitaltwin',
       SESSION_SECRET: 'your-session-secret-here',
+      COOKIE_SECURE: 'false',  // Set to 'true' only if using HTTPS
       PGHOST: 'localhost',
       PGPORT: '5432',
       PGUSER: 'digitaltwin_user',
@@ -62,6 +73,7 @@ nano .env
 GEMINI_API_KEY=YOUR_ACTUAL_GEMINI_API_KEY_HERE
 DATABASE_URL=postgresql://digitaltwin_user:Digitaltwin@123@localhost:5432/digitaltwin
 SESSION_SECRET=your-session-secret-here
+COOKIE_SECURE=false
 PGHOST=localhost
 PGPORT=5432
 PGUSER=digitaltwin_user
@@ -98,6 +110,7 @@ nano ~/.bashrc
 export GEMINI_API_KEY="YOUR_ACTUAL_GEMINI_API_KEY_HERE"
 export DATABASE_URL="postgresql://digitaltwin_user:Digitaltwin@123@localhost:5432/digitaltwin"
 export SESSION_SECRET="your-session-secret-here"
+export COOKIE_SECURE="false"
 ```
 
 3. **Reload the profile**:
