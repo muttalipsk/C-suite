@@ -8,7 +8,8 @@ log("Starting Python FastAPI server on port 8000...");
 const pythonServer = spawn("python3", ["-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"], {
   cwd: process.cwd(),
   stdio: ["ignore", "pipe", "pipe"],
-  detached: false
+  detached: false,
+  env: process.env  // Explicitly pass all environment variables
 });
 
 pythonServer.stdout?.on("data", (data) => {
