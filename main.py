@@ -9,7 +9,7 @@ import io
 from typing import List
 from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
 from fastapi.responses import JSONResponse
-from models import ChatInput, MeetingInput, QuestionRefinementInput, PreMeetingEvaluationInput
+from models import ChatInput, MeetingInput, QuestionRefinementInput, PreMeetingEvaluationInput, ChatFollowupEvaluationInput, ChatFollowupCounterQuestionInput
 from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory_from_vectordb
 from agents import run_meeting
 import google.generativeai as genai
@@ -17,6 +17,7 @@ from chat_vectordb import store_chat_message, get_chat_history, get_agent_stats,
 from twin_manager import create_twin_vectors, query_twin_content, query_twin_style, UPLOADS_DIR
 from pre_meeting import evaluate_readiness_with_ai, generate_counter_question
 from persona_interview import router as persona_interview_router
+from chat_followup import evaluate_chat_question, generate_chat_counter_question
 
 # Create directories
 os.makedirs(CORPUS_DIR, exist_ok=True)
@@ -179,6 +180,61 @@ async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)
         return JSONResponse(
             status_code=500, 
             content={"error": f"Evaluation failed: {str(e)}"}
+        )
+
+@app.post("/chat/evaluate-followup")
+async def chat_evaluate_followup(input_data: ChatFollowupEvaluationInput = Body(...)):
+    """
+    Evaluate if a chat question needs counter-questions for clarification.
+    Uses full context: user profile, meeting type, chat history, agent recommendations.
+    """
+    try:
+        needs_clarification = evaluate_chat_question(
+            question=input_data.question,
+            agent=input_data.agent,
+            user_profile=input_data.user_profile,
+            meeting_type=input_data.meeting_type,
+            chat_history=input_data.chat_history,
+            agent_recommendations=input_data.agent_recommendations
+        )
+        
+        return {
+            "needs_counter_questions": needs_clarification
+        }
+        
+    except Exception as e:
+        print(f"Chat followup evaluation error: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Evaluation failed: {str(e)}"}
+        )
+
+@app.post("/chat/counter-question")
+async def chat_generate_counter_question(input_data: ChatFollowupCounterQuestionInput = Body(...)):
+    """
+    Generate 1-2 targeted counter-questions for chat followup.
+    Uses full context: user profile, meeting type, chat history, agent recommendations.
+    """
+    try:
+        counter_question = generate_chat_counter_question(
+            question=input_data.question,
+            agent=input_data.agent,
+            user_profile=input_data.user_profile,
+            meeting_type=input_data.meeting_type,
+            chat_history=input_data.chat_history,
+            agent_recommendations=input_data.agent_recommendations,
+            previous_counter_questions=input_data.previous_counter_questions
+        )
+        
+        return {
+            "counter_question": counter_question
+        }
+        
+    except Exception as e:
+        print(f"Chat counter-question generation error: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Counter-question generation failed: {str(e)}"}
         )
 
 @app.get("/persona-interview/questions")

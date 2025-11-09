@@ -32,6 +32,23 @@ class PreMeetingEvaluationInput(BaseModel):
     conversation_history: List[Dict[str, str]]
     meeting_type: str = "board"  # board, email, chat (general)
 
+class ChatFollowupEvaluationInput(BaseModel):
+    question: str
+    agent: str
+    user_profile: str
+    meeting_type: str
+    chat_history: List[Dict[str, str]]
+    agent_recommendations: Optional[str] = None
+
+class ChatFollowupCounterQuestionInput(BaseModel):
+    question: str
+    agent: str
+    user_profile: str
+    meeting_type: str
+    chat_history: List[Dict[str, str]]
+    agent_recommendations: Optional[str] = None
+    previous_counter_questions: List[str] = []
+
 # Define a merge function for dictionaries
 def merge_dicts(left: Dict[str, str], right: Dict[str, str]) -> Dict[str, str]:
     """Merge two dictionaries, with right taking precedence"""

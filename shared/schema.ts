@@ -170,6 +170,21 @@ export const personaInterviewSessions = pgTable("persona_interview_sessions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Chat Followup Sessions - Smart counter-questioning during agent chats
+export const chatFollowupSessions = pgTable("chat_followup_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  runId: varchar("run_id").notNull().references(() => runs.id, { onDelete: "cascade" }),
+  agent: text("agent").notNull(), // Which agent user is chatting with
+  meetingType: text("meeting_type").notNull(), // "board", "email", or "chat"
+  originalQuestion: text("original_question").notNull(), // User's chat message
+  conversation: jsonb("conversation").notNull().default('[]'), // Array of counter-questions and answers
+  counterQuestionsAsked: integer("counter_questions_asked").notNull().default(0),
+  status: text("status").notNull().default("active"), // "active", "completed", "cancelled"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -261,6 +276,16 @@ export const insertPersonaInterviewSessionSchema = createInsertSchema(personaInt
   conversation: true, // Managed by backend
 });
 
+export const insertChatFollowupSessionSchema = createInsertSchema(chatFollowupSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  userId: true, // Will be set from session
+  status: true, // Managed by backend
+  conversation: true, // Managed by backend
+  counterQuestionsAsked: true, // Managed by backend
+});
+
 // TypeScript types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -294,6 +319,9 @@ export type InsertPreMeetingSession = z.infer<typeof insertPreMeetingSessionSche
 
 export type PersonaInterviewSession = typeof personaInterviewSessions.$inferSelect;
 export type InsertPersonaInterviewSession = z.infer<typeof insertPersonaInterviewSessionSchema>;
+
+export type ChatFollowupSession = typeof chatFollowupSessions.$inferSelect;
+export type InsertChatFollowupSession = z.infer<typeof insertChatFollowupSessionSchema>;
 
 // AI Agent personas constants
 export const AI_AGENTS = {

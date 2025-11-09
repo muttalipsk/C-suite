@@ -19,13 +19,22 @@ interface ChatBoxProps {
   initialMessages?: Message[];
 }
 
+interface PendingFollowup {
+  originalQuestion: string;
+  counterQuestion: string;
+  answered: boolean;
+}
+
 export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: ChatBoxProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingFollowup, setPendingFollowup] = useState<PendingFollowup | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const awaitingClarification = pendingFollowup !== null && !pendingFollowup.answered;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -121,6 +130,102 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
     setIsLoading(true);
 
     try {
+      // If awaiting clarification, mark answer and proceed directly to chat
+      if (awaitingClarification && pendingFollowup) {
+        setPendingFollowup({
+          ...pendingFollowup,
+          answered: true
+        });
+
+        // Send enriched context to chat endpoint
+        const enrichedMessage = `Original question: ${pendingFollowup.originalQuestion}\nClarifying question: ${pendingFollowup.counterQuestion}\nUser's answer: ${messageToSend}`;
+        
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            runId,
+            agent: agentKey,
+            message: enrichedMessage,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Chat failed");
+        }
+
+        const agentMessage: Message = {
+          sender: "agent",
+          content: result.response,
+          timestamp: new Date(),
+        };
+        
+        setMessages(prev => [...prev, agentMessage]);
+        setPendingFollowup(null); // Clear state after successful response
+        return;
+      }
+
+      // Evaluate if counter-questions are needed (only for top-level messages)
+      try {
+        const evaluateResponse = await fetch("/api/chat/evaluate-followup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: messageToSend,
+            agent: agentKey,
+            runId,
+            meetingType: "chat"
+          }),
+        });
+
+        if (evaluateResponse.ok) {
+          const evalResult = await evaluateResponse.json();
+          
+          if (evalResult.needs_counter_questions) {
+            // Get counter-question
+            const counterResponse = await fetch("/api/chat/counter-question", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                question: messageToSend,
+                agent: agentKey,
+                runId,
+                meetingType: "chat",
+                previousCounterQuestions: []
+              }),
+            });
+
+            if (counterResponse.ok) {
+              const counterResult = await counterResponse.json();
+              
+              // Store pending followup state
+              setPendingFollowup({
+                originalQuestion: messageToSend,
+                counterQuestion: counterResult.counter_question,
+                answered: false
+              });
+
+              // Display counter-question as agent message with label
+              const counterQuestionMessage: Message = {
+                sender: "agent",
+                content: `🔍 Clarifying question:\n\n${counterResult.counter_question}`,
+                timestamp: new Date(),
+              };
+              
+              setMessages(prev => [...prev, counterQuestionMessage]);
+              setIsLoading(false);
+              return; // Exit early, waiting for user's clarification
+            }
+          }
+        }
+      } catch (evalError) {
+        console.log("Evaluation skipped, proceeding with direct chat:", evalError);
+        // Fall through to direct chat if evaluation fails
+      }
+
+      // No counter-questions needed or evaluation failed - proceed with direct chat
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -152,6 +257,7 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
+      setPendingFollowup(null); // Clear state on error
     } finally {
       setIsLoading(false);
     }

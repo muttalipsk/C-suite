@@ -1,16 +1,17 @@
 // Reference: javascript_database blueprint
 import { 
-  users, runs, chats, agentMemory, corpus, twins, preMeetingSessions, personaInterviewSessions,
+  users, runs, chats, agentMemory, corpus, twins, preMeetingSessions, personaInterviewSessions, chatFollowupSessions,
   type User, type InsertUser,
   type Run, type InsertRun,
   type Chat, type InsertChat,
   type AgentMemory, type Corpus,
   type Twin, type InsertTwin,
   type PreMeetingSession, type InsertPreMeetingSession,
-  type PersonaInterviewSession, type InsertPersonaInterviewSession
+  type PersonaInterviewSession, type InsertPersonaInterviewSession,
+  type ChatFollowupSession, type InsertChatFollowupSession
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -55,6 +56,13 @@ export interface IStorage {
   getPersonaInterviewSession(id: string): Promise<PersonaInterviewSession | undefined>;
   updatePersonaInterviewSession(id: string, updates: Partial<PersonaInterviewSession>): Promise<PersonaInterviewSession | undefined>;
   deletePersonaInterviewSession(id: string): Promise<void>;
+
+  // Chat Followup session operations
+  createChatFollowupSession(session: InsertChatFollowupSession & { userId: string }): Promise<ChatFollowupSession>;
+  getChatFollowupSession(id: string): Promise<ChatFollowupSession | undefined>;
+  updateChatFollowupSession(id: string, updates: Partial<ChatFollowupSession>): Promise<ChatFollowupSession | undefined>;
+  deleteChatFollowupSession(id: string): Promise<void>;
+  getActiveChatFollowupSession(userId: string, runId: string, agent: string): Promise<ChatFollowupSession | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -118,8 +126,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(chats)
-      .where(eq(chats.runId, runId))
-      .where(eq(chats.agent, agent))
+      .where(and(eq(chats.runId, runId), eq(chats.agent, agent)))
       .orderBy(chats.createdAt);
   }
 
@@ -247,6 +254,49 @@ export class DatabaseStorage implements IStorage {
 
   async deletePersonaInterviewSession(id: string): Promise<void> {
     await db.delete(personaInterviewSessions).where(eq(personaInterviewSessions.id, id));
+  }
+
+  async createChatFollowupSession(session: InsertChatFollowupSession & { userId: string }): Promise<ChatFollowupSession> {
+    const [newSession] = await db
+      .insert(chatFollowupSessions)
+      .values(session)
+      .returning();
+    return newSession;
+  }
+
+  async getChatFollowupSession(id: string): Promise<ChatFollowupSession | undefined> {
+    const [session] = await db.select().from(chatFollowupSessions).where(eq(chatFollowupSessions.id, id));
+    return session || undefined;
+  }
+
+  async updateChatFollowupSession(id: string, updates: Partial<ChatFollowupSession>): Promise<ChatFollowupSession | undefined> {
+    const [session] = await db
+      .update(chatFollowupSessions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(chatFollowupSessions.id, id))
+      .returning();
+    return session || undefined;
+  }
+
+  async deleteChatFollowupSession(id: string): Promise<void> {
+    await db.delete(chatFollowupSessions).where(eq(chatFollowupSessions.id, id));
+  }
+
+  async getActiveChatFollowupSession(userId: string, runId: string, agent: string): Promise<ChatFollowupSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(chatFollowupSessions)
+      .where(
+        and(
+          eq(chatFollowupSessions.userId, userId),
+          eq(chatFollowupSessions.runId, runId),
+          eq(chatFollowupSessions.agent, agent),
+          eq(chatFollowupSessions.status, "active")
+        )
+      )
+      .orderBy(desc(chatFollowupSessions.createdAt))
+      .limit(1);
+    return session || undefined;
   }
 }
 

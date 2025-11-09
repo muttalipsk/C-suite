@@ -591,6 +591,132 @@ Role Details: ${user.roleDetails}
     }
   });
 
+  // CHAT FOLLOWUP ROUTES - Smart counter-questioning during chat
+  app.post("/api/chat/evaluate-followup", requireAuth, async (req, res) => {
+    try {
+      const { question, agent, runId, meetingType } = req.body;
+
+      if (!question || !agent || !runId) {
+        return res.status(400).json({ error: "question, agent, and runId are required" });
+      }
+
+      // Get user profile
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const userProfile = `Name: ${user.name}
+Company: ${user.companyName}
+Role: ${user.designation} - ${user.roleDescription}
+Goals: ${user.goalOneYear}
+Industry: ${user.companyWebsite}`;
+
+      // Get run to fetch agent recommendations
+      const run = await storage.getRun(runId);
+      const recommendations = run?.recommendations as Record<string, string> | undefined;
+      const agentRecommendations = recommendations?.[agent] || null;
+
+      // Fetch chat history from Python API
+      const chatResponse = await fetch(`http://localhost:8000/get_chat?run_id=${runId}&agent=${agent}`);
+      if (!chatResponse.ok) {
+        throw new Error(`Failed to fetch chat history: ${chatResponse.statusText}`);
+      }
+      const chatData = await chatResponse.json();
+      const chatHistory = chatData.history.map((h: any) => ({
+        sender: h.user ? "user" : "agent",
+        message: h.user || h.agent
+      }));
+
+      // Forward to Python API for evaluation
+      const pythonResponse = await fetch("http://localhost:8000/chat/evaluate-followup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          agent,
+          user_profile: userProfile,
+          meeting_type: meetingType || "chat",
+          chat_history: chatHistory,
+          agent_recommendations: agentRecommendations
+        })
+      });
+
+      if (!pythonResponse.ok) {
+        throw new Error(`Python API error: ${pythonResponse.statusText}`);
+      }
+
+      const result = await pythonResponse.json();
+      res.json(result);
+    } catch (error: any) {
+      console.error("Chat followup evaluation error:", error);
+      res.status(500).json({ error: error.message || "Evaluation failed" });
+    }
+  });
+
+  app.post("/api/chat/counter-question", requireAuth, async (req, res) => {
+    try {
+      const { question, agent, runId, meetingType, previousCounterQuestions } = req.body;
+
+      if (!question || !agent || !runId) {
+        return res.status(400).json({ error: "question, agent, and runId are required" });
+      }
+
+      // Get user profile
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const userProfile = `Name: ${user.name}
+Company: ${user.companyName}
+Role: ${user.designation} - ${user.roleDescription}
+Goals: ${user.goalOneYear}
+Industry: ${user.companyWebsite}`;
+
+      // Get run to fetch agent recommendations
+      const run = await storage.getRun(runId);
+      const recommendations = run?.recommendations as Record<string, string> | undefined;
+      const agentRecommendations = recommendations?.[agent] || null;
+
+      // Fetch chat history from Python API
+      const chatResponse = await fetch(`http://localhost:8000/get_chat?run_id=${runId}&agent=${agent}`);
+      if (!chatResponse.ok) {
+        throw new Error(`Failed to fetch chat history: ${chatResponse.statusText}`);
+      }
+      const chatData = await chatResponse.json();
+      const chatHistory = chatData.history.map((h: any) => ({
+        sender: h.user ? "user" : "agent",
+        message: h.user || h.agent
+      }));
+
+      // Forward to Python API for counter-question generation
+      const pythonResponse = await fetch("http://localhost:8000/chat/counter-question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          agent,
+          user_profile: userProfile,
+          meeting_type: meetingType || "chat",
+          chat_history: chatHistory,
+          agent_recommendations: agentRecommendations,
+          previous_counter_questions: previousCounterQuestions || []
+        })
+      });
+
+      if (!pythonResponse.ok) {
+        throw new Error(`Python API error: ${pythonResponse.statusText}`);
+      }
+
+      const result = await pythonResponse.json();
+      res.json(result);
+    } catch (error: any) {
+      console.error("Chat counter-question error:", error);
+      res.status(500).json({ error: error.message || "Counter-question generation failed" });
+    }
+  });
+
   // MEMORY ROUTES
   app.post("/api/memory", requireAuth, async (req, res) => {
     try {
