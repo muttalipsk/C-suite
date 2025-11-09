@@ -534,7 +534,7 @@ Role Details: ${user.roleDetails}
   // CHAT ROUTES - Now uses Python VectorDB API
   app.post("/api/chat", requireAuth, async (req, res) => {
     try {
-      const { runId, agent, message } = req.body;
+      const { runId, agent, message, enriched_context } = req.body;
 
       if (!runId || !agent || !message) {
         return res.status(400).json({ error: "runId, agent, and message are required" });
@@ -548,7 +548,8 @@ Role Details: ${user.roleDetails}
           run_id: runId,
           agent,
           message,
-          user_id: req.session.userId
+          user_id: req.session.userId,
+          enriched_context: enriched_context || undefined
         })
       });
 
