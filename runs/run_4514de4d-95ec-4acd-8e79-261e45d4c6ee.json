@@ -1,0 +1,19 @@
+{
+  "task": "how to setup database\n\n\nAdditional Context from Pre-Meeting:\nUser: how to setup database\n\nAI: Could you tell me a bit more about your current situation and what you're working on?\nUser: ok\nAI: Could you tell me a bit more about your current situation and what you're working on?\nUser: ok\nAI: Could you tell me a bit more about your current situation and what you're working on?\nUser: ok",
+  "user_profile": "Name: Muttalip sk\nCompany: redpluto analytics pvt\nDesignation: cto\nRole Description: As CTO at RedPluto AI Engineering, I lead the technical vision and execution for AI-powered analytics solutions, driving innovation in data processing, machine learning models, and scalable infrastructure to deliver cutting-edge insights for clients.\nProduct Expectations: I'm seeking a reliable digital twin to automate routine communications (e.g., status reports to the team or stakeholders), simulate decision-making scenarios for faster strategy iteration, and ensure consistent leadership presence during high-growth phases\u2014ultimately freeing up time for deep R&D while maintaining my authoritative, forward-thinking voice.\nCompany Website: https://redplutoanalytics.com/\nRole Details: In my role, I oversee a team of 20+ AI engineers and data scientists, managing everything from prototype development using tools like LangGraph and FAISS for multi-agent systems to deploying production pipelines with FastAPI and vector databases. Key responsibilities include aligning tech roadmap with business goals (e.g., generative AI chatbots and optical character recognition integrations), budgeting for cloud resources, and fostering a culture of ethical AI innovation. Daily challenges involve scaling models for real-time analytics while navigating regulatory hurdles in data privacy.\n1-Year Goal: Launch and scale a flagship generative AI platform (e.g., an LLM-powered analytics dashboard) to 50+ enterprise clients, achieving 30% YoY revenue growth through seamless integration of FAISS vector search and FastAPI microservices; simultaneously, upskill the team via targeted certifications in cloud-native AI (e.g., AWS SageMaker) to boost internal efficiency by 25%.\n5-Year Goal: Position RedPluto as a top-3 AI analytics provider in the APAC region by pioneering ethical AI frameworks for real-time data governance, expanding to 200+ employees with global offices, and driving a potential Series B funding round or IPO\u2014ultimately democratizing AI insights to reduce client decision-making time from weeks to hours across industries like finance and retail.",
+  "turns": 1,
+  "agents": [
+    "Sam_Altman",
+    "Jensen_Huang",
+    "Andrew_Ng",
+    "Demis_Hassabis",
+    "Fei_Fei_Li"
+  ],
+  "recommendations": {
+    "Andrew_Ng": "Fallback recommendation for Andrew_Ng",
+    "Demis_Hassabis": "Fallback recommendation for Demis_Hassabis",
+    "Fei_Fei_Li": "Fallback recommendation for Fei_Fei_Li",
+    "Jensen_Huang": "Fallback recommendation for Jensen_Huang",
+    "Sam_Altman": "Fallback recommendation for Sam_Altman"
+  }
+}
