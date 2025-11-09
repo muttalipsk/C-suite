@@ -10,6 +10,7 @@ class ChatInput(BaseModel):
     agent: str
     message: str
     user_id: str
+    enriched_context: Optional[Dict[str, Any]] = None
 
 class MeetingInput(BaseModel):
     task: str

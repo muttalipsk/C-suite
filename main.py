@@ -214,9 +214,10 @@ async def chat_generate_counter_question(input_data: ChatFollowupCounterQuestion
     """
     Generate 1-2 targeted counter-questions for chat followup.
     Uses full context: user profile, meeting type, chat history, agent recommendations.
+    Returns a list of counter-questions (1-2 items).
     """
     try:
-        counter_question = generate_chat_counter_question(
+        counter_questions = generate_chat_counter_question(
             question=input_data.question,
             agent=input_data.agent,
             user_profile=input_data.user_profile,
@@ -227,7 +228,7 @@ async def chat_generate_counter_question(input_data: ChatFollowupCounterQuestion
         )
         
         return {
-            "counter_question": counter_question
+            "counter_questions": counter_questions
         }
         
     except Exception as e:
@@ -454,7 +455,21 @@ Base your response on:
 - Conversation history: {json.dumps(history)}
 """
 
+    # Build human content with enriched context if available
     human_content = f"User's follow-up message: {input.message}"
+    
+    # Handle enriched context from counter-question clarifications
+    if input.enriched_context and input.enriched_context.get("clarifications"):
+        clarifications = input.enriched_context["clarifications"]
+        clarification_text = "\n\n**Clarifications provided by user:**\n"
+        for i, clarification in enumerate(clarifications, 1):
+            clarification_text += f"{i}. Q: {clarification['question']}\n   A: {clarification['answer']}\n"
+        
+        human_content = f"""Original question: {input.message}
+
+{clarification_text}
+
+Based on these clarifications, please provide a comprehensive response."""
 
     # Use Gemini directly without LangChain
     try:
@@ -470,11 +485,21 @@ Base your response on:
         agent_response = "Sorry, I encountered an issue. Please try again."
 
     # Store user message in ChromaDB vector database
+    # Include clarifications if present so future turns have full context
+    message_to_store = input.message
+    if input.enriched_context and input.enriched_context.get("clarifications"):
+        clarifications = input.enriched_context["clarifications"]
+        clarification_text = "\n\n[Clarifications provided:\n"
+        for i, clarification in enumerate(clarifications, 1):
+            clarification_text += f"{i}. Q: {clarification['question']}\n   A: {clarification['answer']}\n"
+        clarification_text += "]"
+        message_to_store = input.message + clarification_text
+    
     store_chat_message(
         agent_name=agent,
         run_id=input.run_id,
         user_id=input.user_id,
-        message=input.message,
+        message=message_to_store,
         sender="user"
     )
 

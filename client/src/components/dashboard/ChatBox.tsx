@@ -21,8 +21,8 @@ interface ChatBoxProps {
 
 interface PendingFollowup {
   originalQuestion: string;
-  counterQuestion: string;
-  answered: boolean;
+  counterQuestions: string[];
+  answers: string[];
 }
 
 export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: ChatBoxProps) {
@@ -34,7 +34,7 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const awaitingClarification = pendingFollowup !== null && !pendingFollowup.answered;
+  const awaitingClarification = pendingFollowup !== null && pendingFollowup.answers.length < pendingFollowup.counterQuestions.length;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -130,15 +130,35 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
     setIsLoading(true);
 
     try {
-      // If awaiting clarification, mark answer and proceed directly to chat
+      // If awaiting clarification, collect answer
       if (awaitingClarification && pendingFollowup) {
-        setPendingFollowup({
-          ...pendingFollowup,
-          answered: true
-        });
-
-        // Send enriched context to chat endpoint
-        const enrichedMessage = `Original question: ${pendingFollowup.originalQuestion}\nClarifying question: ${pendingFollowup.counterQuestion}\nUser's answer: ${messageToSend}`;
+        const updatedAnswers = [...pendingFollowup.answers, messageToSend];
+        
+        // Check if all counter-questions have been answered
+        if (updatedAnswers.length < pendingFollowup.counterQuestions.length) {
+          // More questions to answer - show next counter-question
+          setPendingFollowup({
+            ...pendingFollowup,
+            answers: updatedAnswers
+          });
+          
+          const nextQuestionIndex = updatedAnswers.length;
+          const nextQuestion: Message = {
+            sender: "agent",
+            content: `🔍 Clarifying question ${nextQuestionIndex + 1}:\n\n${pendingFollowup.counterQuestions[nextQuestionIndex]}`,
+            timestamp: new Date(),
+          };
+          
+          setMessages(prev => [...prev, nextQuestion]);
+          setIsLoading(false);
+          return;
+        }
+        
+        // All questions answered - send enriched context to chat endpoint
+        const clarifications = pendingFollowup.counterQuestions.map((q, i) => ({
+          question: q,
+          answer: updatedAnswers[i]
+        }));
         
         const response = await fetch("/api/chat", {
           method: "POST",
@@ -146,7 +166,11 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
           body: JSON.stringify({
             runId,
             agent: agentKey,
-            message: enrichedMessage,
+            message: pendingFollowup.originalQuestion,
+            enriched_context: {
+              clarifications,
+              meeting_type: "chat"
+            }
           }),
         });
 
@@ -200,23 +224,31 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
             if (counterResponse.ok) {
               const counterResult = await counterResponse.json();
               
-              // Store pending followup state
-              setPendingFollowup({
-                originalQuestion: messageToSend,
-                counterQuestion: counterResult.counter_question,
-                answered: false
-              });
-
-              // Display counter-question as agent message with label
-              const counterQuestionMessage: Message = {
-                sender: "agent",
-                content: `🔍 Clarifying question:\n\n${counterResult.counter_question}`,
-                timestamp: new Date(),
-              };
+              // Backend now returns array of questions
+              const counterQuestions = counterResult.counter_questions || [];
               
-              setMessages(prev => [...prev, counterQuestionMessage]);
-              setIsLoading(false);
-              return; // Exit early, waiting for user's clarification
+              if (counterQuestions.length === 0) {
+                console.error("No counter-questions received");
+                // Fall through to direct chat
+              } else {
+                // Store pending followup state
+                setPendingFollowup({
+                  originalQuestion: messageToSend,
+                  counterQuestions,
+                  answers: []
+                });
+
+                // Display first counter-question as agent message with label
+                const counterQuestionMessage: Message = {
+                  sender: "agent",
+                  content: `🔍 Clarifying question${counterQuestions.length > 1 ? ' 1' : ''}:\n\n${counterQuestions[0]}`,
+                  timestamp: new Date(),
+                };
+                
+                setMessages(prev => [...prev, counterQuestionMessage]);
+                setIsLoading(false);
+                return; // Exit early, waiting for user's clarification
+              }
             }
           }
         }

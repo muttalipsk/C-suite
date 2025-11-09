@@ -110,9 +110,10 @@ def generate_chat_counter_question(
     chat_history: List[Dict[str, str]],
     agent_recommendations: Optional[str] = None,
     previous_counter_questions: List[str] = []
-) -> str:
+) -> List[str]:
     """
     Generate 1-2 targeted counter-questions based on full context.
+    Returns a list of questions (1-2 items).
     
     Uses:
     - User profile
@@ -197,18 +198,42 @@ Generate your counter-question(s):"""
             )
         )
         
-        counter_question = response.text.strip()
-        counter_question = counter_question.strip('"').strip("'")
+        counter_question_text = response.text.strip()
+        counter_question_text = counter_question_text.strip('"').strip("'")
         
-        return counter_question
+        # Parse multiple questions: split by numbered format (1., 2.) or newlines
+        import re
+        # Try to split by numbered questions first
+        numbered_pattern = r'^\s*\d+[\.\)]\s+'
+        lines = counter_question_text.split('\n')
+        questions = []
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            # Remove numbering if present
+            cleaned = re.sub(numbered_pattern, '', line)
+            if cleaned:
+                questions.append(cleaned)
+        
+        # If no valid split, return the whole text as one question
+        if not questions:
+            questions = [counter_question_text]
+        
+        # Limit to max 2 questions
+        questions = questions[:2]
+        
+        print(f"Generated {len(questions)} counter-question(s): {questions}")
+        return questions
         
     except Exception as e:
         import traceback
         print(f"Error generating chat counter-question: {e}")
         print(f"Full traceback: {traceback.format_exc()}")
         
-        # Fallback questions
+        # Fallback questions as list
         if agent_recommendations:
-            return "Could you clarify which part of my earlier recommendations you're asking about?"
+            return ["Could you clarify which part of my earlier recommendations you're asking about?"]
         else:
-            return "Could you provide a bit more context about what specifically you'd like help with?"
+            return ["Could you provide a bit more context about what specifically you'd like help with?"]
