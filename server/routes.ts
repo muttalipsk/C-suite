@@ -1073,7 +1073,7 @@ Industry: ${user.companyWebsite}`;
   // Scrape company website for context
   app.post("/api/digital-twin/scrape", requireAuth, async (req, res) => {
     try {
-      const user = await storage.getUserById(req.session.userId!);
+      const user = await storage.getUser(req.session.userId!);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -1106,7 +1106,7 @@ Industry: ${user.companyWebsite}`;
   // Generate 50 MCQ questions based on user profile + company data
   app.post("/api/digital-twin/generate-mcq", requireAuth, async (req, res) => {
     try {
-      const user = await storage.getUserById(req.session.userId!);
+      const user = await storage.getUser(req.session.userId!);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -1155,7 +1155,7 @@ Industry: ${user.companyWebsite}`;
       }
       
       // Get user info for domain extraction
-      const user = await storage.getUserById(userId!);
+      const user = await storage.getUser(userId!);
       if (!user || !user.email) {
         return res.status(404).json({ error: "User not found" });
       }
