@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Save } from "lucide-react";
+import { Send } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AI_AGENTS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,7 @@ interface ChatBoxProps {
   agentName: string;
   runId: string;
   initialMessages?: Message[];
+  onMessagesChange?: (messages: Message[]) => void;
 }
 
 interface PendingFollowup {
@@ -25,11 +26,10 @@ interface PendingFollowup {
   answers: string[];
 }
 
-export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: ChatBoxProps) {
+export function ChatBox({ agentKey, agentName, runId, initialMessages = [], onMessagesChange }: ChatBoxProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [pendingFollowup, setPendingFollowup] = useState<PendingFollowup | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -43,6 +43,11 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Notify parent when messages change
+  useEffect(() => {
+    onMessagesChange?.(messages);
+  }, [messages, onMessagesChange]);
 
   // Load chat history on mount
   useEffect(() => {
@@ -68,56 +73,6 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
     }
   }, [runId, agentKey, initialMessages.length]);
 
-  const handleSaveChat = async () => {
-    if (messages.length === 0) {
-      toast({
-        title: "No messages",
-        description: "There are no messages to save",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      // Get the last agent message (most recent recommendation/response)
-      const lastAgentMessage = [...messages].reverse().find(m => m.sender === "agent");
-      
-      if (!lastAgentMessage) {
-        throw new Error("No agent message found");
-      }
-
-      const response = await fetch("/api/save-recommendation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          runId,
-          agent: agentKey,
-          recommendation: lastAgentMessage.content,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save chat");
-      }
-
-      toast({
-        title: "Chat saved",
-        description: "This conversation has been saved to your history",
-      });
-
-      window.dispatchEvent(new Event('recommendation-saved'));
-    } catch (error: any) {
-      console.error("Save error:", error);
-      toast({
-        title: "Save failed",
-        description: error.message || "Failed to save chat",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const sendMessage = async (messageToSend: string) => {
     const userMessage: Message = {
@@ -313,21 +268,7 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
 
   return (
     <div className="space-y-4">
-        {messages.length > 0 && (
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSaveChat}
-            disabled={isSaving}
-            data-testid={`button-save-chat-${agentKey}`}
-          >
-            <Save className="w-3 h-3 mr-2" />
-            {isSaving ? "Saving..." : "Save Chat"}
-          </Button>
-        </div>
-      )}
-      <div className="max-h-80 overflow-y-auto space-y-4 pr-2">
+        <div className="max-h-80 overflow-y-auto space-y-4 pr-2">
         {messages.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
             Start a conversation with {agentName}
