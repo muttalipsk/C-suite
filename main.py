@@ -105,9 +105,9 @@ async def pre_meeting_generate_question(input_data: PreMeetingEvaluationInput = 
     user_profile = input_data.user_profile
     conversation_history = input_data.conversation_history
     
-    # Validate agents
+    # Validate agents (accept both PERSONAS and twin_ prefixed digital twins)
     for agent in agents:
-        if agent not in PERSONAS:
+        if agent not in PERSONAS and not agent.startswith("twin_"):
             return JSONResponse(status_code=400, content={"error": f"Invalid agent: {agent}"})
     
     meeting_type = input_data.meeting_type  # Get meeting type from request
@@ -145,9 +145,9 @@ async def pre_meeting_evaluate(input_data: PreMeetingEvaluationInput = Body(...)
     user_profile = input_data.user_profile
     conversation_history = input_data.conversation_history
     
-    # Validate agents
+    # Validate agents (accept both PERSONAS and twin_ prefixed digital twins)
     for agent in agents:
-        if agent not in PERSONAS:
+        if agent not in PERSONAS and not agent.startswith("twin_"):
             return JSONResponse(status_code=400, content={"error": f"Invalid agent: {agent}"})
     
     meeting_type = input_data.meeting_type  # Get meeting type from request
@@ -320,9 +320,9 @@ async def refine_question(input_data: QuestionRefinementInput = Body(...)):
     question = input_data.question
     agents = input_data.agents
     
-    # Validate all agents
+    # Validate all agents (accept both PERSONAS and twin_ prefixed digital twins)
     for agent in agents:
-        if agent not in PERSONAS:
+        if agent not in PERSONAS and not agent.startswith("twin_"):
             return JSONResponse(status_code=400, content={"error": f"Invalid agent: {agent}"})
     
     try:
@@ -410,7 +410,7 @@ async def chat_endpoint(input: ChatInput):
     Each agent has its own collection in ChromaDB.
     """
     agent = input.agent
-    if agent not in PERSONAS:
+    if agent not in PERSONAS and not agent.startswith("twin_"):
         return JSONResponse(status_code=400, content={"error": "Invalid agent"})
 
     run_path = os.path.join(RUNS_DIR, f"run_{input.run_id}.json")
@@ -523,7 +523,7 @@ async def get_chat(run_id: str, agent: str):
     Retrieve chat history from ChromaDB vector database for a specific agent.
     Each agent maintains its own separate chat history collection.
     """
-    if agent not in PERSONAS:
+    if agent not in PERSONAS and not agent.startswith("twin_"):
         return JSONResponse(status_code=400, content={"error": "Invalid agent"})
 
     # Fetch from ChromaDB (agent-specific collection)
@@ -547,7 +547,7 @@ async def agent_stats(agent: str):
     """
     Get statistics about an agent's chat history in ChromaDB.
     """
-    if agent not in PERSONAS:
+    if agent not in PERSONAS and not agent.startswith("twin_"):
         return JSONResponse(status_code=400, content={"error": "Invalid agent"})
 
     stats = get_agent_stats(agent)
@@ -566,10 +566,10 @@ async def upload_agent_knowledge(
     Processes PDFs/TXT files, chunks them, embeds with Gemini, stores for RAG.
     """
     try:
-        if agent not in PERSONAS:
+        if agent not in PERSONAS and not agent.startswith("twin_"):
             return JSONResponse(
                 status_code=400,
-                content={"error": f"Invalid agent. Must be one of: {', '.join(PERSONAS)}"}
+                content={"error": f"Invalid agent. Must be one of: {', '.join(PERSONAS)} or a digital twin (twin_*)"}
             )
         
         # Ensure Gemini is configured
