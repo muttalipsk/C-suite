@@ -374,12 +374,13 @@ async def refine_question(input_data: QuestionRefinementInput = Body(...)):
             company = metadata["company"]
             role = metadata["role"]
             description = metadata["description"]
+            knowledge = metadata.get("knowledge", description)  # Fallback to description if no knowledge
             
             if knowledge_chunks:
                 agent_info = f"**{agent}** ({role} at {company}):\n{knowledge_chunks[:500]}"
                 all_knowledge.append(agent_info)
             
-            agents_context.append(f"- {agent}: {role} at {company}, expert in {description}")
+            agents_context.append(f"- {agent}: {role} at {company}, expert in {knowledge}")
         
         knowledge_context = ""
         if all_knowledge:
@@ -471,6 +472,7 @@ async def chat_endpoint(input: ChatInput):
     company = metadata["company"]
     role = metadata["role"]
     description = metadata["description"]
+    knowledge = metadata.get("knowledge", description)  # Fallback to description if no knowledge
     
     # NEW: Retrieve from ChromaDB knowledge base using RAG
     from agents import retrieve_from_knowledge_base
@@ -484,7 +486,11 @@ async def chat_endpoint(input: ChatInput):
         knowledge_context = f"**Your domain knowledge and expertise:**\n{knowledge_chunks}\n\n"
 
     system_prompt = f"""
-You are {agent} from {company}, acting in your {role}: {description}. You are serving as a moderator and advisor to C-suite level executives. Respond in a natural, conversational manner, providing balanced, insightful advice based on your expertise.
+You are {agent} from {company}, acting in your {role}: {description}.
+
+**Your expertise:** {knowledge}
+
+You are serving as a moderator and advisor to C-suite level executives. Respond in a natural, conversational manner, providing balanced, insightful advice based on your expertise.
 
 Remain unbiased, helpful, and focused on the context. Build on your previous recommendation and the conversation history.
 

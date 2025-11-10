@@ -64,10 +64,16 @@ def get_agent_metadata(agent: str):
         ValueError: If agent is neither in PERSONAS nor a valid twin_* identifier
     """
     if agent in PERSONAS:
+        # Extract knowledge from description field (full biography in PERSONAS)
+        description = PERSONAS[agent]["description"]
+        # Use first sentence as summary knowledge
+        knowledge = description.split('.')[0] + "." if '.' in description else description
+        
         return {
             "company": PERSONAS[agent]["company"],
             "role": PERSONAS[agent]["role"],
-            "description": PERSONAS[agent]["description"]
+            "description": description,
+            "knowledge": knowledge
         }
     elif agent.startswith("twin_"):
         # Digital twin - fetch metadata from PostgreSQL database
