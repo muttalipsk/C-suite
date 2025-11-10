@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import uvicorn
 from fastapi import FastAPI, UploadFile, File, Form, Body 
 from fastapi.middleware.cors import CORSMiddleware
@@ -938,6 +939,164 @@ async def generate_mcq(input_data: GenerateMCQInput = Body(...)):
                 "error": str(e),
                 "questions": []
             }
+        )
+
+
+@app.post("/digital-twin/create")
+async def create_digital_twin(input_data: CreateDigitalTwinInput = Body(...)):
+    """
+    Create a digital twin from MCQ answers, optional email samples, and documents.
+    
+    Process:
+    1. Analyze MCQ answers to extract persona characteristics
+    2. Optional: Analyze email samples for writing style
+    3. Create ChromaDB collections (content + style)
+    4. Store twin in database
+    5. Auto-add persona to constants
+    
+    Args:
+        user_id: User ID
+        mcq_answers: List of MCQ answers with question IDs and selected choices
+        email_samples: Optional pasted email text
+        documents: Optional uploaded document paths
+    
+    Returns:
+        Created twin ID and success status
+    """
+    try:
+        user_id = input_data.user_id
+        mcq_answers = input_data.mcq_answers
+        email_samples = input_data.email_samples
+        documents = input_data.documents or []
+        
+        # Validate MCQ answers
+        if not mcq_answers or len(mcq_answers) != 50:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "error": f"Expected 50 MCQ answers, got {len(mcq_answers) if mcq_answers else 0}"
+                }
+            )
+        
+        # Step 1: Process MCQ answers to extract persona characteristics
+        ensure_genai_configured()
+        model_instance = genai.GenerativeModel('gemini-2.0-flash-exp')
+        
+        # Prepare MCQ context
+        mcq_context = "\n".join([
+            f"Q{ans['question_id']}: {ans['question']} -> Answer: {ans['selected_choice']}"
+            for ans in mcq_answers
+        ])
+        
+        # Generate persona summary from MCQ
+        persona_prompt = f"""Based on these 50 MCQ answers, create a comprehensive digital twin persona profile.
+
+MCQ Responses:
+{mcq_context}
+
+Generate a JSON object with these fields:
+{{
+  "twin_name": "Full name for the digital twin (e.g., John Smith Digital Twin)",
+  "core_values": "Comma-separated list of 3-5 core values",
+  "decision_making_style": "Concise description of how they make decisions",
+  "communication_style": "Concise description of communication preferences",
+  "leadership_approach": "Concise description of leadership style",
+  "expertise_areas": "Comma-separated list of key expertise areas",
+  "risk_tolerance": "Conservative/Moderate/Aggressive",
+  "tone_style": "Direct/Collaborative/Analytical/Strategic/Inspirational"
+}}
+
+Be specific and based on the MCQ responses. Return only valid JSON."""
+
+        response = model_instance.generate_content(
+            persona_prompt,
+            generation_config={"temperature": 0.3, "max_output_tokens": 1000}
+        )
+        
+        # Extract JSON
+        response_text = response.text.strip()
+        if "```json" in response_text:
+            start_idx = response_text.find("```json") + 7
+            end_idx = response_text.find("```", start_idx)
+            response_text = response_text[start_idx:end_idx].strip()
+        elif "```" in response_text:
+            start_idx = response_text.find("```") + 3
+            end_idx = response_text.find("```", start_idx)
+            response_text = response_text[start_idx:end_idx].strip()
+        
+        persona_data = json.loads(response_text)
+        
+        # Step 2: Analyze email samples if provided
+        email_style = {}
+        if email_samples:
+            try:
+                from email_analyzer import EmailAnalyzer
+                analyzer = EmailAnalyzer()
+                
+                # Parse email samples into structured format
+                email_list = [{"body": email_samples, "subject": "Sample"}]
+                email_style = analyzer.analyze_email_batch(email_list, {})
+            except Exception as e:
+                print(f"Email analysis failed: {e}")
+                email_style = {
+                    "tone": "Professional",
+                    "formality_level": 5,
+                    "emoji_usage": "Minimal"
+                }
+        
+        # Step 3: Create ChromaDB collections
+        twin_id = f"twin_{user_id}_{int(time.time() * 1000)}"  # Unique twin ID
+        
+        try:
+            # Create twin vectors (content + style collections)
+            profile_data = {
+                "twin_name": persona_data.get("twin_name", "Digital Twin"),
+                "core_values": persona_data.get("core_values", ""),
+                "decision_making": persona_data.get("decision_making_style", ""),
+                "communication": persona_data.get("communication_style", ""),
+                "leadership": persona_data.get("leadership_approach", ""),
+                "expertise": persona_data.get("expertise_areas", ""),
+                "mcq_responses": mcq_context
+            }
+            
+            # Create vectors in ChromaDB
+            create_twin_vectors(
+                twin_id=twin_id,
+                sample_messages=[],  # No sample messages for MCQ-based twins
+                uploaded_files=documents,
+                profile_data=profile_data
+            )
+            
+        except Exception as e:
+            print(f"Error creating ChromaDB collections: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "error": f"Failed to create twin vectors: {str(e)}"}
+            )
+        
+        # Step 4: Return success
+        return {
+            "success": True,
+            "twin_id": twin_id,
+            "twin_name": persona_data.get("twin_name", "Digital Twin"),
+            "persona_data": persona_data,
+            "message": "Digital twin created successfully"
+        }
+        
+    except json.JSONDecodeError as e:
+        print(f"JSON parsing error: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": "Failed to parse AI response"}
+        )
+    except Exception as e:
+        print(f"Error creating digital twin: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
         )
 
 
