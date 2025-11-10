@@ -9,7 +9,7 @@ import io
 from typing import List
 from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
 from fastapi.responses import JSONResponse
-from models import ChatInput, MeetingInput, QuestionRefinementInput, PreMeetingEvaluationInput, ChatFollowupEvaluationInput, ChatFollowupCounterQuestionInput
+from models import ChatInput, MeetingInput, QuestionRefinementInput, PreMeetingEvaluationInput, ChatFollowupEvaluationInput, ChatFollowupCounterQuestionInput, ScrapeWebsiteInput, GenerateMCQInput, CreateDigitalTwinInput
 from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory_from_vectordb
 from agents import run_meeting
 import google.generativeai as genai
@@ -18,6 +18,8 @@ from twin_manager import create_twin_vectors, query_twin_content, query_twin_sty
 from pre_meeting import evaluate_readiness_with_ai, generate_counter_question
 from persona_interview import router as persona_interview_router
 from chat_followup import evaluate_chat_question, generate_chat_counter_question
+from web_scraper import scrape_company_website, extract_company_insights
+from digital_twin_mcq import generate_mcq_questions
 
 # Create directories
 os.makedirs(CORPUS_DIR, exist_ok=True)
@@ -813,6 +815,129 @@ async def twin_stats(twin_id: str):
         return JSONResponse(
             status_code=500,
             content={"error": str(e)}
+        )
+
+
+@app.post("/digital-twin/scrape-website")
+async def scrape_website(input_data: ScrapeWebsiteInput = Body(...)):
+    """
+    Scrape company website to gather information for MCQ generation.
+    
+    Args:
+        company_url: Company website URL from user profile
+        user_id: User ID for logging
+    
+    Returns:
+        Scraped company data (about, team, culture, values, etc.)
+    """
+    try:
+        company_url = input_data.company_url
+        
+        if not company_url or company_url.strip() == "":
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": False,
+                    "error": "No company URL provided",
+                    "company_data": {
+                        "company_info": "",
+                        "about": "",
+                        "team": "",
+                        "culture": "",
+                        "values": "",
+                        "all_text": ""
+                    }
+                }
+            )
+        
+        # Scrape the website
+        scraped_data = scrape_company_website(company_url)
+        
+        if scraped_data.get("error") and not scraped_data.get("all_text"):
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": False,
+                    "error": scraped_data["error"],
+                    "company_data": scraped_data
+                }
+            )
+        
+        # Extract insights for AI consumption
+        insights = extract_company_insights(scraped_data)
+        
+        return {
+            "success": True,
+            "company_data": scraped_data,
+            "insights": insights
+        }
+        
+    except Exception as e:
+        print(f"Error scraping website: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": str(e),
+                "company_data": {
+                    "company_info": "",
+                    "about": "",
+                    "team": "",
+                    "culture": "",
+                    "values": "",
+                    "all_text": ""
+                }
+            }
+        )
+
+
+@app.post("/digital-twin/generate-mcq")
+async def generate_mcq(input_data: GenerateMCQInput = Body(...)):
+    """
+    Generate 50 MCQ questions (10 per category) using Gemini AI.
+    Questions are personalized based on user profile and company website data.
+    
+    Args:
+        user_id: User ID for logging
+        user_profile: User profile information
+        company_data: Scraped company website data
+    
+    Returns:
+        List of 50 MCQ questions with 4 answer choices each
+    """
+    try:
+        user_profile = input_data.user_profile
+        company_data = input_data.company_data
+        
+        # Generate MCQ questions
+        questions = generate_mcq_questions(user_profile, company_data)
+        
+        # Validate we got 50 questions
+        if len(questions) != 50:
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "success": False,
+                    "error": f"Expected 50 questions, got {len(questions)}",
+                    "questions": questions
+                }
+            )
+        
+        return {
+            "success": True,
+            "questions": questions,
+            "total": len(questions)
+        }
+        
+    except Exception as e:
+        print(f"Error generating MCQ questions: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": str(e),
+                "questions": []
+            }
         )
 
 

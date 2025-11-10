@@ -50,6 +50,21 @@ class ChatFollowupCounterQuestionInput(BaseModel):
     agent_recommendations: Optional[str] = None
     previous_counter_questions: List[str] = []
 
+class ScrapeWebsiteInput(BaseModel):
+    company_url: str
+    user_id: str
+
+class GenerateMCQInput(BaseModel):
+    user_id: str
+    user_profile: Dict[str, Any]
+    company_data: Dict[str, str]
+
+class CreateDigitalTwinInput(BaseModel):
+    user_id: str
+    mcq_answers: List[Dict[str, Any]]
+    email_samples: Optional[str] = None
+    documents: Optional[List[str]] = None
+
 # Define a merge function for dictionaries
 def merge_dicts(left: Dict[str, str], right: Dict[str, str]) -> Dict[str, str]:
     """Merge two dictionaries, with right taking precedence"""

@@ -32,3 +32,7 @@ pypdf
 python-multipart
 sentence-transformers
 uvicorn
+beautifulsoup4
+langgraph-checkpoint
+requests
+typing-extensions
