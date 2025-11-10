@@ -1,6 +1,6 @@
 // Reference: javascript_database blueprint
 import { 
-  users, runs, chats, agentMemory, corpus, twins, preMeetingSessions, personaInterviewSessions, chatFollowupSessions,
+  users, runs, chats, agentMemory, corpus, twins, preMeetingSessions, personaInterviewSessions, chatFollowupSessions, twinMetadata,
   type User, type InsertUser,
   type Run, type InsertRun,
   type Chat, type InsertChat,
@@ -8,7 +8,8 @@ import {
   type Twin, type InsertTwin,
   type PreMeetingSession, type InsertPreMeetingSession,
   type PersonaInterviewSession, type InsertPersonaInterviewSession,
-  type ChatFollowupSession, type InsertChatFollowupSession
+  type ChatFollowupSession, type InsertChatFollowupSession,
+  type TwinMetadata, type InsertTwinMetadata
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -63,6 +64,11 @@ export interface IStorage {
   updateChatFollowupSession(id: string, updates: Partial<ChatFollowupSession>): Promise<ChatFollowupSession | undefined>;
   deleteChatFollowupSession(id: string): Promise<void>;
   getActiveChatFollowupSession(userId: string, runId: string, agent: string): Promise<ChatFollowupSession | undefined>;
+  
+  // Twin metadata operations
+  upsertTwinMetadata(metadata: InsertTwinMetadata): Promise<TwinMetadata>;
+  getTwinMetadata(twinKey: string): Promise<TwinMetadata | undefined>;
+  getAllTwinMetadata(): Promise<TwinMetadata[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -297,6 +303,36 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(chatFollowupSessions.createdAt))
       .limit(1);
     return session || undefined;
+  }
+
+  async upsertTwinMetadata(metadata: InsertTwinMetadata): Promise<TwinMetadata> {
+    const existing = await this.getTwinMetadata(metadata.twinKey);
+    
+    if (existing) {
+      // Update existing metadata
+      const [updated] = await db
+        .update(twinMetadata)
+        .set({ ...metadata, updatedAt: new Date() })
+        .where(eq(twinMetadata.twinKey, metadata.twinKey))
+        .returning();
+      return updated;
+    } else {
+      // Insert new metadata
+      const [created] = await db
+        .insert(twinMetadata)
+        .values(metadata)
+        .returning();
+      return created;
+    }
+  }
+
+  async getTwinMetadata(twinKey: string): Promise<TwinMetadata | undefined> {
+    const [metadata] = await db.select().from(twinMetadata).where(eq(twinMetadata.twinKey, twinKey));
+    return metadata || undefined;
+  }
+
+  async getAllTwinMetadata(): Promise<TwinMetadata[]> {
+    return await db.select().from(twinMetadata).orderBy(desc(twinMetadata.createdAt));
   }
 }
 

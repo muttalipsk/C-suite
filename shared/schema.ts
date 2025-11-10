@@ -201,6 +201,19 @@ export const digitalTwinSessions = pgTable("digital_twin_sessions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Twin Metadata - Auto-generated metadata for digital twins (company, role, description, knowledge)
+export const twinMetadata = pgTable("twin_metadata", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  twinKey: text("twin_key").notNull().unique(), // Format: twin_<uuid> matching the agent key
+  company: text("company").notNull(), // Extracted from user profile
+  role: text("role").notNull(), // Extracted from user profile (designation)
+  description: text("description").notNull(), // AI-generated from profile
+  knowledge: text("knowledge").notNull(), // AI-generated expertise summary
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -302,6 +315,12 @@ export const insertChatFollowupSessionSchema = createInsertSchema(chatFollowupSe
   counterQuestionsAsked: true, // Managed by backend
 });
 
+export const insertTwinMetadataSchema = createInsertSchema(twinMetadata).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // TypeScript types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -338,6 +357,9 @@ export type InsertPersonaInterviewSession = z.infer<typeof insertPersonaIntervie
 
 export type ChatFollowupSession = typeof chatFollowupSessions.$inferSelect;
 export type InsertChatFollowupSession = z.infer<typeof insertChatFollowupSessionSchema>;
+
+export type TwinMetadata = typeof twinMetadata.$inferSelect;
+export type InsertTwinMetadata = z.infer<typeof insertTwinMetadataSchema>;
 
 // AI Agent personas constants
 export const AI_AGENTS = {
