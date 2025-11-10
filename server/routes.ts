@@ -1068,6 +1068,152 @@ Industry: ${user.companyWebsite}`;
     }
   });
 
+  // ===== DIGITAL TWIN MCQ ROUTES (50-Question MCQ-Based Digital Twin Creation) =====
+  
+  // Scrape company website for context
+  app.post("/api/digital-twin/scrape", requireAuth, async (req, res) => {
+    try {
+      const user = await storage.getUserById(req.session.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const companyUrl = user.companyWebsite || req.body.company_url;
+      
+      if (!companyUrl) {
+        return res.status(400).json({ error: "Company website URL is required" });
+      }
+      
+      // Forward to Python API for web scraping
+      const pythonResponse = await axios.post(
+        'http://localhost:8000/digital-twin/scrape-website',
+        { 
+          company_url: companyUrl,
+          user_id: req.session.userId 
+        },
+        { timeout: 30000 }
+      );
+      
+      res.json(pythonResponse.data);
+    } catch (error: any) {
+      console.error("Website scraping error:", error);
+      res.status(500).json({
+        error: error.response?.data?.error || "Failed to scrape website"
+      });
+    }
+  });
+  
+  // Generate 50 MCQ questions based on user profile + company data
+  app.post("/api/digital-twin/generate-mcq", requireAuth, async (req, res) => {
+    try {
+      const user = await storage.getUserById(req.session.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const { company_data } = req.body;
+      
+      // Prepare user profile
+      const userProfile = {
+        name: user.name,
+        title: user.designation,
+        company: user.companyName,
+        role: user.roleDescription,
+        industry: user.roleDetails
+      };
+      
+      // Forward to Python API for MCQ generation
+      const pythonResponse = await axios.post(
+        'http://localhost:8000/digital-twin/generate-mcq',
+        { 
+          user_id: req.session.userId,
+          user_profile: userProfile,
+          company_data: company_data || {}
+        },
+        { timeout: 60000 } // 60 seconds for AI generation
+      );
+      
+      res.json(pythonResponse.data);
+    } catch (error: any) {
+      console.error("MCQ generation error:", error);
+      res.status(500).json({
+        error: error.response?.data?.error || "Failed to generate MCQ questions"
+      });
+    }
+  });
+  
+  // Create digital twin from 50 MCQ answers + optional email samples
+  app.post("/api/digital-twin/create", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const { mcq_answers, email_samples } = req.body;
+      
+      if (!mcq_answers || mcq_answers.length !== 50) {
+        return res.status(400).json({ 
+          error: "All 50 MCQ questions must be answered" 
+        });
+      }
+      
+      // Get user info for domain extraction
+      const user = await storage.getUserById(userId!);
+      if (!user || !user.email) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Extract company domain from email
+      const emailDomain = user.email.split('@')[1];
+      
+      // Forward to Python API to create digital twin
+      const pythonResponse = await axios.post(
+        'http://localhost:8000/digital-twin/create',
+        { 
+          user_id: userId,
+          mcq_answers,
+          email_samples: email_samples || null,
+          documents: []
+        },
+        { timeout: 120000 } // 2 minutes for twin creation
+      );
+      
+      if (!pythonResponse.data.success) {
+        return res.status(500).json({ 
+          error: pythonResponse.data.error || "Failed to create digital twin" 
+        });
+      }
+      
+      // Store twin in database
+      const twin = await storage.createTwin({
+        userId: userId!,
+        twinName: pythonResponse.data.twin_name,
+        companyDomain: emailDomain,
+        toneStyle: pythonResponse.data.persona_data.tone_style || "Professional",
+        riskTolerance: pythonResponse.data.persona_data.risk_tolerance || "Moderate",
+        coreValues: pythonResponse.data.persona_data.core_values || "",
+        emojiPreference: "None",
+        sampleMessages: [],
+        profileData: pythonResponse.data.persona_data,
+        filesUploaded: []
+      });
+      
+      res.json({
+        success: true,
+        twin: {
+          id: twin.id,
+          twinName: twin.twinName,
+          companyDomain: twin.companyDomain,
+          createdAt: twin.createdAt
+        },
+        message: "Digital twin created successfully"
+      });
+      
+    } catch (error: any) {
+      console.error("Digital twin creation error:", error);
+      res.status(500).json({
+        error: error.response?.data?.error || "Failed to create digital twin"
+      });
+    }
+  });
+
   // ===== PERSONA INTERVIEW ROUTES (20-Question AI-Powered Interview) =====
   
   // Generate 20 personalized questions based on user profile

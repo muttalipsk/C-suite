@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import TwinsPage from "./TwinsPage";
-import CreateTwinPage from "./CreateTwinPage";
+import CreateDigitalTwinPage from "./CreateDigitalTwinPage";
 
 interface DashboardPageProps {
   onLogout: () => void;
@@ -423,8 +423,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             <TwinsPage />
           </Route>
 
-          <Route path="/create-twin">
-            <CreateTwinPage />
+          <Route path="/create-digital-twin">
+            <CreateDigitalTwinPage />
           </Route>
         </Switch>
       </div>

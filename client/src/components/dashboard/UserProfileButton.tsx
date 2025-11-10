@@ -50,9 +50,9 @@ export function UserProfileButton({ user, onLogout, onViewProfile }: UserProfile
           <Settings className="w-4 h-4 mr-2" />
           View Profile
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/create-twin")} data-testid="menu-create-persona">
+        <DropdownMenuItem onClick={() => navigate("/create-digital-twin")} data-testid="menu-create-digital-twin">
           <Sparkles className="w-4 h-4 mr-2" />
-          Create Persona
+          Create Your Digital Twin
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onLogout} data-testid="menu-logout">
           <LogOut className="w-4 h-4 mr-2" />
