@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChatBox } from "./ChatBox";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { isHtmlContent, parseRecommendation } from "@/lib/parseRecommendation";
 
 interface AgentCardProps {
   agentKey: string;
@@ -59,50 +60,6 @@ export function AgentCard({
       setChatMessages(parsedMessages);
     }
   }, [savedChatHistory]);
-
-  // Check if recommendation contains HTML tags
-  const isHtmlContent = (text: string) => {
-    return /<\/?[a-z][\s\S]*>/i.test(text);
-  };
-
-  // Parse recommendation into structured sections (for markdown/plain text)
-  const parseRecommendation = (text: string) => {
-    console.log(`[${agentKey}] Parsing recommendation:`, text.substring(0, 200));
-    
-    const sections = {
-      keyRecommendations: [] as string[],
-      rationale: "",
-      pitfalls: [] as string[],
-      nextSteps: "",
-    };
-
-    // More flexible patterns - handle variations in formatting
-    const keyRecsMatch = text.match(/\*\*Key Recommendations\*\*:?\s*(.*?)(?=\*\*[A-Z]|$)/s);
-    const rationaleMatch = text.match(/\*\*Rationale\s*[&and]*\s*Insights\*\*:?\s*(.*?)(?=\*\*[A-Z]|$)/s);
-    const pitfallsMatch = text.match(/\*\*Potential Pitfalls\s*[&and]*\s*Mitigations\*\*:?\s*(.*?)(?=\*\*[A-Z]|$)/s);
-    const nextStepsMatch = text.match(/\*\*Next Steps\s*[&and]*\s*Follow-Up\*\*:?\s*(.*?)(?=\*\*[A-Z]|$)/s);
-
-    console.log(`[${agentKey}] Pattern matches:`, {
-      keyRecs: !!keyRecsMatch,
-      rationale: !!rationaleMatch,
-      pitfalls: !!pitfallsMatch,
-      nextSteps: !!nextStepsMatch
-    });
-
-    if (keyRecsMatch) {
-      const bullets = keyRecsMatch[1].match(/[-•]\s*(.+?)(?=\n[-•]|\n\n|$)/gs);
-      sections.keyRecommendations = bullets?.map(b => b.replace(/^[-•]\s*/, '').trim()) || [];
-      console.log(`[${agentKey}] Found ${sections.keyRecommendations.length} key recommendations`);
-    }
-    if (rationaleMatch) sections.rationale = rationaleMatch[1].trim();
-    if (pitfallsMatch) {
-      const bullets = pitfallsMatch[1].match(/[-•]\s*(.+?)(?=\n[-•]|\n\n|$)/gs);
-      sections.pitfalls = bullets?.map(b => b.replace(/^[-•]\s*/, '').trim()) || [];
-    }
-    if (nextStepsMatch) sections.nextSteps = nextStepsMatch[1].trim();
-
-    return sections;
-  };
 
   const hasHtmlContent = isHtmlContent(recommendation);
   const sections = !hasHtmlContent ? parseRecommendation(recommendation) : {

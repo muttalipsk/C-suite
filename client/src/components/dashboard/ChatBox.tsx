@@ -5,6 +5,7 @@ import { Send } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AI_AGENTS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { isHtmlContent, parseRecommendation } from "@/lib/parseRecommendation";
 
 interface Message {
   sender: "user" | "agent";
@@ -297,7 +298,76 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [], onMe
                       : "bg-card"
                   }`}
                 >
-                  <p className="text-sm leading-relaxed">{msg.content}</p>
+                  {msg.sender === "user" ? (
+                    <p className="text-sm leading-relaxed">{msg.content}</p>
+                  ) : (
+                    (() => {
+                      const hasHtml = isHtmlContent(msg.content);
+                      const sections = !hasHtml ? parseRecommendation(msg.content) : null;
+                      
+                      if (hasHtml) {
+                        return (
+                          <div 
+                            className="prose prose-sm max-w-none dark:prose-invert
+                              prose-p:text-muted-foreground prose-p:leading-relaxed
+                              prose-headings:text-foreground prose-headings:font-semibold
+                              prose-ul:text-muted-foreground prose-ul:space-y-1
+                              prose-li:text-muted-foreground
+                              prose-strong:text-foreground prose-strong:font-semibold"
+                            dangerouslySetInnerHTML={{ __html: msg.content }}
+                          />
+                        );
+                      } else if (sections && (sections.keyRecommendations.length > 0 || sections.rationale)) {
+                        return (
+                          <div className="space-y-3">
+                            {sections.keyRecommendations.length > 0 && (
+                              <div>
+                                <h5 className="font-semibold text-xs text-foreground mb-1.5">Key Recommendations</h5>
+                                <ul className="space-y-1">
+                                  {sections.keyRecommendations.map((rec, i) => (
+                                    <li key={i} className="text-xs text-muted-foreground flex gap-1.5">
+                                      <span className="text-primary">•</span>
+                                      <span className="flex-1">{rec}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {sections.rationale && (
+                              <div>
+                                <h5 className="font-semibold text-xs text-foreground mb-1.5">Rationale & Insights</h5>
+                                <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{sections.rationale}</p>
+                              </div>
+                            )}
+                            
+                            {sections.pitfalls.length > 0 && (
+                              <div>
+                                <h5 className="font-semibold text-xs text-foreground mb-1.5">Potential Pitfalls & Mitigations</h5>
+                                <ul className="space-y-1">
+                                  {sections.pitfalls.map((pitfall, i) => (
+                                    <li key={i} className="text-xs text-muted-foreground flex gap-1.5">
+                                      <span className="text-destructive">•</span>
+                                      <span className="flex-1">{pitfall}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {sections.nextSteps && (
+                              <div>
+                                <h5 className="font-semibold text-xs text-foreground mb-1.5">Next Steps & Follow-Up</h5>
+                                <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{sections.nextSteps}</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      } else {
+                        return <p className="text-sm leading-relaxed">{msg.content}</p>;
+                      }
+                    })()
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground">
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

@@ -514,6 +514,22 @@ Base your response on:
 - Your previous recommendation: {recommendation}
 {knowledge_context}- Recent memory: {memory}
 - Conversation history: {json.dumps(history)}
+
+**IMPORTANT: Format your response using structured markdown with these sections:**
+
+**Key Recommendations**
+- Provide 2-4 actionable bullet points
+
+**Rationale & Insights**
+Explain your reasoning and key insights in 2-3 sentences.
+
+**Potential Pitfalls & Mitigations**
+- List 1-3 potential risks and how to mitigate them
+
+**Next Steps & Follow-Up**
+Provide clear next steps in 1-2 sentences.
+
+Use this exact structure with markdown bold headings (**Section Name**) and bullet points (- item).
 """
 
     # Build human content with enriched context if available
@@ -539,7 +555,8 @@ Based on these clarifications, please provide a comprehensive response."""
         response = chat_model.generate_content(
             f"{system_prompt}\n\n{human_content}",
             generation_config=genai.GenerationConfig(temperature=TEMP))
-        agent_response = Markup(markdown.markdown(response.text))
+        # Return plain markdown text (no HTML conversion)
+        agent_response = response.text
     except Exception as e:
         print(f"Error in chat with {agent}: {e}")
         agent_response = "Sorry, I encountered an issue. Please try again."
