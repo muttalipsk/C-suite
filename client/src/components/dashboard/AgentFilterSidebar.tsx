@@ -2,17 +2,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { AI_AGENTS } from "@shared/schema";
+import { User2 } from "lucide-react";
 import { Brain, CheckCircle2 } from "lucide-react";
 
 interface AgentFilterSidebarProps {
   selectedAgents: string[];
   onToggleAgent: (agentKey: string) => void;
   onToggleAll: () => void;
+  allAgents: Record<string, any>;
 }
 
-export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll }: AgentFilterSidebarProps) {
-  const allSelected = selectedAgents.length === Object.keys(AI_AGENTS).length;
+export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll, allAgents }: AgentFilterSidebarProps) {
+  const allSelected = selectedAgents.length === Object.keys(allAgents).length;
 
   return (
     <aside className="w-64 border-r bg-sidebar h-screen flex flex-col">
@@ -35,8 +36,9 @@ export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll 
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-2">
-          {Object.entries(AI_AGENTS).map(([key, agent]) => {
+          {Object.entries(allAgents).map(([key, agent]) => {
             const isSelected = selectedAgents.includes(key);
+            const isDigitalTwin = agent.isDigitalTwin || false;
             return (
               <button
                 key={key}
@@ -56,16 +58,17 @@ export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll 
                       className="object-cover w-full h-full"
                     />
                     <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40 text-foreground text-xs">
-                      {agent.name.split(' ').map(n => n[0]).join('')}
+                      {agent.name.split(' ').map((n: string) => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm">{agent.name}</p>
+                      {isDigitalTwin && <User2 className="w-3 h-3 text-primary flex-shrink-0" />}
                       {isSelected && <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />}
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{agent.company}</p>
-                    <Badge variant="outline" className="mt-1 text-xs">
+                    <Badge variant={isDigitalTwin ? "default" : "outline"} className="mt-1 text-xs">
                       {agent.role}
                     </Badge>
                   </div>

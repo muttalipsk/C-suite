@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { Route, Switch, Link, useLocation } from "wouter";
 import { MeetingForm } from "@/components/dashboard/MeetingForm";
 import { AgentCard } from "@/components/dashboard/AgentCard";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import TwinsPage from "./TwinsPage";
 import CreateDigitalTwinPage from "./CreateDigitalTwinPage";
+import { useQuery } from "@tanstack/react-query";
 
 interface DashboardPageProps {
   onLogout: () => void;
@@ -26,6 +27,33 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [currentRunId, setCurrentRunId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<{runId: string, agentKey: string} | null>(null);
+
+  // Fetch digital twins from database
+  const { data: twinsData } = useQuery<{ twins: any[] }>({
+    queryKey: ["/api/twins"],
+    refetchOnWindowFocus: true,
+  });
+
+  // Combine AI_AGENTS with user digital twins
+  const allAgents = useMemo(() => {
+    const combined: Record<string, any> = { ...AI_AGENTS };
+    
+    if (twinsData?.twins) {
+      twinsData.twins.forEach((twin: any) => {
+        const twinKey = `twin_${twin.id}`;
+        combined[twinKey] = {
+          name: twin.twinName,
+          company: twin.profileData?.company || twin.companyDomain,
+          role: twin.profileData?.designation || "Digital Twin",
+          avatar: "", // Will use initials fallback
+          isDigitalTwin: true,
+          twinId: twin.id,
+        };
+      });
+    }
+    
+    return combined;
+  }, [twinsData]);
 
   // Fetch user data
   useState(() => {
@@ -98,13 +126,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   const toggleAll = useCallback(() => {
     setSelectedAgents(prev => {
-      if (prev.length === Object.keys(AI_AGENTS).length) {
+      if (prev.length === Object.keys(allAgents).length) {
         return [];
       } else {
-        return Object.keys(AI_AGENTS);
+        return Object.keys(allAgents);
       }
     });
-  }, []);
+  }, [allAgents]);
 
   const handleClearResults = useCallback(() => {
     console.log("🧹 Clearing recommendations and conversation results");
@@ -346,6 +374,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           selectedAgents={selectedAgents}
           onToggleAgent={toggleAgent}
           onToggleAll={toggleAll}
+          allAgents={allAgents}
         />
       )}
 
