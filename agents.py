@@ -5,6 +5,7 @@ from constants import PERSONAS, MODEL, GEMINI_KEY, TEMP, MEMORY_DIR, RUNS_DIR, T
 from utils import load_knowledge, retrieve_relevant_chunks, load_memory_from_vectordb, merge_recommendations
 from chat_vectordb import store_chat_message, ensure_genai_configured
 from chromadb import PersistentClient
+from agent_metadata import get_agent_metadata
 import json
 import os
 import uuid
@@ -58,9 +59,7 @@ def retrieve_from_knowledge_base(agent: str,
 
 # Agent Node Factory - Uses ChromaDB VectorDB Memory
 def create_agent_node(persona: str):
-    # Import shared metadata helper to handle both AI leaders and digital twins
-    from agent_metadata import get_agent_metadata
-    
+    # Use shared metadata helper to handle both AI leaders and digital twins
     metadata = get_agent_metadata(persona)
     company = metadata["company"]
     role = metadata["role"]
@@ -230,7 +229,16 @@ def run_meeting(task: str,
 
     recommend_nodes = []
     for persona in agents:
-        agent_node = create_agent_node(persona)
+        try:
+            agent_node = create_agent_node(persona)
+        except ValueError as e:
+            # Invalid agent identifier
+            print(f"ERROR: Invalid agent '{persona}': {e}")
+            return {
+                "error": f"Invalid agent identifier: {persona}",
+                "status": "failed"
+            }
+        
         recommend_node_name = f"recommend_{persona}"
         graph.add_node(recommend_node_name, agent_node)
         recommend_nodes.append(recommend_node_name)
