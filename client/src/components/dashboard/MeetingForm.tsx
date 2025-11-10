@@ -29,6 +29,7 @@ interface MeetingFormProps {
   isLoading?: boolean;
   selectedAgents: string[];
   onClearResults?: () => void; // New callback to clear parent state
+  allAgents: Record<string, any>; // Include digital twins + AI agents
 }
 
 interface Message {
@@ -43,7 +44,7 @@ interface PreMeetingSession {
   isReady: boolean;
 }
 
-export function MeetingForm({ onSubmit, isLoading = false, selectedAgents, onClearResults }: MeetingFormProps) {
+export function MeetingForm({ onSubmit, isLoading = false, selectedAgents, onClearResults, allAgents }: MeetingFormProps) {
   const [preMeetingSession, setPreMeetingSession] = useState<PreMeetingSession | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState("");
@@ -228,7 +229,7 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents, onCle
             className="px-6 pt-6 pb-4 flex flex-wrap gap-2"
           >
             {selectedAgents.map((agentKey, idx) => {
-              const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
+              const agent = allAgents[agentKey];
               return agent ? (
                 <motion.div
                   key={agentKey}

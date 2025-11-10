@@ -423,6 +423,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                   isLoading={isLoading}
                   selectedAgents={selectedAgents}
                   onClearResults={handleClearResults}
+                  allAgents={allAgents}
                 />
 
                 {/* Results */}
