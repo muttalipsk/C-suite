@@ -65,6 +65,10 @@ class CreateDigitalTwinInput(BaseModel):
     email_samples: Optional[str] = None
     documents: Optional[List[str]] = None
 
+class GenerateMetadataInput(BaseModel):
+    prompt: str
+    temperature: float = 0.3
+
 # Define a merge function for dictionaries
 def merge_dicts(left: Dict[str, str], right: Dict[str, str]) -> Dict[str, str]:
     """Merge two dictionaries, with right taking precedence"""

@@ -1196,6 +1196,54 @@ Industry: ${user.companyWebsite}`;
         filesUploaded: []
       });
       
+      // Generate twin metadata using Gemini AI
+      const twinKey = `twin_${twin.id}`;
+      const personaData = pythonResponse.data.persona_data;
+      
+      // Create prompt for metadata generation
+      const metadataPrompt = `Based on this digital twin profile, generate metadata in JSON format:
+
+Twin Profile:
+- Name: ${pythonResponse.data.twin_name}
+- Company: ${user.companyName}
+- Designation: ${user.designation}
+- Core Values: ${personaData.core_values || "Not specified"}
+- Decision Making Style: ${personaData.decision_making_style || "Not specified"}
+- Communication Style: ${personaData.communication_style || "Not specified"}
+- Leadership Approach: ${personaData.leadership_approach || "Not specified"}
+- Expertise Areas: ${personaData.expertise_areas || "Not specified"}
+- Risk Tolerance: ${personaData.risk_tolerance || "Moderate"}
+
+Generate a JSON object with:
+{
+  "description": "1-2 sentence description of this person's professional focus and approach",
+  "knowledge": "Comma-separated list of key expertise areas"
+}
+
+Be specific and professional. Return only valid JSON.`;
+
+      // Call Gemini to generate description and knowledge
+      const geminiResponse = await axios.post(
+        'http://localhost:8000/generate-metadata',
+        { 
+          prompt: metadataPrompt,
+          temperature: 0.3
+        },
+        { timeout: 15000 }
+      );
+      
+      const metadata = geminiResponse.data;
+      
+      // Store twin metadata in database
+      await storage.upsertTwinMetadata({
+        twinKey,
+        company: user.companyName,
+        role: user.designation,
+        description: metadata.description,
+        knowledge: metadata.knowledge,
+        userId: userId!
+      });
+      
       res.json({
         success: true,
         twin: {
@@ -1204,7 +1252,13 @@ Industry: ${user.companyWebsite}`;
           companyDomain: twin.companyDomain,
           createdAt: twin.createdAt
         },
-        message: "Digital twin created successfully"
+        metadata: {
+          company: user.companyName,
+          role: user.designation,
+          description: metadata.description,
+          knowledge: metadata.knowledge
+        },
+        message: "Digital twin created successfully with personalized metadata"
       });
       
     } catch (error: any) {

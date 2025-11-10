@@ -10,7 +10,7 @@ import io
 from typing import List
 from constants import MODEL as model, GEMINI_KEY as gemini_key, TEMP, CORPUS_DIR, INDEX_DIR, MEMORY_DIR, RUNS_DIR, CHATS_DIR, PERSONAS, TURNS
 from fastapi.responses import JSONResponse
-from models import ChatInput, MeetingInput, QuestionRefinementInput, PreMeetingEvaluationInput, ChatFollowupEvaluationInput, ChatFollowupCounterQuestionInput, ScrapeWebsiteInput, GenerateMCQInput, CreateDigitalTwinInput
+from models import ChatInput, MeetingInput, QuestionRefinementInput, PreMeetingEvaluationInput, ChatFollowupEvaluationInput, ChatFollowupCounterQuestionInput, ScrapeWebsiteInput, GenerateMCQInput, CreateDigitalTwinInput, GenerateMetadataInput
 from utils import build_or_update_index, retrieve_relevant_chunks, load_knowledge, load_memory_from_vectordb
 from agents import run_meeting
 import google.generativeai as genai
@@ -300,6 +300,37 @@ async def generate_interview_summary(
         return JSONResponse(
             status_code=500,
             content={"error": f"Failed to generate summary: {str(e)}"}
+        )
+
+@app.post("/generate-metadata")
+async def generate_metadata(input_data: GenerateMetadataInput = Body(...)):
+    """
+    Generate digital twin metadata (description and knowledge) using Gemini AI.
+    Used during twin creation to auto-generate company, role, description, knowledge.
+    """
+    try:
+        ensure_genai_configured()
+        model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        
+        response = model.generate_content(
+            input_data.prompt,
+            generation_config=genai.GenerationConfig(
+                temperature=input_data.temperature,
+                response_mime_type="application/json"
+            )
+        )
+        
+        # Parse JSON response
+        metadata = json.loads(response.text)
+        
+        print(f"✅ Generated twin metadata: {metadata}")
+        return metadata
+        
+    except Exception as e:
+        print(f"Error generating metadata: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to generate metadata: {str(e)}"}
         )
 
 @app.post("/meeting")
