@@ -19,6 +19,12 @@ interface AgentCardProps {
   autoOpenChat?: boolean;
 }
 
+interface ChatMessage {
+  sender: "user" | "agent";
+  content: string;
+  timestamp: Date;
+}
+
 export function AgentCard({
   agentKey,
   agentName,
@@ -32,6 +38,7 @@ export function AgentCard({
   const [isExpanded, setIsExpanded] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const { toast } = useToast();
 
   // Update chat state when autoOpenChat changes
@@ -94,6 +101,7 @@ export function AgentCard({
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // Save both recommendation AND chat history
       const response = await fetch("/api/save-recommendation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -101,19 +109,24 @@ export function AgentCard({
           runId,
           agent: agentKey,
           recommendation,
+          chatHistory: chatMessages.length > 0 ? chatMessages.map(m => ({
+            sender: m.sender,
+            content: m.content,
+            timestamp: m.timestamp.toISOString(),
+          })) : null,
         }),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to save recommendation");
+        throw new Error(result.error || "Failed to save conversation");
       }
 
       setIsSaved(true);
       toast({
-        title: "Saved to Memory",
-        description: `${agentName}'s recommendation has been saved to your memory.`,
+        title: "Conversation Saved",
+        description: `${agentName}'s recommendation${chatMessages.length > 0 ? ' and chat history' : ''} has been saved.`,
       });
 
       // Trigger a custom event to notify conversation history
@@ -124,7 +137,7 @@ export function AgentCard({
       console.error("Save error:", error);
       toast({
         title: "Save Failed",
-        description: error.message || "Failed to save recommendation. Please try again.",
+        description: error.message || "Failed to save conversation. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -250,7 +263,7 @@ export function AgentCard({
             data-testid={`button-save-${agentKey}`}
           >
             <Save className="w-4 h-4 mr-2" />
-            {isSaved ? "Saved to Memory" : isSaving ? "Saving..." : "Save to Memory"}
+            {isSaved ? "Conversation Saved" : isSaving ? "Saving..." : "Save Conversation"}
           </Button>
 
           <Button
@@ -266,7 +279,12 @@ export function AgentCard({
 
         {showChat && runId && (
           <div className="pt-4 border-t">
-            <ChatBox agentKey={agentKey} agentName={agentName} runId={runId} />
+            <ChatBox 
+              agentKey={agentKey} 
+              agentName={agentName} 
+              runId={runId}
+              onMessagesChange={setChatMessages}
+            />
           </div>
         )}
       </CardContent>
