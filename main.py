@@ -62,6 +62,28 @@ async def startup_event():
     except Exception as e:
         print(f"ERROR configuring Gemini API: {e}")
 
+# Helper function to get agent metadata (handles both PERSONAS and digital twins)
+def get_agent_metadata(agent: str):
+    """
+    Retrieve agent metadata from PERSONAS or use defaults for digital twins.
+    Returns dict with keys: company, role, description
+    """
+    if agent in PERSONAS:
+        return {
+            "company": PERSONAS[agent]["company"],
+            "role": PERSONAS[agent]["role"],
+            "description": PERSONAS[agent]["description"]
+        }
+    elif agent.startswith("twin_"):
+        # Digital twin - use generic metadata (frontend will display actual twin info)
+        return {
+            "company": "Digital Twin",
+            "role": "Personalized Advisor",
+            "description": "Custom digital twin advisor based on your profile"
+        }
+    else:
+        raise ValueError(f"Invalid agent: {agent}")
+
 # Routes/Endpoints
 @app.get("/", response_class=JSONResponse)
 async def root():
@@ -335,9 +357,11 @@ async def refine_question(input_data: QuestionRefinementInput = Body(...)):
         for agent in agents:
             knowledge_chunks = retrieve_from_knowledge_base(agent, question, n_results=2)
             
-            company = PERSONAS[agent]["company"]
-            role = PERSONAS[agent]["role"]
-            description = PERSONAS[agent]["description"]
+            # Get agent metadata (handles both PERSONAS and digital twins)
+            metadata = get_agent_metadata(agent)
+            company = metadata["company"]
+            role = metadata["role"]
+            description = metadata["description"]
             
             if knowledge_chunks:
                 agent_info = f"**{agent}** ({role} at {company}):\n{knowledge_chunks[:500]}"
@@ -430,9 +454,11 @@ async def chat_endpoint(input: ChatInput):
                 "agent": msg.get("message") if msg.get("sender") == "agent" else ""} 
                for msg in history_messages]
 
-    company = PERSONAS[agent]["company"]
-    role = PERSONAS[agent]["role"]
-    description = PERSONAS[agent]["description"]
+    # Get agent metadata (handles both PERSONAS and digital twins)
+    metadata = get_agent_metadata(agent)
+    company = metadata["company"]
+    role = metadata["role"]
+    description = metadata["description"]
     
     # NEW: Retrieve from ChromaDB knowledge base using RAG
     from agents import retrieve_from_knowledge_base
