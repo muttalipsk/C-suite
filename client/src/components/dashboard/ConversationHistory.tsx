@@ -8,17 +8,24 @@ import { AI_AGENTS } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
+interface ChatMessage {
+  sender: "user" | "agent";
+  content: string;
+  timestamp: string;
+}
+
 interface SavedRecommendation {
   id: number;
   agent: string;
   content: string;
+  chatHistory?: ChatMessage[];
   createdAt: string;
   runId?: string;
 }
 
 interface ConversationHistoryProps {
   onSelectConversation?: (runId: string, agentKey: string) => void;
-  onLoadChat?: (runId: string, agentKey: string, recommendation: string) => void;
+  onLoadChat?: (runId: string, agentKey: string, recommendation: string, chatHistory?: ChatMessage[]) => void;
   selectedConversation?: { runId: string; agentKey: string } | null;
 }
 
@@ -174,7 +181,7 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
                                 if (onSelectConversation) {
                                   onSelectConversation(runId, agentKey);
                                 } else if (onLoadChat) {
-                                  onLoadChat(runId, agentKey, saved.content);
+                                  onLoadChat(runId, agentKey, saved.content, saved.chatHistory);
                                 }
                               }}
                               data-testid={`saved-${saved.id}`}
@@ -183,10 +190,17 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-2 break-words">
                                   {saved.content.substring(0, 80)}...
                                 </p>
-                                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Clock className="w-3 h-3 shrink-0" />
-                                  <span className="truncate">{new Date(saved.createdAt).toLocaleDateString()}</span>
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Clock className="w-3 h-3 shrink-0" />
+                                    <span className="truncate">{new Date(saved.createdAt).toLocaleDateString()}</span>
+                                  </span>
+                                  {saved.chatHistory && saved.chatHistory.length > 0 && (
+                                    <Badge variant="secondary" className="text-xs h-4 px-1">
+                                      {saved.chatHistory.length} messages
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </Button>
                           );
