@@ -8,7 +8,7 @@ if not GEMINI_KEY:
 if GEMINI_KEY and len(GEMINI_KEY.strip()) == 0:
     raise ValueError("GEMINI_API_KEY is empty - please set a valid API key")
 print(f"[DEBUG] GEMINI_API_KEY loaded: {GEMINI_KEY[:10]}...{GEMINI_KEY[-4:] if len(GEMINI_KEY) > 14 else ''}")
-MODEL = "gemini-2.0-flash"
+MODEL = "gemini-2.0-flash-exp"
 EMBEDDING_MODEL = "models/embedding-001"
 TURNS = int(os.getenv("TURNS", 1))
 TEMP = 0.2
