@@ -17,6 +17,7 @@ interface AgentCardProps {
   recommendation: string;
   runId: string;
   autoOpenChat?: boolean;
+  savedChatHistory?: any[];
 }
 
 interface ChatMessage {
@@ -33,6 +34,7 @@ export function AgentCard({
   recommendation,
   runId,
   autoOpenChat = false,
+  savedChatHistory = [],
 }: AgentCardProps) {
   const [showChat, setShowChat] = useState(autoOpenChat);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -45,6 +47,18 @@ export function AgentCard({
   useEffect(() => {
     setShowChat(autoOpenChat);
   }, [autoOpenChat]);
+
+  // Initialize chat messages from saved history
+  useEffect(() => {
+    if (savedChatHistory && savedChatHistory.length > 0) {
+      const parsedMessages = savedChatHistory.map((msg: any) => ({
+        sender: msg.sender,
+        content: msg.content,
+        timestamp: new Date(msg.timestamp),
+      }));
+      setChatMessages(parsedMessages);
+    }
+  }, [savedChatHistory]);
 
   // Check if recommendation contains HTML tags
   const isHtmlContent = (text: string) => {
@@ -283,6 +297,7 @@ export function AgentCard({
               agentKey={agentKey} 
               agentName={agentName} 
               runId={runId}
+              initialMessages={chatMessages.length > 0 ? chatMessages : undefined}
               onMessagesChange={setChatMessages}
             />
           </div>

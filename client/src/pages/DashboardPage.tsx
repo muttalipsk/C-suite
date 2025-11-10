@@ -27,6 +27,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [currentRunId, setCurrentRunId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<{runId: string, agentKey: string} | null>(null);
+  const [savedChatHistory, setSavedChatHistory] = useState<Record<string, any[]>>({});
 
   // Fetch digital twins from database
   const { data: twinsData } = useQuery<{ twins: any[] }>({
@@ -346,7 +347,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     );
   }, []);
 
-  const handleLoadChat = useCallback((runId: string, agentKey: string, recommendation: string) => {
+  const handleLoadChat = useCallback((runId: string, agentKey: string, recommendation: string, chatHistory?: any[]) => {
     // Set the current run ID
     setCurrentRunId(runId);
 
@@ -354,6 +355,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     setRecommendations({
       [agentKey]: recommendation
     });
+
+    // Store saved chat history for this agent
+    if (chatHistory && chatHistory.length > 0) {
+      setSavedChatHistory({
+        [agentKey]: chatHistory
+      });
+    }
 
     // Scroll to results
     setTimeout(() => {
@@ -437,6 +445,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 recommendation={recommendation}
                                 runId={results.runId}
                                 autoOpenChat={results.selectedAgentKey === agentKey}
+                                savedChatHistory={savedChatHistory[agentKey]}
                               />
                             );
                           })}
