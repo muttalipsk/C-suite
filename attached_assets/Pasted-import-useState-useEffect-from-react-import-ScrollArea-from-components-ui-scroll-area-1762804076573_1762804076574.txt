@@ -30,7 +30,6 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
   const [isLoading, setIsLoading] = useState(true);
   const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
   const [isExpanded, setIsExpanded] = useState(true);
-  
   const loadSavedRecommendations = async () => {
     try {
       const response = await fetch("/api/agent-memory");
@@ -131,13 +130,13 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
               const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
               if (!agent) return null;
 
-              const isAgentExpanded = expandedAgents.has(agentKey);
+              const isExpanded = expandedAgents.has(agentKey);
               const conversationCount = conversations.length;
 
               return (
                 <Collapsible
                   key={agentKey}
-                  open={isAgentExpanded}
+                  open={isExpanded}
                   onOpenChange={() => toggleAgent(agentKey)}
                 >
                   <div className="border rounded-lg bg-card">
@@ -163,7 +162,7 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
                               {conversationCount} {conversationCount === 1 ? 'conversation' : 'conversations'}
                             </p>
                           </div>
-                          {isAgentExpanded ? (
+                          {isExpanded ? (
                             <ChevronUp className="w-4 h-4 shrink-0" />
                           ) : (
                             <ChevronDown className="w-4 h-4 shrink-0" />
