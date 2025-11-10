@@ -9,6 +9,8 @@ import json
 import os
 import uuid
 import google.generativeai as genai
+import markdown
+from markupsafe import Markup
 
 
 # NEW: Retrieve from knowledge base ChromaDB collection
@@ -164,7 +166,7 @@ def create_agent_node(persona: str):
             response = chat_model.generate_content(
                 f"{system_prompt}\n\n{human_content}",
                 generation_config=genai.GenerationConfig(temperature=TEMP))
-            recommendation = response.text
+            recommendation = Markup(markdown.markdown(response.text))
             print(f"[{persona}] Recommendation completed!")
             return {"recommendations": {persona: recommendation}}
         except Exception as e:
