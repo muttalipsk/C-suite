@@ -27,7 +27,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [currentRunId, setCurrentRunId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<{runId: string, agentKey: string} | null>(null);
-  const [savedChatHistory, setSavedChatHistory] = useState<Record<string, any[]>>({});
+  const [savedChatHistory, setSavedChatHistory] = useState<Record<string, any[]>>({}); // Keyed by runId_agentKey
 
   // Fetch digital twins from database
   const { data: twinsData } = useQuery<{ twins: any[] }>({
@@ -141,6 +141,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     setRecommendations({});
     setCurrentRunId("");
     setSelectedConversation(null);
+    setSavedChatHistory({});
   }, []);
 
   // Abort controller to cancel duplicate requests
@@ -177,6 +178,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     setResults(null);
     setRecommendations({});
     setCurrentRunId("");
+    setSavedChatHistory({}); // Clear saved chat history for new meetings
     
     // If recommendations are already provided (from pre-meeting completion), skip API call
     if (data.runId && data.recommendations) {
@@ -356,11 +358,14 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       [agentKey]: recommendation
     });
 
-    // Store saved chat history for this agent
+    // Clear previous saved chat history and set new one
+    const historyKey = `${runId}_${agentKey}`;
     if (chatHistory && chatHistory.length > 0) {
       setSavedChatHistory({
-        [agentKey]: chatHistory
+        [historyKey]: chatHistory
       });
+    } else {
+      setSavedChatHistory({});
     }
 
     // Scroll to results
@@ -437,7 +442,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
                             return (
                               <AgentCard
-                                key={agentKey}
+                                key={`${results.runId}_${agentKey}`}
                                 agentKey={agentKey}
                                 agentName={agent.name}
                                 company={agent.company}
@@ -445,7 +450,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 recommendation={recommendation}
                                 runId={results.runId}
                                 autoOpenChat={results.selectedAgentKey === agentKey}
-                                savedChatHistory={savedChatHistory[agentKey]}
+                                savedChatHistory={savedChatHistory[`${results.runId}_${agentKey}`]}
                               />
                             );
                           })}
