@@ -58,9 +58,13 @@ def retrieve_from_knowledge_base(agent: str,
 
 # Agent Node Factory - Uses ChromaDB VectorDB Memory
 def create_agent_node(persona: str):
-    company = PERSONAS[persona]["company"]
-    role = PERSONAS[persona]["role"]
-    description = PERSONAS[persona]["description"]
+    # Import shared metadata helper to handle both AI leaders and digital twins
+    from agent_metadata import get_agent_metadata
+    
+    metadata = get_agent_metadata(persona)
+    company = metadata["company"]
+    role = metadata["role"]
+    description = metadata["description"]
 
     def agent_node(state):
         try:

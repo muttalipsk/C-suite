@@ -62,27 +62,8 @@ async def startup_event():
     except Exception as e:
         print(f"ERROR configuring Gemini API: {e}")
 
-# Helper function to get agent metadata (handles both PERSONAS and digital twins)
-def get_agent_metadata(agent: str):
-    """
-    Retrieve agent metadata from PERSONAS or use defaults for digital twins.
-    Returns dict with keys: company, role, description
-    """
-    if agent in PERSONAS:
-        return {
-            "company": PERSONAS[agent]["company"],
-            "role": PERSONAS[agent]["role"],
-            "description": PERSONAS[agent]["description"]
-        }
-    elif agent.startswith("twin_"):
-        # Digital twin - use generic metadata (frontend will display actual twin info)
-        return {
-            "company": "Digital Twin",
-            "role": "Personalized Advisor",
-            "description": "Custom digital twin advisor based on your profile"
-        }
-    else:
-        raise ValueError(f"Invalid agent: {agent}")
+# Import shared agent metadata helper
+from agent_metadata import get_agent_metadata
 
 # Routes/Endpoints
 @app.get("/", response_class=JSONResponse)
