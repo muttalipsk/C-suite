@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useMemo } from "react";
-import { Route, Switch, Link, useLocation } from "wouter";
+import { Route, Switch, Link, useLocation, Redirect } from "wouter";
 import { MeetingForm } from "@/components/dashboard/MeetingForm";
 import { AgentCard } from "@/components/dashboard/AgentCard";
 import { AgentFilterSidebar } from "@/components/dashboard/AgentFilterSidebar";
@@ -467,6 +467,10 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
           <Route path="/create-digital-twin">
             <CreateDigitalTwinPage />
+          </Route>
+
+          <Route path="/dashboard">
+            <Redirect to="/" />
           </Route>
         </Switch>
       </div>

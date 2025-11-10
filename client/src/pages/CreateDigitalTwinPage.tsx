@@ -119,7 +119,7 @@ export default function CreateDigitalTwinPage() {
         description: `${data.twin.twinName} is now available for your team.`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/twins'] });
-      navigate("/dashboard");
+      navigate("/");
     },
     onError: (error: any) => {
       toast({
