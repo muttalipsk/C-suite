@@ -10,26 +10,25 @@ from constants import TEMP
 
 
 def evaluate_chat_question(
-    question: str,
-    agent: str,
-    user_profile: str,
-    meeting_type: str,
-    chat_history: List[Dict[str, str]],
-    agent_recommendations: Optional[str] = None
-) -> bool:
+        question: str,
+        agent: str,
+        user_profile: str,
+        meeting_type: str,
+        chat_history: List[Dict[str, str]],
+        agent_recommendations: Optional[str] = None) -> bool:
     """
     Evaluate if a chat question has enough context or needs counter-questions.
     
     Returns: needs_counter_questions (boolean)
     """
     ensure_genai_configured()
-    
+
     # Build chat context from history
     chat_context = "\n".join([
         f"{turn['sender'].upper()}: {turn['message']}"
         for turn in chat_history[-10:]  # Last 10 messages for context
     ])
-    
+
     # Create evaluation prompt
     evaluation_prompt = f"""You are evaluating whether a user's question to an AI advisor needs clarification.
 
@@ -72,30 +71,30 @@ Respond with ONLY ONE WORD:
 - "CLARIFY" if counter-questions are needed
 
 Decision:"""
-    
+
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content(
             evaluation_prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.3,
                 max_output_tokens=10,
-            )
-        )
-        
+            ))
+
         import string
         decision = response.text.strip().upper()
-        decision_normalized = decision.strip(string.punctuation + string.whitespace)
-        
+        decision_normalized = decision.strip(string.punctuation +
+                                             string.whitespace)
+
         needs_clarification = decision_normalized == "CLARIFY"
-        
+
         print(f"Chat Question Evaluation:")
         print(f"  Question: {question}")
         print(f"  Decision: {decision}")
         print(f"  Needs clarification: {needs_clarification}")
-        
+
         return needs_clarification
-        
+
     except Exception as e:
         print(f"Error evaluating chat question: {e}")
         # Conservative fallback: Don't ask counter-questions on error
@@ -103,14 +102,13 @@ Decision:"""
 
 
 def generate_chat_counter_question(
-    question: str,
-    agent: str,
-    user_profile: str,
-    meeting_type: str,
-    chat_history: List[Dict[str, str]],
-    agent_recommendations: Optional[str] = None,
-    previous_counter_questions: List[str] = []
-) -> List[str]:
+        question: str,
+        agent: str,
+        user_profile: str,
+        meeting_type: str,
+        chat_history: List[Dict[str, str]],
+        agent_recommendations: Optional[str] = None,
+        previous_counter_questions: List[str] = []) -> List[str]:
     """
     Generate 1-2 targeted counter-questions based on full context.
     Returns a list of questions (1-2 items).
@@ -123,24 +121,26 @@ def generate_chat_counter_question(
     - Current question
     """
     ensure_genai_configured()
-    
+
     # Build chat context
     chat_context = "\n".join([
         f"{turn['sender'].upper()}: {turn['message']}"
         for turn in chat_history[-10:]
     ])
-    
+
     # Build previous counter-questions context
-    previous_qs = "\n".join([f"- {q}" for q in previous_counter_questions]) if previous_counter_questions else "None"
-    
+    previous_qs = "\n".join([f"- {q}" for q in previous_counter_questions
+                             ]) if previous_counter_questions else "None"
+
     # Context type descriptions
     context_descriptions = {
         "board": "formal Board Meeting requiring strategic depth",
         "email": "Email/Chat format needing quick, actionable insights",
         "chat": "General Strategy discussion for high-level guidance"
     }
-    context_desc = context_descriptions.get(meeting_type, context_descriptions["chat"])
-    
+    context_desc = context_descriptions.get(meeting_type,
+                                            context_descriptions["chat"])
+
     # Create prompt for counter-question generation
     system_prompt = f"""You are {agent}, an AI advisor helping a user in a chat conversation.
 
@@ -184,30 +184,31 @@ Guidelines:
 6. Don't repeat questions already asked
 
 Generate your counter-question(s):"""
-    
+
     try:
         from constants import GEMINI_KEY
-        print(f"[DEBUG generate_chat_counter_question] API Key present: {bool(GEMINI_KEY)}")
-        
-        model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        print(
+            f"[DEBUG generate_chat_counter_question] API Key present: {bool(GEMINI_KEY)}"
+        )
+
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content(
             system_prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7,
                 max_output_tokens=200,
-            )
-        )
-        
+            ))
+
         counter_question_text = response.text.strip()
         counter_question_text = counter_question_text.strip('"').strip("'")
-        
+
         # Parse multiple questions: split by numbered format (1., 2.) or newlines
         import re
         # Try to split by numbered questions first
         numbered_pattern = r'^\s*\d+[\.\)]\s+'
         lines = counter_question_text.split('\n')
         questions = []
-        
+
         for line in lines:
             line = line.strip()
             if not line:
@@ -216,24 +217,28 @@ Generate your counter-question(s):"""
             cleaned = re.sub(numbered_pattern, '', line)
             if cleaned:
                 questions.append(cleaned)
-        
+
         # If no valid split, return the whole text as one question
         if not questions:
             questions = [counter_question_text]
-        
+
         # Limit to max 2 questions
         questions = questions[:2]
-        
+
         print(f"Generated {len(questions)} counter-question(s): {questions}")
         return questions
-        
+
     except Exception as e:
         import traceback
         print(f"Error generating chat counter-question: {e}")
         print(f"Full traceback: {traceback.format_exc()}")
-        
+
         # Fallback questions as list
         if agent_recommendations:
-            return ["Could you clarify which part of my earlier recommendations you're asking about?"]
+            return [
+                "Could you clarify which part of my earlier recommendations you're asking about?"
+            ]
         else:
-            return ["Could you provide a bit more context about what specifically you'd like help with?"]
+            return [
+                "Could you provide a bit more context about what specifically you'd like help with?"
+            ]

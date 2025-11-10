@@ -72,7 +72,7 @@ def evaluate_readiness_with_ai(question: str,
     Decision:"""
 
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content(
             evaluation_prompt,
             generation_config=genai.types.GenerationConfig(
@@ -195,7 +195,7 @@ def generate_counter_question(
             f"[DEBUG generate_counter_question] API Key present: {bool(GEMINI_KEY)}, Length: {len(GEMINI_KEY) if GEMINI_KEY else 0}"
         )
 
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content(
             system_prompt,
             generation_config=genai.types.GenerationConfig(
