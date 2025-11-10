@@ -115,7 +115,7 @@ export default function CreateDigitalTwinPage() {
     },
     onSuccess: (data) => {
       toast({
-        title: "🎉 Digital Twin Created!",
+        title: "Digital Twin Created!",
         description: `${data.twin.twinName} is now available for your team.`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/twins'] });

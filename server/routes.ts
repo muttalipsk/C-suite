@@ -1258,7 +1258,7 @@ Industry: ${user.companyWebsite}`;
       }
       
       // Get user info for company domain
-      const user = await storage.getUserById(userId!);
+      const user = await storage.getUser(userId!);
       if (!user || !user.email) {
         return res.status(404).json({ error: "User not found" });
       }
