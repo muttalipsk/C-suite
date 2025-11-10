@@ -1041,7 +1041,6 @@ MCQ Responses:
 
 Generate a JSON object with these fields:
 {{
-  "twin_name": "Full name for the digital twin (e.g., John Smith Digital Twin)",
   "core_values": "Comma-separated list of 3-5 core values",
   "decision_making_style": "Concise description of how they make decisions",
   "communication_style": "Concise description of communication preferences",
@@ -1092,10 +1091,13 @@ Be specific and based on the MCQ responses. Return only valid JSON."""
         # Step 3: Create ChromaDB collections
         twin_id = f"twin_{user_id}_{int(time.time() * 1000)}"  # Unique twin ID
         
+        # Use actual user name instead of AI-generated name
+        twin_name = input_data.user_name
+        
         try:
             # Create twin vectors (content + style collections)
             profile_data = {
-                "twin_name": persona_data.get("twin_name", "Digital Twin"),
+                "twin_name": twin_name,
                 "core_values": persona_data.get("core_values", ""),
                 "decision_making": persona_data.get("decision_making_style", ""),
                 "communication": persona_data.get("communication_style", ""),
@@ -1123,7 +1125,7 @@ Be specific and based on the MCQ responses. Return only valid JSON."""
         return {
             "success": True,
             "twin_id": twin_id,
-            "twin_name": persona_data.get("twin_name", "Digital Twin"),
+            "twin_name": twin_name,  # Use actual user name
             "persona_data": persona_data,
             "message": "Digital twin created successfully"
         }

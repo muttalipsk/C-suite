@@ -61,6 +61,7 @@ class GenerateMCQInput(BaseModel):
 
 class CreateDigitalTwinInput(BaseModel):
     user_id: str
+    user_name: str  # Actual user name from profile
     mcq_answers: List[Dict[str, Any]]
     email_samples: Optional[str] = None
     documents: Optional[List[str]] = None

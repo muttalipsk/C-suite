@@ -1169,6 +1169,7 @@ Industry: ${user.companyWebsite}`;
         'http://localhost:8000/digital-twin/create',
         { 
           user_id: userId,
+          user_name: user.name, // Pass actual user name
           mcq_answers,
           email_samples: email_samples || null,
           documents: []
