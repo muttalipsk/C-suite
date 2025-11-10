@@ -36,3 +36,5 @@ beautifulsoup4
 langgraph-checkpoint
 requests
 typing-extensions
+markdown
+markupsafe
