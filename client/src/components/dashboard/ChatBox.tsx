@@ -62,6 +62,8 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [], onMe
             timestamp: new Date(h.timestamp),
           }));
           setMessages(loadedMessages);
+          // Immediately notify parent of loaded messages
+          onMessagesChange?.(loadedMessages);
         }
       } catch (error) {
         console.error("Failed to load chat history:", error);
@@ -71,7 +73,7 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [], onMe
     if (initialMessages.length === 0) {
       loadChatHistory();
     }
-  }, [runId, agentKey, initialMessages.length]);
+  }, [runId, agentKey, initialMessages.length, onMessagesChange]);
 
 
   const sendMessage = async (messageToSend: string) => {
