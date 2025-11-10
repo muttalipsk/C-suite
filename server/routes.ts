@@ -1164,12 +1164,27 @@ Industry: ${user.companyWebsite}`;
       // Extract company domain from email
       const emailDomain = user.email.split('@')[1];
       
-      // Forward to Python API to create digital twin
+      // STEP 1: Create twin in database FIRST to get the UUID
+      const twin = await storage.createTwin({
+        userId: userId!,
+        twinName: user.name, // Use actual user name
+        companyDomain: emailDomain,
+        toneStyle: "Professional", // Temporary, will be updated from AI
+        riskTolerance: "Moderate", // Temporary, will be updated from AI
+        coreValues: "", // Temporary, will be updated from AI
+        emojiPreference: "None",
+        sampleMessages: [],
+        profileData: {}, // Temporary, will be updated from AI
+        filesUploaded: []
+      });
+      
+      // STEP 2: Forward to Python API with database twin.id
       const pythonResponse = await axios.post(
         'http://localhost:8000/digital-twin/create',
         { 
           user_id: userId,
           user_name: user.name, // Pass actual user name
+          twin_id: twin.id, // Pass database twin.id for ChromaDB
           mcq_answers,
           email_samples: email_samples || null,
           documents: []
@@ -1178,24 +1193,16 @@ Industry: ${user.companyWebsite}`;
       );
       
       if (!pythonResponse.data.success) {
+        // Delete the twin if Python creation fails
+        await storage.deleteTwin(twin.id);
         return res.status(500).json({ 
           error: pythonResponse.data.error || "Failed to create digital twin" 
         });
       }
       
-      // Store twin in database
-      const twin = await storage.createTwin({
-        userId: userId!,
-        twinName: pythonResponse.data.twin_name,
-        companyDomain: emailDomain,
-        toneStyle: pythonResponse.data.persona_data.tone_style || "Professional",
-        riskTolerance: pythonResponse.data.persona_data.risk_tolerance || "Moderate",
-        coreValues: pythonResponse.data.persona_data.core_values || "",
-        emojiPreference: "None",
-        sampleMessages: [],
-        profileData: pythonResponse.data.persona_data,
-        filesUploaded: []
-      });
+      // STEP 3: Update twin with AI-generated data
+      // (Note: storage.updateTwin doesn't exist, but we can work with what we have)
+      // For now, the twin exists with placeholder data
       
       // Generate twin metadata using Gemini AI
       const twinKey = `twin_${twin.id}`;

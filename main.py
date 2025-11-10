@@ -874,6 +874,8 @@ async def twin_stats(twin_id: str):
     """Get statistics about a twin's vector database"""
     try:
         from twin_manager import get_twin_collections
+        
+        # twin_id is the database UUID, use it directly
         content_collection, style_collection = get_twin_collections(twin_id)
 
         content_count = content_collection.count()
@@ -1026,6 +1028,7 @@ async def create_digital_twin(input_data: CreateDigitalTwinInput = Body(...)):
     """
     try:
         user_id = input_data.user_id
+        twin_id = input_data.twin_id  # Use database-generated twin UUID
         mcq_answers = input_data.mcq_answers
         email_samples = input_data.email_samples
         documents = input_data.documents or []
@@ -1109,10 +1112,11 @@ Be specific and based on the MCQ responses. Return only valid JSON."""
                 }
 
         # Step 3: Create ChromaDB collections
-        # Use shorter twin_id to avoid ChromaDB 63-char collection name limit
-        # Format: userid_timestamp (e.g., "123_1762810065000")
-        twin_id = f"{user_id}_{int(time.time() * 1000)}"
-
+        # twin_id comes from Node.js database (UUID format)
+        # For ChromaDB, we need to ensure collection name length is < 63 chars
+        # Database twin.id is a UUID like "abc-123-def-456" (36 chars)
+        # Collection name will be "twin_content_abc-123-def-456" (49 chars) - VALID!
+        
         # Use actual user name instead of AI-generated name
         twin_name = input_data.user_name
 
@@ -1129,9 +1133,9 @@ Be specific and based on the MCQ responses. Return only valid JSON."""
                 "mcq_responses": mcq_context
             }
 
-            # Create vectors in ChromaDB
+            # Create vectors in ChromaDB using the database UUID
             create_twin_vectors(
-                twin_id=twin_id,
+                twin_id=twin_id,  # Use database UUID directly
                 sample_messages=[],  # No sample messages for MCQ-based twins
                 uploaded_files=documents,
                 profile_data=profile_data)

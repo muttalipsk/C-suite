@@ -486,7 +486,7 @@ def run_twin_conversation(twin_id: str, twin_profile: dict, user_query: str) -> 
     Run a conversation with a digital twin using LangGraph workflow.
     
     Args:
-        twin_id: Twin ID
+        twin_id: Twin ID (database UUID, no prefix conversion needed)
         twin_profile: Twin profile data
         user_query: User's question
     
@@ -511,7 +511,7 @@ def run_twin_conversation(twin_id: str, twin_profile: dict, user_query: str) -> 
         "proposal": "",
         "critique": "",
         "final_response": "",
-        "twin_id": twin_id,
+        "twin_id": twin_id,  # Use database UUID directly
         "twin_profile": twin_profile,
         "escalated": False
     }

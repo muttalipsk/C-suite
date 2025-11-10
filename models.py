@@ -61,6 +61,7 @@ class GenerateMCQInput(BaseModel):
 
 class CreateDigitalTwinInput(BaseModel):
     user_id: str
+    twin_id: str  # Database-generated twin UUID (from Node.js)
     user_name: str  # Actual user name from profile
     mcq_answers: List[Dict[str, Any]]
     email_samples: Optional[str] = None
