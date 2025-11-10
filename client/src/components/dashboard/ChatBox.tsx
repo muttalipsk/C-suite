@@ -145,7 +145,7 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
           const nextQuestionIndex = updatedAnswers.length;
           const nextQuestion: Message = {
             sender: "agent",
-            content: `🔍 Clarifying question ${nextQuestionIndex + 1}:\n\n${pendingFollowup.counterQuestions[nextQuestionIndex]}`,
+            content: pendingFollowup.counterQuestions[nextQuestionIndex],
             timestamp: new Date(),
           };
           
@@ -238,10 +238,10 @@ export function ChatBox({ agentKey, agentName, runId, initialMessages = [] }: Ch
                   answers: []
                 });
 
-                // Display first counter-question as agent message with label
+                // Display first counter-question as agent message
                 const counterQuestionMessage: Message = {
                   sender: "agent",
-                  content: `🔍 Clarifying question${counterQuestions.length > 1 ? ' 1' : ''}:\n\n${counterQuestions[0]}`,
+                  content: counterQuestions[0],
                   timestamp: new Date(),
                 };
                 
