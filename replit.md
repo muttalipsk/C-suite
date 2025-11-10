@@ -81,6 +81,16 @@ Preferred communication style: Simple, everyday language.
 - Semantic search capabilities for finding similar past conversations
 - Metadata: run_id, user_id, sender, timestamp stored with each message
 
+**Recent Changes (November 10, 2025):**
+- **Automatic Digital Twin Metadata Generation** (COMPLETED): AI-powered metadata extraction and storage
+  - **Database Schema**: New `twin_metadata` table storing company, role, description, knowledge per twin
+  - **Gemini-Based Generation**: Auto-extracts company/role from user profile, generates personalized description/knowledge from MCQ answers
+  - **PostgreSQL Integration**: Python agent_metadata.py queries database for fresh twin metadata (no caching)
+  - **Knowledge Field**: All metadata (PERSONAS + twins) now includes knowledge field used in Gemini prompts
+  - **Node.js Endpoints**: Enhanced `/api/digital-twin/create` with metadata generation and storage
+  - **Python Endpoints**: New `/generate-metadata` endpoint for AI-powered description/knowledge generation
+  - **Unified Metadata System**: Both built-in AI leaders and custom twins use consistent 4-field structure (company, role, description, knowledge)
+
 **Recent Changes (November 5, 2025):**
 - **Custom Persona Creation System** (COMPLETED): AI-powered personalized interview system
   - **20-Question Personalized Interview**: AI generates unique questions based on user's existing profile
