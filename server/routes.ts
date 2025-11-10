@@ -741,13 +741,13 @@ Industry: ${user.companyWebsite}`;
     }
   });
 
-  // Save recommendation to memory
+  // Save recommendation and chat history to memory (unified save)
   app.post("/api/save-recommendation", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const { runId, agent, recommendation } = req.body;
+    const { runId, agent, recommendation, chatHistory } = req.body;
 
     if (!runId || !agent || !recommendation) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -758,7 +758,8 @@ Industry: ${user.companyWebsite}`;
         req.session.userId,
         agent,
         recommendation,
-        runId
+        runId,
+        chatHistory || null
       );
 
       res.json({ success: true, memoryId: memory.id });
