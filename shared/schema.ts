@@ -50,6 +50,7 @@ export const agentMemory = pgTable("agent_memory", {
   runId: varchar("run_id"), // Nullable - memories can exist independently
   agent: text("agent").notNull(),
   content: text("content").notNull(),
+  chatHistory: jsonb("chat_history"), // Complete chat conversation with agent
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
