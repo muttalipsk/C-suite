@@ -38,9 +38,8 @@ export default function CreateDigitalTwinPage() {
   // Step 1: Scrape company website
   const scrapeMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/digital-twin/scrape", {
-        method: "POST"
-      });
+      const res = await apiRequest("POST", "/api/digital-twin/scrape");
+      return await res.json();
     },
     onSuccess: (data) => {
       if (data.success) {
@@ -68,10 +67,8 @@ export default function CreateDigitalTwinPage() {
   // Step 2: Generate MCQ questions
   const generateMCQMutation = useMutation({
     mutationFn: async (companyDataParam: any) => {
-      return await apiRequest("/api/digital-twin/generate-mcq", {
-        method: "POST",
-        body: JSON.stringify({ company_data: companyDataParam })
-      });
+      const res = await apiRequest("POST", "/api/digital-twin/generate-mcq", { company_data: companyDataParam });
+      return await res.json();
     },
     onSuccess: (data) => {
       if (data.success && data.questions) {
@@ -110,13 +107,11 @@ export default function CreateDigitalTwinPage() {
         };
       });
       
-      return await apiRequest("/api/digital-twin/create", {
-        method: "POST",
-        body: JSON.stringify({
-          mcq_answers: mcqAnswers,
-          email_samples: emailSamples.trim() || null
-        })
+      const res = await apiRequest("POST", "/api/digital-twin/create", {
+        mcq_answers: mcqAnswers,
+        email_samples: emailSamples.trim() || null
       });
+      return await res.json();
     },
     onSuccess: (data) => {
       toast({
