@@ -6,11 +6,6 @@ Handles both built-in AI leaders (PERSONAS) and custom digital twins (twin_*).
 import os
 import psycopg2
 from constants import PERSONAS
-from functools import lru_cache
-
-# Cache twin metadata for 5 minutes
-_twin_metadata_cache = {}
-_cache_ttl = 300  # 5 minutes
 
 
 def _get_db_connection():
@@ -18,11 +13,10 @@ def _get_db_connection():
     return psycopg2.connect(os.environ.get("DATABASE_URL"))
 
 
-@lru_cache(maxsize=100)
 def _fetch_twin_metadata_from_db(twin_key: str):
     """
     Fetch twin metadata from PostgreSQL database.
-    Cached to avoid excessive DB queries.
+    No caching - always fetch fresh data to support metadata updates.
     """
     try:
         conn = _get_db_connection()
@@ -58,13 +52,13 @@ def _fetch_twin_metadata_from_db(twin_key: str):
 def get_agent_metadata(agent: str):
     """
     Retrieve agent metadata from PERSONAS or database for digital twins.
-    Returns dict with keys: company, role, description
+    Returns dict with keys: company, role, description, knowledge
     
     Args:
         agent (str): Agent identifier (e.g., "Sam_Altman" or "twin_e29eb729-...")
     
     Returns:
-        dict: Agent metadata containing company, role, and description
+        dict: Agent metadata containing company, role, description, and knowledge
         
     Raises:
         ValueError: If agent is neither in PERSONAS nor a valid twin_* identifier
@@ -83,7 +77,8 @@ def get_agent_metadata(agent: str):
             return {
                 "company": metadata["company"],
                 "role": metadata["role"],
-                "description": metadata["description"]
+                "description": metadata["description"],
+                "knowledge": metadata["knowledge"]  # Include knowledge field
             }
         else:
             # Fallback if metadata not found in database
@@ -91,7 +86,8 @@ def get_agent_metadata(agent: str):
             return {
                 "company": "Digital Twin",
                 "role": "Personalized Advisor",
-                "description": "Custom digital twin advisor based on your profile"
+                "description": "Custom digital twin advisor based on your profile",
+                "knowledge": "General business and leadership expertise"
             }
     else:
         raise ValueError(f"Invalid agent: {agent}")
