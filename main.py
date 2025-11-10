@@ -1109,7 +1109,9 @@ Be specific and based on the MCQ responses. Return only valid JSON."""
                 }
 
         # Step 3: Create ChromaDB collections
-        twin_id = f"twin_{user_id}_{int(time.time() * 1000)}"  # Unique twin ID
+        # Use shorter twin_id to avoid ChromaDB 63-char collection name limit
+        # Format: userid_timestamp (e.g., "123_1762810065000")
+        twin_id = f"{user_id}_{int(time.time() * 1000)}"
 
         # Use actual user name instead of AI-generated name
         twin_name = input_data.user_name
