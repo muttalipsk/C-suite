@@ -362,9 +362,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   }, []);
 
 
-  // Mock AGENT_DATA and results for the changes to apply correctly
-  // In a real scenario, these would be fetched or defined elsewhere.
-  const AGENT_DATA = AI_AGENTS;
+  // Use combined allAgents (includes AI_AGENTS + digital twins from database)
+  const AGENT_DATA = allAgents;
 
   return (
     <div className="flex h-screen bg-background">
