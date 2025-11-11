@@ -398,9 +398,20 @@ Role Details: ${user.roleDetails}
 
       console.log(`Pre-meeting completed: DB ID ${run.id}, Python Run ID ${pythonRunId}`);
 
+      // Format pre-meeting conversation for display
+      const preMeetingConversation = [
+        {
+          role: "user",
+          content: session.initialQuestion,
+          timestamp: session.createdAt?.toISOString() || new Date().toISOString(),
+        },
+        ...session.conversation
+      ];
+
       res.json({
         runId: pythonRunId,
         recommendations,
+        preMeetingConversation,
       });
     } catch (error: any) {
       console.error("Pre-meeting complete error:", error);

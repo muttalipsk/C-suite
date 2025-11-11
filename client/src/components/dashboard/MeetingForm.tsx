@@ -22,6 +22,7 @@ interface MeetingFormData {
   // Optional fields for pre-meeting completion
   runId?: string;
   recommendations?: any;
+  preMeetingConversation?: any[];
 }
 
 interface MeetingFormProps {
@@ -158,6 +159,7 @@ export function MeetingForm({ onSubmit, isLoading = false, selectedAgents, onCle
         // Include the completed meeting data
         runId: data.runId,
         recommendations: data.recommendations,
+        preMeetingConversation: data.preMeetingConversation,
       });
     },
   });

@@ -16,7 +16,7 @@ interface PreMeetingConversationProps {
   sessionId: string;
   initialCounterQuestion: string | null;
   isReady: boolean;
-  onComplete: (runId: string, recommendations: any) => void;
+  onComplete: (runId: string, recommendations: any, preMeetingConversation?: any[]) => void;
   onCancel: () => void;
 }
 
@@ -86,7 +86,7 @@ export function PreMeetingConversation({
       return data;
     },
     onSuccess: (data) => {
-      onComplete(data.runId, data.recommendations);
+      onComplete(data.runId, data.recommendations, data.preMeetingConversation);
     },
   });
 
