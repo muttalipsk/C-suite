@@ -19,6 +19,7 @@ interface AgentCardProps {
   runId: string;
   autoOpenChat?: boolean;
   savedChatHistory?: any[];
+  preMeetingConversation?: any[];
 }
 
 interface ChatMessage {
@@ -36,6 +37,7 @@ export function AgentCard({
   runId,
   autoOpenChat = false,
   savedChatHistory = [],
+  preMeetingConversation = [],
 }: AgentCardProps) {
   const [showChat, setShowChat] = useState(autoOpenChat);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -72,7 +74,17 @@ export function AgentCard({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Save both recommendation AND chat history
+      // Merge pre-meeting conversation with chat history
+      const fullChatHistory = [
+        ...(preMeetingConversation || []),
+        ...chatMessages.map(m => ({
+          sender: m.sender,
+          content: m.content,
+          timestamp: m.timestamp.toISOString(),
+        }))
+      ];
+
+      // Save recommendation with full conversation history
       const response = await fetch("/api/save-recommendation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,11 +92,7 @@ export function AgentCard({
           runId,
           agent: agentKey,
           recommendation,
-          chatHistory: chatMessages.length > 0 ? chatMessages.map(m => ({
-            sender: m.sender,
-            content: m.content,
-            timestamp: m.timestamp.toISOString(),
-          })) : null,
+          chatHistory: fullChatHistory.length > 0 ? fullChatHistory : null,
         }),
       });
 
@@ -148,19 +156,40 @@ export function AgentCard({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full justify-between p-0 h-auto font-semibold text-sm"
-              data-testid={`button-toggle-${agentKey}`}
-            >
-              Recommendation Details
-              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
-          </CollapsibleTrigger>
+        {/* Pre-Meeting Conversation Timeline */}
+        {preMeetingConversation && preMeetingConversation.length > 0 && (
+          <div className="space-y-3 pb-4 border-b">
+            {preMeetingConversation.map((msg, idx) => (
+              <div key={idx} className="flex gap-3">
+                {msg.role === "assistant" && (
+                  <Avatar className="w-8 h-8 shrink-0">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">AI</AvatarFallback>
+                  </Avatar>
+                )}
+                {msg.role === "user" && <div className="w-8" />}
+                <div className={`flex-1 ${msg.role === "user" ? "text-right" : ""}`}>
+                  <div
+                    className={`inline-block rounded-lg px-4 py-2 ${
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    }`}
+                  >
+                    <p className="text-sm leading-relaxed">{msg.content}</p>
+                  </div>
+                </div>
+                {msg.role === "user" && (
+                  <Avatar className="w-8 h-8 shrink-0">
+                    <AvatarFallback className="text-xs">U</AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
-          <CollapsibleContent className="space-y-4 mt-4">
+        {/* Recommendation Content */}
+        <div className="space-y-4">
             {hasHtmlContent ? (
               <div 
                 className="prose prose-sm max-w-none dark:prose-invert
@@ -222,8 +251,7 @@ export function AgentCard({
                 )}
               </>
             )}
-          </CollapsibleContent>
-        </Collapsible>
+        </div>
 
         <div className="flex gap-3">
           <Button
