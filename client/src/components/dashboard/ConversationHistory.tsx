@@ -19,13 +19,14 @@ interface ConversationHistoryProps {
   onSelectConversation?: (runId: string, agentKey: string) => void;
   onLoadChat?: (runId: string, agentKey: string, recommendation: string) => void;
   selectedConversation?: { runId: string; agentKey: string } | null;
+  allAgents: Record<string, any>;
 }
 
 interface GroupedConversations {
   [agentKey: string]: SavedRecommendation[];
 }
 
-export function ConversationHistory({ onSelectConversation, onLoadChat, selectedConversation }: ConversationHistoryProps) {
+export function ConversationHistory({ onSelectConversation, onLoadChat, selectedConversation, allAgents }: ConversationHistoryProps) {
   const [savedRecommendations, setSavedRecommendations] = useState<SavedRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
@@ -128,7 +129,7 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
           ) : (
             <div className="p-4 space-y-2">
               {Object.entries(groupedConversations).map(([agentKey, conversations]) =>{
-              const agent = AI_AGENTS[agentKey as keyof typeof AI_AGENTS];
+              const agent = allAgents[agentKey];
               if (!agent) return null;
 
               const isAgentExpanded = expandedAgents.has(agentKey);
