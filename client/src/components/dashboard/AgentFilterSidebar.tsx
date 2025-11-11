@@ -68,8 +68,8 @@ export function AgentFilterSidebar({ selectedAgents, onToggleAgent, onToggleAll,
                       {isSelected && <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />}
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{agent.company}</p>
-                    <Badge variant={isDigitalTwin ? "default" : "outline"} className="mt-1 text-xs">
-                      {agent.role}
+                    <Badge variant="default" className="mt-1 text-xs">
+                      Digital Twin
                     </Badge>
                   </div>
                 </div>
