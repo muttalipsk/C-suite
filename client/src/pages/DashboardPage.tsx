@@ -189,6 +189,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         runId: data.runId,
         recommendations: data.recommendations,
         selectedAgents: data.selectedAgents,
+        preMeetingConversation: data.preMeetingConversation, // Pass conversation to results
       });
 
       // Scroll to results after a brief delay
@@ -452,6 +453,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 runId={results.runId}
                                 autoOpenChat={results.selectedAgentKey === agentKey}
                                 savedChatHistory={savedChatHistory[`${results.runId}_${agentKey}`]}
+                                preMeetingConversation={results.preMeetingConversation}
                               />
                             );
                           })}
