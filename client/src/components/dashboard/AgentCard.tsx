@@ -149,7 +149,7 @@ export function AgentCard({
           <div className="flex-1">
             <CardTitle className="text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">{agentName}</CardTitle>
             <Badge variant="secondary" className="mt-2 bg-gradient-to-r from-primary/80 to-accent-foreground/80 text-white border-0 shadow-sm">
-              {company}
+              Expert
             </Badge>
           </div>
         </div>

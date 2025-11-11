@@ -38,7 +38,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   // Combine AI_AGENTS with user digital twins
   const allAgents = useMemo(() => {
     const combined: Record<string, any> = { ...AI_AGENTS };
-    
+
     if (twinsData?.twins) {
       twinsData.twins.forEach((twin: any) => {
         const twinKey = `twin_${twin.id}`;
@@ -52,7 +52,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         };
       });
     }
-    
+
     return combined;
   }, [twinsData]);
 
@@ -158,13 +158,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     });
 
     const now = Date.now();
-    
+
     // Debounce: Ignore if submitted within last 2 seconds
     if (now - lastSubmitTimeRef.current < 2000) {
       console.log("⚠️ Duplicate submission ignored (debounced within 2s)");
       return;
     }
-    
+
     lastSubmitTimeRef.current = now;
 
     // Prevent double execution
@@ -180,7 +180,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     setRecommendations({});
     setCurrentRunId("");
     setSavedChatHistory({}); // Clear saved chat history for new meetings
-    
+
     // If recommendations are already provided (from pre-meeting completion), skip API call
     if (data.runId && data.recommendations) {
       console.log("✅ Using pre-meeting recommendations, skipping API call");
@@ -213,7 +213,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     // Create new abort controller
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
-    
+
     try {
       const requestBody = {
         task: data.task,
@@ -221,7 +221,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         turns: data.turns || 1,
         meetingType: data.meetingType || "board",
       };
-      
+
       console.log("📤 Full request body:", requestBody);
 
       const response = await fetch("/api/meeting", {
@@ -257,7 +257,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         console.log("Request was cancelled");
         return;
       }
-      
+
       console.error("Meeting error:", error);
       alert(error.message || "Failed to run meeting. Please try again.");
     } finally {
@@ -278,11 +278,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
         if (savedItem) {
           const useRunId = savedItem.runId || savedItem.id.toString();
-          
+
           // Split chatHistory into pre-meeting (role field) and post-meeting (sender field)
           let preMeetingConversation: any[] = [];
           let postMeetingChat: any[] = [];
-          
+
           if (savedItem.chatHistory && savedItem.chatHistory.length > 0) {
             savedItem.chatHistory.forEach((msg: any) => {
               if (msg.role) {
@@ -294,7 +294,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               }
             });
           }
-          
+
           // Set the results to show the agent card with pre-meeting conversation
           setResults({
             runId: useRunId,
@@ -307,7 +307,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           setCurrentRunId(useRunId);
           setRecommendations({ [agentKey]: savedItem.content });
           setSelectedConversation({ runId: useRunId, agentKey });
-          
+
           // Load post-meeting chat history
           if (postMeetingChat.length > 0) {
             setSavedChatHistory({
@@ -456,7 +456,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                 {results && (
                       <div className="space-y-6" data-results-section id="results-section">
                         <div className="flex items-center justify-between">
-                          <h2 className="text-2xl font-bold">AI Leaders' Recommendations</h2>
+                          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent-foreground bg-clip-text text-transparent">
+                            Expert Recommendations
+                          </h2>
                           <Badge variant="outline" className="text-sm">
                             {results.selectedAgents.length} {results.selectedAgents.length === 1 ? 'Agent' : 'Agents'}
                           </Badge>
@@ -605,7 +607,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       className="mt-1"
                     />
                   ) : (
-                    <p className="mt-1">{user.companyWebsite || "Not provided"}</p>
+                    <p className="font-medium mt-1">{user.companyWebsite || "Not provided"}</p>
                   )}
                 </div>
 
@@ -618,7 +620,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       className="mt-1"
                     />
                   ) : (
-                    <p className="mt-1">{user.roleDetails || "Not provided"}</p>
+                    <p className="font-medium mt-1">{user.roleDetails || "Not provided"}</p>
                   )}
                 </div>
 
