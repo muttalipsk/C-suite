@@ -511,6 +511,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           onSelectConversation={handleSelectConversation} 
           onLoadChat={handleLoadChat}
           selectedConversation={selectedConversation}
+          allAgents={allAgents}
         />
       )}
 
