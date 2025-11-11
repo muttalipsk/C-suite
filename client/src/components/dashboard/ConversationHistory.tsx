@@ -3,7 +3,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Clock, ChevronRight, Save, ChevronDown, ChevronUp } from "lucide-react";
-import { AI_AGENTS } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -156,7 +155,7 @@ export function ConversationHistory({ onSelectConversation, onLoadChat, selected
                               alt={agent.name}
                               className="object-cover"
                             />
-                            <AvatarFallback>{agent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                            <AvatarFallback>{agent.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0 text-left">
                             <p className="font-medium text-sm">{agent.name}</p>
