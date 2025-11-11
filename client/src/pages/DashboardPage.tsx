@@ -76,6 +76,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     recommendations: Record<string, string>;
     selectedAgents: string[];
     selectedAgentKey?: string;
+    preMeetingConversation?: any[];
   } | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -278,17 +279,41 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         if (savedItem) {
           const useRunId = savedItem.runId || savedItem.id.toString();
           
-          // Set the results to show the agent card
+          // Split chatHistory into pre-meeting (role field) and post-meeting (sender field)
+          let preMeetingConversation: any[] = [];
+          let postMeetingChat: any[] = [];
+          
+          if (savedItem.chatHistory && savedItem.chatHistory.length > 0) {
+            savedItem.chatHistory.forEach((msg: any) => {
+              if (msg.role) {
+                // Pre-meeting message (has 'role' field)
+                preMeetingConversation.push(msg);
+              } else if (msg.sender) {
+                // Post-meeting chat message (has 'sender' field)
+                postMeetingChat.push(msg);
+              }
+            });
+          }
+          
+          // Set the results to show the agent card with pre-meeting conversation
           setResults({
             runId: useRunId,
             recommendations: { [agentKey]: savedItem.content },
             selectedAgents: [agentKey],
-            selectedAgentKey: agentKey
+            selectedAgentKey: agentKey,
+            preMeetingConversation: preMeetingConversation.length > 0 ? preMeetingConversation : undefined
           });
 
           setCurrentRunId(useRunId);
           setRecommendations({ [agentKey]: savedItem.content });
           setSelectedConversation({ runId: useRunId, agentKey });
+          
+          // Load post-meeting chat history
+          if (postMeetingChat.length > 0) {
+            setSavedChatHistory({
+              [`${useRunId}_${agentKey}`]: postMeetingChat
+            });
+          }
 
           // Scroll to the results section and the specific agent card
           setTimeout(() => {
